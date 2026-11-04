@@ -1,11 +1,8 @@
 # jigsaw — Procedural Puzzle Icon Generator
 
-Turns a **seed** into a jigsaw-puzzle-piece icon: strict top-down view, classic
-tab/socket outline, soft multi-color diffuse gradient, and a subtle
-soft-resin / matte-acrylic 3D look that comes from an SDF bevel and lighting.
+Turns a **seed** into a jigsaw-puzzle-piece icon: strict top-down view, classic tab/socket outline, soft multi-color diffuse gradient, and a subtle soft-resin / matte-acrylic 3D look that comes from an SDF bevel and lighting.
 
-> Geometry defines the shape, the SDF defines the bevel, shaders define the
-> material, the seed defines the identity.
+> Geometry defines the shape, the SDF defines the bevel, shaders define the material, the seed defines the identity.
 
 Design spec: [docs/design.md](docs/design.md).
 
@@ -41,8 +38,7 @@ import { PuzzleIcon } from "@jigsaw/react";
 <PuzzleIcon seed="board" size={256} layout="grid" pieceCount={9} material={{ preset: "matteAcrylic" }} background="#FFFFFF" />
 ```
 
-All `<PuzzleIcon>`s share one generator (one GPU device). Rendered images are
-cached, and the canvas is rendered at `size × devicePixelRatio`.
+All `<PuzzleIcon>`s share one generator (one GPU device). Rendered images are cached, and the canvas is rendered at `size × devicePixelRatio`.
 
 ### Core API
 
@@ -64,8 +60,7 @@ const webp = await gen.toWebP({ seed: "alpha", size: 128 }, { size: 512, transpa
 const blob = await gen.export({ seed: "alpha" }, { format: "png", size: 256, transparent: false });
 ```
 
-Without any renderer at all (e.g. on a server), `@jigsaw/core` gives you the
-description, and `renderPlanCpu(buildRenderPlan(description))` the pixels:
+Without any renderer at all (e.g. on a server), `@jigsaw/core` gives you the description, and `renderPlanCpu(buildRenderPlan(description))` the pixels:
 
 ```ts
 import { buildRenderPlan, generatePuzzleIcon } from "@jigsaw/core";
@@ -109,56 +104,19 @@ interface PuzzleIconOptions {
 
 ## How it works
 
-1. **Geometry.** Each side gets a `PuzzleEdge` (`flat` / `tab` / `socket` with
-   center, width, depth, neck width, asymmetry, curvature, all normalized to
-   the side). Profiles are 8 cubic Béziers; head ≥ neck + 0.07 and the neck is
-   widened to ≥ 3 output pixels, so outlines never pinch or self-intersect.
-   Corners are rounded. Neighbors share one `SharedEdge` and walk it in
-   opposite directions, so they fit exactly.
-2. **Layouts.** `single` enforces ≥ 1 non-flat edge, ≤ 3 tabs, not all
-   equal, aspect < 1.3. `grid` keeps pieces interlocked and forms the gap by
-   eroding the SDF (uniform, never overlaps). `cluster` grows a compact patch,
-   then spreads and rotates pieces, damping until no two pieces overlap.
-3. **SDF.** Flatten → scanline mask → exact Felzenszwalb EDT inside and out →
-   signed field (positive inside), refined near the outline with exact
-   point-to-segment distances so bevel normals are smooth. 256 / 512 / 1024
-   texels chosen from the output size, and cached.
-4. **Shading** (identical in WGSL, GLSL and TS). `h = H·smoothstep(0, b, d)`,
-   normal from central differences of the SDF in piece units (resolution
-   independent, uniform control flow). Lambert + Blinn–Phong normalized so the
-   flat top keeps its color, which makes top/left bevels brighter and
-   bottom/right ones darker. Gradient = normalized Gaussian spots + base color
-   in linear RGB; palettes are varied in OKLCH. Soft shadow from the offset
-   SDF. SDF-based AA, dithered sRGB output, premultiplied "over" compositing.
-5. **Stamp.** The letter is drawn with Canvas 2D, fitted to its ink box,
-   thresholded and run through the same EDT, giving a second SDF centred on
-   the piece. It adds a relief `h_s = ±height·smoothstep(0, w, d_s)` on top of
-   the bevel, so the walls of the letter take the same light as the outline.
-   The walls sit just inside the letter's edge, so the surface around it is
-   untouched.
-   Glyphs depend on the platform's fonts, so stamped pixels are not promised to
-   match across machines. Without a canvas (Node) no stamp is drawn unless a
-   rasterizer is set with `setGlyphRasterizer`.
-6. **Backends.** WebGPU (one device, r32float SDF textures in an LRU,
-   dynamic-offset uniforms, readback so preview == export), WebGL2 (same
-   shader math), CPU (reference). All three agree within 1/255.
+1. **Geometry.** Each side gets a `PuzzleEdge` (`flat` / `tab` / `socket` with center, width, depth, neck width, asymmetry, curvature, all normalized to the side). Profiles are 8 cubic Béziers; head ≥ neck + 0.07 and the neck is widened to ≥ 3 output pixels, so outlines never pinch or self-intersect. Corners are rounded. Neighbors share one `SharedEdge` and walk it in opposite directions, so they fit exactly.
+2. **Layouts.** `single` enforces ≥ 1 non-flat edge, ≤ 3 tabs, not all equal, aspect < 1.3. `grid` keeps pieces interlocked and forms the gap by eroding the SDF (uniform, never overlaps). `cluster` grows a compact patch, then spreads and rotates pieces, damping until no two pieces overlap.
+3. **SDF.** Flatten → scanline mask → exact Felzenszwalb EDT inside and out → signed field (positive inside), refined near the outline with exact point-to-segment distances so bevel normals are smooth. 256 / 512 / 1024 texels chosen from the output size, and cached.
+4. **Shading** (identical in WGSL, GLSL and TS). `h = H·smoothstep(0, b, d)`, normal from central differences of the SDF in piece units (resolution independent, uniform control flow). Lambert + Blinn–Phong normalized so the flat top keeps its color, which makes top/left bevels brighter and bottom/right ones darker. Gradient = normalized Gaussian spots + base color in linear RGB; palettes are varied in OKLCH. Soft shadow from the offset SDF. SDF-based AA, dithered sRGB output, premultiplied "over" compositing.
+5. **Stamp.** The letter is drawn with Canvas 2D, fitted to its ink box, thresholded and run through the same EDT, giving a second SDF centred on the piece. It adds a relief `h_s = ±height·smoothstep(0, w, d_s)` on top of the bevel, so the walls of the letter take the same light as the outline. The walls sit just inside the letter's edge, so the surface around it is untouched. Glyphs depend on the platform's fonts, so stamped pixels are not promised to match across machines. Without a canvas (Node) no stamp is drawn unless a rasterizer is set with `setGlyphRasterizer`.
+6. **Backends.** WebGPU (one device, r32float SDF textures in an LRU, dynamic-offset uniforms, readback so preview == export), WebGL2 (same shader math), CPU (reference). All three agree within 1/255.
 
 ## Tests
 
-- `tests/geometry.test.ts`: closed paths, no self-intersection, area, tab/socket
-  direction, neck limits, shared edges match in reverse, bounds, no overlaps.
-- `tests/deterministic.test.ts`: PRNG pinning, independent streams, no
-  `Math.random`, same seed gives the same description and pixels, variety across seeds.
-- `tests/rendering.test.ts`: 32–512 px × white / dark / transparent ×
-  single / cluster / grid golden signatures (`tests/golden/signatures.json`;
-  delete it to re-baseline), bevel lighting direction, albedo preservation,
-  no banding, AA, shadow alpha on transparent, PNG round-trip. Images land in
-  `tests/__output__/`.
+- `tests/geometry.test.ts`: closed paths, no self-intersection, area, tab/socket direction, neck limits, shared edges match in reverse, bounds, no overlaps.
+- `tests/deterministic.test.ts`: PRNG pinning, independent streams, no `Math.random`, same seed gives the same description and pixels, variety across seeds.
+- `tests/rendering.test.ts`: 32–512 px × white / dark / transparent × single / cluster / grid golden signatures (`tests/golden/signatures.json`; delete it to re-baseline), bevel lighting direction, albedo preservation, no banding, AA, shadow alpha on transparent, PNG round-trip. Images land in `tests/__output__/`.
 
 ## Determinism
 
-Identical options produce an identical description (`GeneratorMetadata
-{ seed, algorithmVersion, presetVersion }` is embedded). Pixels are identical
-per backend and machine; across GPUs they match within float precision, but
-per-pixel identity isn't promised. For production, prefer exported (cached)
-PNG/WebP assets.
+Identical options produce an identical description (`GeneratorMetadata { seed, algorithmVersion, presetVersion }` is embedded). Pixels are identical per backend and machine; across GPUs they match within float precision, but per-pixel identity isn't promised. For production, prefer exported (cached) PNG/WebP assets.
