@@ -2,7 +2,7 @@ import { DEFAULT_LIGHTING, DEFAULT_SHADOW, MATERIAL_PRESETS } from "./material/p
 import type { LayoutKind, PuzzleIconOptions, ResolvedOptions } from "./types";
 
 export const ALGORITHM_VERSION = "1.0.0";
-export const PRESET_VERSION = "1.0.0";
+export const PRESET_VERSION = "1.1.0";
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const num = (v: unknown, d: number) => (typeof v === "number" && Number.isFinite(v) ? v : d);

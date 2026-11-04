@@ -41,9 +41,6 @@ interface State {
   intensity: number;
   ambient: number;
   specular: number;
-  shadow: boolean;
-  shadowOpacity: number;
-  shadowBlur: number;
   stampText: string;
   stampStyle: StampStyle;
   stampSize: number;
@@ -72,9 +69,6 @@ const initial: State = {
   intensity: 0.85,
   ambient: 0.65,
   specular: 0.28,
-  shadow: true,
-  shadowOpacity: 0.12,
-  shadowBlur: 0.04,
   stampText: "",
   stampStyle: "deboss",
   stampSize: 0.42,
@@ -116,7 +110,6 @@ function toOptions(s: State, size: number): PuzzleIconOptions {
       ambient: s.ambient,
       specular: s.specular,
     },
-    shadow: { enabled: s.shadow, opacity: s.shadowOpacity, blur: s.shadowBlur },
     stamp: s.stampText
       ? { text: s.stampText, style: s.stampStyle, size: s.stampSize, depth: s.stampDepth, ink: s.stampInk, weight: s.stampWeight }
       : undefined,
@@ -219,7 +212,7 @@ export function App() {
     <div className="app">
       <header className="top">
         <div className="brand">
-          <PuzzleIcon seed="brand" size={28} gradient={{ palette: "aurora" }} shadow={{ enabled: false }} renderer={renderer} />
+          <PuzzleIcon seed="brand" size={28} gradient={{ palette: "aurora" }} renderer={renderer} />
           <h1>Puzzle Icon Playground</h1>
         </div>
         <div className="status">
@@ -341,16 +334,6 @@ export function App() {
             <Slider label="Intensity" value={s.intensity} min={0} max={1.5} step={0.01} onChange={(v) => set("intensity", v)} />
             <Slider label="Ambient" value={s.ambient} min={0} max={1.5} step={0.01} onChange={(v) => set("ambient", v)} />
             <Slider label="Specular" value={s.specular} min={0} max={1} step={0.01} onChange={(v) => set("specular", v)} />
-            <label className="row check">
-              <input type="checkbox" checked={s.shadow} onChange={(e) => set("shadow", e.target.checked)} />
-              <span>Ambient shadow</span>
-            </label>
-            {s.shadow && (
-              <>
-                <Slider label="Shadow opacity" value={s.shadowOpacity} min={0} max={0.5} step={0.01} onChange={(v) => set("shadowOpacity", v)} />
-                <Slider label="Shadow blur" value={s.shadowBlur} min={0} max={0.12} step={0.002} onChange={(v) => set("shadowBlur", v)} />
-              </>
-            )}
           </Section>
 
           <Section title="Export">

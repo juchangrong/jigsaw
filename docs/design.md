@@ -8,7 +8,7 @@
 
 - Minimal, geometric, soft resin, diffuse gradient, subtle 3D.
 - Orthographic top-down only. The surface is flat; depth comes from rounded bevel highlights, never from extruded sides.
-- No color banding, light shadow, legible from 32 px to 256 px.
+- No color banding, no drop shadow by default, legible from 32 px to 256 px.
 - Avoid: thick strokes, metal, strong specular, cartoon look.
 
 **Non-goals:** animation, physics, perspective, ray tracing, game interaction, AI image generation, glass refraction, SVG export.
@@ -108,7 +108,7 @@ interface GradientSpot { position: [number, number]; color: string; radius: numb
 
 ## 7. Shadow
 
-Soft ambient shadow: `opacity 0.12`, `blur 0.04`, `offset 0.01 / 0.025` (normalized icon units). Shadow alpha is kept when exporting with a transparent background.
+Soft ambient shadow, off by default and enabled with `shadow.enabled`: `opacity 0.12`, `blur 0.04`, `offset 0.01 / 0.025` (normalized icon units). Shadow alpha is kept when exporting with a transparent background.
 
 ## 8. Rendering pipeline
 

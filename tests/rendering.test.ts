@@ -165,7 +165,7 @@ describe("material properties", () => {
   });
 
   it("keeps soft shadow alpha on a transparent background", () => {
-    const { plan, px } = render({ ...flat, size: 128 });
+    const { plan, px } = render({ ...flat, size: 128, shadow: { enabled: true } });
     const p = plan.pieces[0]!;
     let shadowPx = 0;
     for (let i = 0; i < px.length; i += 4) {
