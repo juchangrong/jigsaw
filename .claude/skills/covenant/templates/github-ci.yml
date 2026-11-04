@@ -1,0 +1,58 @@
+# covenant checks for GitHub Actions: copy to .github/workflows/ and require the
+# verify and pr-title jobs by name in a ruleset. Add the project's own checks to verify.
+name: covenant
+
+on:
+  pull_request:
+    # edited reruns pr-title when only the title changes.
+    types: [opened, edited, reopened, synchronize]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+      - name: Check incoming commit messages
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node .agents/skills/covenant/scripts/check-commit-message.mjs --range "$BASE_SHA" "$HEAD_SHA"
+      - run: node .agents/scripts/verify-covenant.mjs
+      - name: Check whitespace in every tracked file
+        run: git diff --check "$(git hash-object -t tree /dev/null)" HEAD
+
+  pr-title:
+    name: pr-title
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+      - name: Check the pull request title
+        # The title arrives through env; expanding it inside run would let a title inject shell commands.
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          printf '%s\n' "$TITLE" > "$RUNNER_TEMP/subject"
+          node .agents/skills/covenant/scripts/check-commit-message.mjs "$RUNNER_TEMP/subject"

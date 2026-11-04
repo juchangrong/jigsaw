@@ -1,0 +1,12 @@
+{
+  "checks": ["notes", "budgets", "links", "wrap", "language", "docs-placement"],
+  "notesRoot": ".agents/notes",
+  "noteClasses": ["feature", "bug-fix", "simplification", "architecture", "process", "testing"],
+  "formatAdopted": "2026-01-01",
+  "counterpartPattern": "\\.[a-z]{2}(?:-[A-Za-z]{2,4})?\\.md$",
+  "budgets": {
+    "AGENTS.md": 1500
+  },
+  "markdown": ["*.md", "docs/**/*.md", ".agents/**/*.md", "src/**/*.md"],
+  "exclude": ["node_modules/**", "vendor/**", ".agents/notes/archived/**", ".agents/skills/*/templates/**", "**/.generated/**"]
+}
