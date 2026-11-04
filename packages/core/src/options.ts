@@ -1,0 +1,69 @@
+import { DEFAULT_LIGHTING, DEFAULT_SHADOW, MATERIAL_PRESETS } from "./material/presets";
+import type { LayoutKind, PuzzleIconOptions, ResolvedOptions } from "./types";
+
+export const ALGORITHM_VERSION = "1.0.0";
+export const PRESET_VERSION = "1.0.0";
+
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+const num = (v: unknown, d: number) => (typeof v === "number" && Number.isFinite(v) ? v : d);
+
+export function defaultPieceCount(layout: LayoutKind): number {
+  return layout === "single" ? 1 : layout === "grid" ? 4 : 3;
+}
+
+export function resolveOptions(o: PuzzleIconOptions): ResolvedOptions {
+  const layout: LayoutKind = o.layout ?? "single";
+  let pieceCount = Math.round(num(o.pieceCount, defaultPieceCount(layout)));
+  if (layout === "single") pieceCount = 1;
+  else if (layout === "grid") pieceCount = pieceCount >= 9 ? 9 : 4;
+  else pieceCount = clamp(pieceCount, 2, 5);
+
+  const preset = o.material?.preset ?? "softResin";
+  const base = MATERIAL_PRESETS[preset];
+  const m = o.material ?? {};
+  const g = o.geometry ?? {};
+  const s = o.shadow ?? {};
+  const l = o.lighting ?? {};
+
+  return {
+    seed: String(o.seed),
+    size: clamp(Math.round(num(o.size, 128)), 8, 4096),
+    layout,
+    pieceCount,
+    geometry: {
+      tabSize: clamp(num(g.tabSize, 0.5), 0, 1),
+      curvature: clamp(num(g.curvature, 0.5), 0, 1),
+      asymmetry: clamp(num(g.asymmetry, 0.6), 0, 1),
+      separation: clamp(num(g.separation, layout === "cluster" ? 0.09 : 0.04), 0, 0.5),
+      rotation: clamp(num(g.rotation, layout === "cluster" ? 6 : 0), 0, 30),
+    },
+    gradient: {
+      palette: o.gradient?.palette ?? null,
+      spots: o.gradient?.spots !== undefined ? clamp(Math.round(o.gradient.spots), 3, 5) : null,
+      softness: clamp(num(o.gradient?.softness, 0.5), 0, 1),
+    },
+    material: {
+      preset,
+      bevelWidth: clamp(num(m.bevelWidth, base.bevelWidth), 0.005, 0.2),
+      bevelStrength: clamp(num(m.bevelStrength, base.bevelStrength), 0, 2),
+      roughness: clamp(num(m.roughness, base.roughness), 0.05, 1),
+      specularIntensity: clamp(num(m.specularIntensity, base.specularIntensity), 0, 1),
+      ambientOcclusion: clamp(num(m.ambientOcclusion, base.ambientOcclusion), 0, 1),
+      thickness: clamp(num(m.thickness, base.thickness), 0, 0.1),
+    },
+    lighting: {
+      direction: l.direction ?? DEFAULT_LIGHTING.direction,
+      intensity: clamp(num(l.intensity, DEFAULT_LIGHTING.intensity), 0, 2),
+      ambient: clamp(num(l.ambient, DEFAULT_LIGHTING.ambient), 0, 2),
+      specular: clamp(num(l.specular, DEFAULT_LIGHTING.specular), 0, 2),
+    },
+    shadow: {
+      enabled: s.enabled ?? DEFAULT_SHADOW.enabled,
+      opacity: clamp(num(s.opacity, DEFAULT_SHADOW.opacity), 0, 1),
+      blur: clamp(num(s.blur, DEFAULT_SHADOW.blur), 0, 0.2),
+      offset: s.offset ?? DEFAULT_SHADOW.offset,
+      color: s.color ?? DEFAULT_SHADOW.color,
+    },
+    background: o.background ?? "transparent",
+  };
+}
