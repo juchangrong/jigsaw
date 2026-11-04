@@ -35,7 +35,7 @@ export const DEFAULT_LIGHTING: LightingParams = {
 };
 
 export const DEFAULT_SHADOW: ShadowParams = {
-  enabled: true,
+  enabled: false,
   opacity: 0.12,
   blur: 0.04,
   offset: [0.01, 0.025],
