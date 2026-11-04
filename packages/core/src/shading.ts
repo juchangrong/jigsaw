@@ -10,11 +10,14 @@
 import { hexToSrgb, linearToSrgbChannel, type RGB } from "./color/oklch";
 import { gradientToLinear } from "./color/gradient";
 import { sampleSdf, sharedSdfCache, type SdfCache, type SdfField } from "./sdf/sdf";
+import { EMPTY_STAMP, stampCache, stampResolution } from "./stamp/glyph";
 import type { PuzzleIconDescription } from "./types";
 
 export const MAX_SPOTS = 5;
 /** vec4 count of the packed per-piece uniform block */
-export const UNIFORM_VEC4S = 22;
+export const UNIFORM_VEC4S = 24;
+/** relief height (piece units) of a stamp at depth 1 */
+export const STAMP_MAX_HEIGHT = 0.02;
 
 export interface PiecePlan {
   id: string;
@@ -40,6 +43,14 @@ export interface PiecePlan {
   shadowBlur: number;
   shadowOpacity: number;
   shadowColor: RGB; // sRGB
+  /** glyph SDF (EMPTY_STAMP when the piece has no letter) */
+  stamp: SdfField;
+  /** signed relief height, piece units (< 0 pressed in, 0 = none) */
+  stampHeight: number;
+  /** width of the stamp's walls, piece units */
+  stampBevel: number;
+  /** 0–1 darkening inside the letter */
+  stampInk: number;
 }
 
 export interface RenderPlan {
@@ -105,6 +116,11 @@ export function buildRenderPlan(desc: PuzzleIconDescription, o: PlanOptions = {}
     const so = desc.shadow.offset;
     const g = gradientToLinear(p.gradient);
     const rough = m.roughness;
+    const st = desc.stamp;
+    const stamp = p.stamp
+      ? stampCache.get(p.stamp, { font: st.font, weight: st.weight, size: st.size, resolution: stampResolution(res, st.size) })
+      : EMPTY_STAMP;
+    const hasStamp = stamp !== EMPTY_STAMP;
     return {
       id: p.id,
       sdf: cache.get(p.geometryKey, p.path, res),
@@ -132,6 +148,11 @@ export function buildRenderPlan(desc: PuzzleIconDescription, o: PlanOptions = {}
       shadowBlur: Math.max(desc.shadow.blur / t.scale, 1.5 * pxLocal),
       shadowOpacity: desc.shadow.opacity,
       shadowColor: hexToSrgb(desc.shadow.color),
+      stamp,
+      stampHeight: hasStamp ? (st.style === "emboss" ? 1 : -1) * st.depth * STAMP_MAX_HEIGHT : 0,
+      // walls scale with the letter; never narrower than ~1 px
+      stampBevel: Math.max(0.035 * st.size, 0.9 * pxLocal),
+      stampInk: hasStamp ? st.ink : 0,
     };
   });
 
@@ -177,6 +198,8 @@ export function packPieceUniforms(plan: RenderPlan, p: PiecePlan, out = new Floa
   v(20, plan.ambient, plan.specular, plan.flatDiffuse, 0);
   const flatSpec = Math.pow(Math.max(plan.half[2], 0), p.shininess);
   v(21, plan.half[0], plan.half[1], plan.half[2], flatSpec);
+  v(22, p.stamp.originX, p.stamp.originY, p.stamp.texel, p.stampInk);
+  v(23, p.stamp.width, p.stamp.height, p.stampHeight, p.stampBevel);
   return out;
 }
 
@@ -226,8 +249,24 @@ export function shadeSurface(plan: RenderPlan, p: PiecePlan, px: number, py: num
   // h = H·smoothstep(0, b, d)  →  ∂h/∂d = H·6t(1−t)/b
   const t = clamp01(d / p.bevel);
   const dh = (p.heightScale * 6 * t * (1 - t)) / p.bevel;
-  let nx = -dh * gx;
-  let ny = -dh * gy;
+
+  // letter stamp: second height field h_s = height · smoothstep(0, w, d_s).
+  // The walls sit inside the letter's edge, so nothing outside it changes;
+  // faded in over the bevel so it never touches the outline.
+  const st = p.stamp;
+  const ds = sampleSdf(st, lx, ly);
+  const es = Math.max(st.texel, 0.5 * p.pxLocal);
+  const sxL = (sampleSdf(st, lx + es, ly) - sampleSdf(st, lx - es, ly)) / (2 * es);
+  const syL = (sampleSdf(st, lx, ly + es) - sampleSdf(st, lx, ly - es)) / (2 * es);
+  const sgx = p.cos * sxL - p.sin * syL;
+  const sgy = p.sin * sxL + p.cos * syL;
+  const ts = clamp01(ds / p.stampBevel);
+  const inner = smoothstep(0, p.bevel, d);
+  const dhs = (inner * p.stampHeight * 6 * ts * (1 - ts)) / p.stampBevel;
+  const letter = inner * ts * ts * (3 - 2 * ts);
+
+  let nx = -dh * gx - dhs * sgx;
+  let ny = -dh * gy - dhs * sgy;
   let nz = 1;
   const nl = Math.hypot(nx, ny, nz);
   nx /= nl;
@@ -257,9 +296,10 @@ export function shadeSurface(plan: RenderPlan, p: PiecePlan, px: number, py: num
     b += s.color[2] * w;
     ws += w;
   }
-  r /= ws;
-  g /= ws;
-  b /= ws;
+  const inkK = 1 - 0.45 * p.stampInk * letter;
+  r = (r / ws) * inkK;
+  g = (g / ws) * inkK;
+  b = (b / ws) * inkK;
 
   const shade = diffuse * ao;
   const tint = (c: number) => spec * (0.8 + 0.2 * c);

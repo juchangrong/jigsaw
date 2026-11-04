@@ -6,6 +6,7 @@ import {
   type LayoutKind,
   type MaterialPreset,
   type PuzzleIconOptions,
+  type StampStyle,
 } from "@jigsaw/core";
 import { downloadBlob } from "@jigsaw/export";
 import { PuzzleIcon, getSharedGenerator, useRendererBackend } from "@jigsaw/react";
@@ -43,6 +44,12 @@ interface State {
   shadow: boolean;
   shadowOpacity: number;
   shadowBlur: number;
+  stampText: string;
+  stampStyle: StampStyle;
+  stampSize: number;
+  stampDepth: number;
+  stampInk: number;
+  stampWeight: number;
 }
 
 const initial: State = {
@@ -68,6 +75,12 @@ const initial: State = {
   shadow: true,
   shadowOpacity: 0.12,
   shadowBlur: 0.04,
+  stampText: "",
+  stampStyle: "deboss",
+  stampSize: 0.42,
+  stampDepth: 0.5,
+  stampInk: 0.25,
+  stampWeight: 700,
 };
 
 function toOptions(s: State, size: number): PuzzleIconOptions {
@@ -104,6 +117,9 @@ function toOptions(s: State, size: number): PuzzleIconOptions {
       specular: s.specular,
     },
     shadow: { enabled: s.shadow, opacity: s.shadowOpacity, blur: s.shadowBlur },
+    stamp: s.stampText
+      ? { text: s.stampText, style: s.stampStyle, size: s.stampSize, depth: s.stampDepth, ink: s.stampInk, weight: s.stampWeight }
+      : undefined,
     background: "transparent",
   };
 }
@@ -295,6 +311,28 @@ export function App() {
             <Slider label="Roughness" value={s.roughness} min={0.05} max={1} step={0.01} onChange={(v) => set("roughness", v)} />
             <Slider label="Specular" value={s.specularIntensity} min={0} max={1} step={0.01} onChange={(v) => set("specularIntensity", v)} />
             <Slider label="Occlusion" value={s.ambientOcclusion} min={0} max={0.6} step={0.01} onChange={(v) => set("ambientOcclusion", v)} />
+          </Section>
+
+          <Section title="Stamp">
+            <label className="row text">
+              <span className="label">Letters</span>
+              <input
+                value={s.stampText}
+                maxLength={s.layout === "single" ? 1 : 9}
+                placeholder={s.layout === "single" ? "A" : "one per piece"}
+                onChange={(e) => set("stampText", e.target.value)}
+                spellCheck={false}
+              />
+            </label>
+            {s.stampText && (
+              <>
+                <Segmented label="Style" value={s.stampStyle} options={["deboss", "emboss"] as const} onChange={(v) => set("stampStyle", v)} />
+                <Slider label="Size" value={s.stampSize} min={0.15} max={0.7} step={0.01} onChange={(v) => set("stampSize", v)} />
+                <Slider label="Depth" value={s.stampDepth} min={0} max={1} step={0.01} onChange={(v) => set("stampDepth", v)} />
+                <Slider label="Ink" value={s.stampInk} min={0} max={1} step={0.01} onChange={(v) => set("stampInk", v)} />
+                <Slider label="Weight" value={s.stampWeight} min={300} max={900} step={100} onChange={(v) => set("stampWeight", v)} format={(v) => String(v)} />
+              </>
+            )}
           </Section>
 
           <Section title="Lighting">

@@ -17,10 +17,13 @@ struct Piece {
   light: vec4f,       // L.xyz, intensity
   light2: vec4f,      // ambient, specular, flatDiffuse, -
   halfV: vec4f,       // H.xyz, flatSpec
+  stampInfo: vec4f,   // originX, originY, texel, ink
+  stampSize: vec4f,   // width, height, signed relief height, wall width
 };
 
 @group(0) @binding(0) var<uniform> P: Piece;
 @group(0) @binding(1) var sdfTex: texture_2d<f32>;
+@group(0) @binding(2) var stampTex: texture_2d<f32>;
 
 @vertex
 fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {
@@ -39,6 +42,19 @@ fn sdfAt(p: vec2f) -> f32 {
   let b = textureLoad(sdfTex, ii + vec2i(1, 0), 0).r;
   let c = textureLoad(sdfTex, ii + vec2i(0, 1), 0).r;
   let d = textureLoad(sdfTex, ii + vec2i(1, 1), 0).r;
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+fn stampAt(p: vec2f) -> f32 {
+  let size = P.stampSize.xy;
+  let uv = clamp((p - P.stampInfo.xy) / P.stampInfo.z - 0.5, vec2f(0.0), size - 1.0);
+  let i = min(floor(uv), size - 2.0);
+  let f = uv - i;
+  let ii = vec2i(i);
+  let a = textureLoad(stampTex, ii, 0).r;
+  let b = textureLoad(stampTex, ii + vec2i(1, 0), 0).r;
+  let c = textureLoad(stampTex, ii + vec2i(0, 1), 0).r;
+  let d = textureLoad(stampTex, ii + vec2i(1, 1), 0).r;
   return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
@@ -88,7 +104,21 @@ fn fsSurface(@builtin(position) pos: vec4f) -> @location(0) vec4f {
   let bevel = P.mat.x;
   let t = clamp(d / bevel, 0.0, 1.0);
   let dh = P.mat.y * 6.0 * t * (1.0 - t) / bevel;
-  let n = normalize(vec3f(-dh * g, 1.0));
+
+  // Letter stamp: h_s = height · smoothstep(0, w, d_s). Walls sit inside the
+  // letter's edge (no ring outside it); faded in over the bevel.
+  let ds = stampAt(l);
+  let es = max(P.stampInfo.z, 0.5 * pxLocal);
+  let sxL = (stampAt(l + vec2f(es, 0.0)) - stampAt(l - vec2f(es, 0.0))) / (2.0 * es);
+  let syL = (stampAt(l + vec2f(0.0, es)) - stampAt(l - vec2f(0.0, es))) / (2.0 * es);
+  let sg = vec2f(cs * sxL - sn * syL, sn * sxL + cs * syL);
+  let sw = P.stampSize.w;
+  let ts = clamp(ds / sw, 0.0, 1.0);
+  let inner = smoothstep(0.0, bevel, d);
+  let dhs = inner * P.stampSize.z * 6.0 * ts * (1.0 - ts) / sw;
+  let letter = inner * ts * ts * (3.0 - 2.0 * ts);
+
+  let n = normalize(vec3f(-dh * g - dhs * sg, 1.0));
 
   let L = P.light.xyz;
   let ndl = max(dot(n, L), 0.0);
@@ -108,7 +138,7 @@ fn fsSurface(@builtin(position) pos: vec4f) -> @location(0) vec4f {
     col += P.spotColor[i].rgb * w;
     ws += w;
   }
-  col /= ws;
+  col = col / ws * (1.0 - 0.45 * P.stampInfo.w * letter);
 
   let lit = col * (diffuse * ao) + spec * (0.8 + 0.2 * col);
   let srgb = clamp(linearToSrgb(lit) + dither(floor(pos.xy)) / 255.0, vec3f(0.0), vec3f(1.0));

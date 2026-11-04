@@ -1,22 +1,17 @@
 # Procedural Puzzle Icon Generator — Technical Design (v1.0)
 
-> Seed → jigsaw-puzzle-piece icon. Strict top-down view, classic tab/socket
-> outline, soft multi-color diffuse gradient, subtle 3D "soft resin / matte
-> acrylic" look produced by an SDF bevel and lighting.
+> Seed → jigsaw-puzzle-piece icon. Strict top-down view, classic tab/socket outline, soft multi-color diffuse gradient, subtle 3D "soft resin / matte acrylic" look produced by an SDF bevel and lighting.
 >
-> **Principle:** geometry defines the shape, the SDF defines the bevel, shaders
-> define the material, the seed defines the identity.
+> **Principle:** geometry defines the shape, the SDF defines the bevel, shaders define the material, the seed defines the identity.
 
 ## 1. Visual goals
 
 - Minimal, geometric, soft resin, diffuse gradient, subtle 3D.
-- Orthographic top-down only. The surface is flat; depth comes from rounded
-  bevel highlights, never from extruded sides.
+- Orthographic top-down only. The surface is flat; depth comes from rounded bevel highlights, never from extruded sides.
 - No color banding, light shadow, legible from 32 px to 256 px.
 - Avoid: thick strokes, metal, strong specular, cartoon look.
 
-**Non-goals:** animation, physics, perspective, ray tracing, game interaction,
-AI image generation, glass refraction, SVG export.
+**Non-goals:** animation, physics, perspective, ray tracing, game interaction, AI image generation, glass refraction, SVG export.
 
 ## 2. Architecture
 
@@ -58,9 +53,7 @@ interface PuzzleEdge {
 }
 ```
 
-All values are normalized to the side length. The generator must prevent
-self-intersection and overly thin necks (head width ≥ neck + margin; the neck is
-widened so it is at least a few output pixels wide at the target size).
+All values are normalized to the side length. The generator must prevent self-intersection and overly thin necks (head width ≥ neck + margin; the neck is widened so it is at least a few output pixels wide at the target size).
 
 ### 3.2 Shared edges (multi-piece layouts)
 
@@ -73,9 +66,7 @@ interface SharedEdge {
 }
 ```
 
-Neighbors traverse the same geometry in opposite directions, so pieces fit
-exactly with no gaps or overlaps. A `tab` from A's point of view is a `socket`
-for B.
+Neighbors traverse the same geometry in opposite directions, so pieces fit exactly with no gaps or overlaps. A `tab` from A's point of view is a `socket` for B.
 
 ### 3.3 Single-piece rules
 
@@ -85,36 +76,24 @@ for B.
 ### 3.4 Layouts
 
 - `single`
-- `cluster`: 2–5 pieces from a compact connected patch of a grid, with slight
-  separation and rotation.
+- `cluster`: 2–5 pieces from a compact connected patch of a grid, with slight separation and rotation.
 - `grid`: 2×2 or 3×3.
 
 ## 4. SDF
 
 - Convention: **positive inside**.
-- CPU flattens the Bézier path, rasterizes a coverage mask, runs an exact
-  Euclidean distance transform (Felzenszwalb–Huttenlocher) for inside and
-  outside, and combines them into a signed field. Distances near the outline are
-  refined with exact point-to-segment distances so the bevel normals are smooth.
+- CPU flattens the Bézier path, rasterizes a coverage mask, runs an exact Euclidean distance transform (Felzenszwalb–Huttenlocher) for inside and outside, and combines them into a signed field. Distances near the outline are refined with exact point-to-segment distances so the bevel normals are smooth.
 - The field is uploaded as a texture (a compute shader would also be fine).
 - **Never** use a blurred mask in place of a real SDF.
-- Default resolution 256 or 512; regenerate at higher resolution for big
-  exports. Enforce a minimum connection width per pixel size.
+- Default resolution 256 or 512; regenerate at higher resolution for big exports. Enforce a minimum connection width per pixel size.
 
 ## 5. Material & lighting
 
 - Height: `h = H · smoothstep(0, b, d)` (H = thickness, b = bevel width).
-- Normal: `normalize(-∂h/∂x, -∂h/∂y, 1)` with derivatives computed by central
-  differences of the SDF texture in piece-local units, so the scale is the same
-  at every resolution and control flow stays uniform.
-- One directional light plus ambient:
-  `direction [-0.5, -0.6, 1]`, `intensity 0.85`, `ambient 0.65`, `specular 0.28`.
-- Lambert + simplified Blinn–Phong. Lighting is normalized so the flat top
-  keeps the true gradient color; top and left bevels get brighter, opposite
-  bevels slightly darker. Never fake highlights with a fixed white stroke.
-- `softResin` preset: `bevelWidth 0.055`, `bevelStrength 0.7`,
-  `roughness 0.48`, `specularIntensity 0.3`, `ambientOcclusion 0.18`,
-  `thickness 0.025`.
+- Normal: `normalize(-∂h/∂x, -∂h/∂y, 1)` with derivatives computed by central differences of the SDF texture in piece-local units, so the scale is the same at every resolution and control flow stays uniform.
+- One directional light plus ambient: `direction [-0.5, -0.6, 1]`, `intensity 0.85`, `ambient 0.65`, `specular 0.28`.
+- Lambert + simplified Blinn–Phong. Lighting is normalized so the flat top keeps the true gradient color; top and left bevels get brighter, opposite bevels slightly darker. Never fake highlights with a fixed white stroke.
+- `softResin` preset: `bevelWidth 0.055`, `bevelStrength 0.7`, `roughness 0.48`, `specularIntensity 0.3`, `ambientOcclusion 0.18`, `thickness 0.025`.
 
 ## 6. Diffuse gradient
 
@@ -122,26 +101,19 @@ for B.
 interface GradientSpot { position: [number, number]; color: string; radius: number; intensity: number; }
 ```
 
-- 3–5 Gaussian spots per piece; normalized weighted sum plus a base color and
-  base weight (avoids division by zero).
+- 3–5 Gaussian spots per piece; normalized weighted sum plus a base color and base weight (avoids division by zero).
 - Mixing happens in linear RGB; palettes are built/jittered in OKLCH.
-- Presets: aurora `#B9A0FF #7DE5ED #6478F2`, sunset `#FFE18C #FF91B2 #CB91F5`,
-  mint `#91EFC8 #71CBEF #9F9CFF`, candy `#FFA6CF #A6A3FF #82D9FF`.
-- Spot positions come from the seed. Pieces may share a palette but each gets
-  its own spots.
+- Presets: aurora `#B9A0FF #7DE5ED #6478F2`, sunset `#FFE18C #FF91B2 #CB91F5`, mint `#91EFC8 #71CBEF #9F9CFF`, candy `#FFA6CF #A6A3FF #82D9FF`.
+- Spot positions come from the seed. Pieces may share a palette but each gets its own spots.
 
 ## 7. Shadow
 
-Soft ambient shadow: `opacity 0.12`, `blur 0.04`, `offset 0.01 / 0.025`
-(normalized icon units). Shadow alpha is kept when exporting with a transparent
-background.
+Soft ambient shadow: `opacity 0.12`, `blur 0.04`, `offset 0.01 / 0.025` (normalized icon units). Shadow alpha is kept when exporting with a transparent background.
 
 ## 8. Rendering pipeline
 
-- Premultiplied-alpha compositing, SDF-based anti-aliasing, lighting in linear
-  space, sRGB output. Exports must match the preview.
-- Per piece: geometry, SDF, gradient, material, transform.
-  Shared: lighting, camera, color management, renderer.
+- Premultiplied-alpha compositing, SDF-based anti-aliasing, lighting in linear space, sRGB output. Exports must match the preview.
+- Per piece: geometry, SDF, gradient, material, transform. Shared: lighting, camera, color management, renderer.
 
 ## 9. Determinism
 
@@ -180,10 +152,8 @@ await gen.export(opts, { format: "png" }); // also toPNG() / toWebP()
 
 ## 11. Playground
 
-- Left: preview (checkerboard / white / dark background, 32/64/128/256 sizes,
-  Randomize, seed input).
-- Right: Geometry, Gradient, Material, Lighting, Export (PNG, WebP, resolution,
-  transparent background, copy config).
+- Left: preview (checkerboard / white / dark background, 32/64/128/256 sizes, Randomize, seed input).
+- Right: Geometry, Gradient, Material, Lighting, Export (PNG, WebP, resolution, transparent background, copy config).
 - Randomize generates a new seed and re-renders immediately.
 
 ## 12. Repository layout
@@ -204,13 +174,11 @@ tests/               geometry, deterministic, rendering tests
 - Small-size tuning for 24–48 px (minimum bevel and AA width in pixels).
 - Production should prefer cached PNG/WebP.
 - Fallback chain WebGPU → WebGL2 → CPU, checking adapter/device acquisition.
-- Targets: 128 px hot render < 16 ms, 100-icon batch without re-initializing
-  the device, 1024 px PNG export, no GPU leaks.
+- Targets: 128 px hot render < 16 ms, 100-icon batch without re-initializing the device, 1024 px PNG export, no GPU leaks.
 
 ## 14. Tests
 
-- Geometry: paths closed, no self-intersection, shared edges match, correct
-  tab/socket direction, reasonable area, no thin necks, pieces in bounds.
+- Geometry: paths closed, no self-intersection, shared edges match, correct tab/socket direction, reasonable area, no thin necks, pieces in bounds.
 - Determinism per seed; visible variety across seeds.
 - Visual checks at 32–512 px on white, dark and transparent backgrounds.
 

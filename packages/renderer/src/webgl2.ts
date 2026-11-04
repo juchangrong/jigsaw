@@ -19,6 +19,7 @@ export class WebGl2Backend implements RenderBackend {
   private loc: {
     u: WebGLUniformLocation;
     tex: WebGLUniformLocation;
+    stamp: WebGLUniformLocation;
     height: WebGLUniformLocation;
     mode: WebGLUniformLocation;
   };
@@ -37,7 +38,7 @@ export class WebGl2Backend implements RenderBackend {
       if (!l) throw new Error(`missing uniform ${n}`);
       return l;
     };
-    this.loc = { u: get("u"), tex: get("sdfTex"), height: get("uHeight"), mode: get("uMode") };
+    this.loc = { u: get("u"), tex: get("sdfTex"), stamp: get("stampTex"), height: get("uHeight"), mode: get("uMode") };
   }
 
   static async create(): Promise<WebGl2Backend> {
@@ -111,10 +112,13 @@ export class WebGl2Backend implements RenderBackend {
       gl.useProgram(this.program);
       gl.uniform1f(this.loc.height, h);
       gl.uniform1i(this.loc.tex, 0);
-      gl.activeTexture(gl.TEXTURE0);
+      gl.uniform1i(this.loc.stamp, 1);
       const packed = plan.pieces.map((p) => packPieceUniforms(plan, p));
       const draw = (mode: number) =>
         plan.pieces.forEach((p, i) => {
+          gl.activeTexture(gl.TEXTURE1);
+          gl.bindTexture(gl.TEXTURE_2D, this.texture(p.stamp));
+          gl.activeTexture(gl.TEXTURE0);
           gl.bindTexture(gl.TEXTURE_2D, this.texture(p.sdf));
           gl.uniform4fv(this.loc.u, packed[i]!);
           gl.uniform1i(this.loc.mode, mode);
