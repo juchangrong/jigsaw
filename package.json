@@ -1,0 +1,29 @@
+{
+  "name": "jigsaw",
+  "private": true,
+  "type": "module",
+  "description": "Procedural puzzle-piece icon generator (TypeScript + React + WebGPU)",
+  "scripts": {
+    "dev": "pnpm --filter @jigsaw/playground dev",
+    "build": "pnpm --filter @jigsaw/playground build",
+    "preview": "pnpm --filter @jigsaw/playground preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@webgpu/types": "^0.1.51",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.0",
+    "vitest": "^3.0.0"
+  },
+  "packageManager": "pnpm@10.28.1",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}
