@@ -95,6 +95,14 @@ interface PuzzleIconOptions {
   material?: { preset?: "softResin" | "matteAcrylic" | "satinResin"; bevelWidth?; bevelStrength?; roughness?; specularIntensity?; ambientOcclusion?; thickness? };
   lighting?: { direction?: [x, y, z]; intensity?; ambient?; specular? }; // default [-0.5,-0.6,1], 0.85, 0.65, 0.28
   shadow?: { enabled?; opacity?; blur?; offset?: [x, y]; color? };      // default 0.12, 0.04, [0.01, 0.025]
+  stamp?: {                            // letter stamp, off by default
+    text?: string;                     // character i goes on piece i, e.g. "R" or "ABC"
+    style?: "deboss" | "emboss";       // pressed in (default) or raised
+    size?: number;                     // glyph height, piece units (0.15–0.7, default 0.42)
+    depth?: number;                    // 0–1 relief (default 0.5)
+    ink?: number;                      // 0–1 darkening inside the letter (default 0.25)
+    font?: string; weight?: number;    // CSS font family, 100–900 (default system sans, 700)
+  };
   background?: string | "transparent";
 }
 ```
@@ -122,7 +130,16 @@ interface PuzzleIconOptions {
    bottom/right ones darker. Gradient = normalized Gaussian spots + base color
    in linear RGB; palettes are varied in OKLCH. Soft shadow from the offset
    SDF. SDF-based AA, dithered sRGB output, premultiplied "over" compositing.
-5. **Backends.** WebGPU (one device, r32float SDF textures in an LRU,
+5. **Stamp.** The letter is drawn with Canvas 2D, fitted to its ink box,
+   thresholded and run through the same EDT, giving a second SDF centred on
+   the piece. It adds a relief `h_s = ±height·smoothstep(0, w, d_s)` on top of
+   the bevel, so the walls of the letter take the same light as the outline.
+   The walls sit just inside the letter's edge, so the surface around it is
+   untouched.
+   Glyphs depend on the platform's fonts, so stamped pixels are not promised to
+   match across machines. Without a canvas (Node) no stamp is drawn unless a
+   rasterizer is set with `setGlyphRasterizer`.
+6. **Backends.** WebGPU (one device, r32float SDF textures in an LRU,
    dynamic-offset uniforms, readback so preview == export), WebGL2 (same
    shader math), CPU (reference). All three agree within 1/255.
 

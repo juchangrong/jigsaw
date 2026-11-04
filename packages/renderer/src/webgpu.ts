@@ -52,6 +52,7 @@ export class WebGpuBackend implements RenderBackend {
       entries: [
         { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform", hasDynamicOffset: true } },
         { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "unfilterable-float" } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "unfilterable-float" } },
       ],
     });
     const pipelineLayout = device.createPipelineLayout({ bindGroupLayouts: [layout] });
@@ -151,6 +152,7 @@ export class WebGpuBackend implements RenderBackend {
         entries: [
           { binding: 0, resource: { buffer: this.uniform!, size: UNIFORM_VEC4S * 16 } },
           { binding: 1, resource: this.sdfTexture(p.sdf).createView() },
+          { binding: 2, resource: this.sdfTexture(p.stamp).createView() },
         ],
       }),
     );

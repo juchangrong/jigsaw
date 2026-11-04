@@ -11,3 +11,4 @@ export * from "./color/palettes";
 export * from "./color/gradient";
 export * from "./material/presets";
 export * from "./shading";
+export * from "./stamp/glyph";

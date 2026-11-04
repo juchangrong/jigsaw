@@ -4,8 +4,9 @@ precision highp float;
 precision highp int;
 precision highp sampler2D;
 
-uniform vec4 u[22];
+uniform vec4 u[24];
 uniform sampler2D sdfTex;
+uniform sampler2D stampTex;
 uniform float uHeight;
 uniform int uMode; // 0 = shadow, 1 = surface
 
@@ -23,6 +24,8 @@ out vec4 outColor;
 #define LIGHT u[19]
 #define LIGHT2 u[20]
 #define HALFV u[21]
+#define STAMP_INFO u[22]
+#define STAMP_SIZE u[23]
 
 float sdfAt(vec2 p) {
   vec2 size = SDF_SIZE.xy;
@@ -34,6 +37,19 @@ float sdfAt(vec2 p) {
   float b = texelFetch(sdfTex, ii + ivec2(1, 0), 0).r;
   float c = texelFetch(sdfTex, ii + ivec2(0, 1), 0).r;
   float d = texelFetch(sdfTex, ii + ivec2(1, 1), 0).r;
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+float stampAt(vec2 p) {
+  vec2 size = STAMP_SIZE.xy;
+  vec2 uv = clamp((p - STAMP_INFO.xy) / STAMP_INFO.z - 0.5, vec2(0.0), size - 1.0);
+  vec2 i = min(floor(uv), size - 2.0);
+  vec2 f = uv - i;
+  ivec2 ii = ivec2(i);
+  float a = texelFetch(stampTex, ii, 0).r;
+  float b = texelFetch(stampTex, ii + ivec2(1, 0), 0).r;
+  float c = texelFetch(stampTex, ii + ivec2(0, 1), 0).r;
+  float d = texelFetch(stampTex, ii + ivec2(1, 1), 0).r;
   return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
@@ -80,7 +96,19 @@ void main() {
   float bevel = MAT.x;
   float t = clamp(d / bevel, 0.0, 1.0);
   float dh = MAT.y * 6.0 * t * (1.0 - t) / bevel;
-  vec3 n = normalize(vec3(-dh * g, 1.0));
+
+  float ds = stampAt(l);
+  float es = max(STAMP_INFO.z, 0.5 * pxLocal);
+  float sxL = (stampAt(l + vec2(es, 0.0)) - stampAt(l - vec2(es, 0.0))) / (2.0 * es);
+  float syL = (stampAt(l + vec2(0.0, es)) - stampAt(l - vec2(0.0, es))) / (2.0 * es);
+  vec2 sg = vec2(cs * sxL - sn * syL, sn * sxL + cs * syL);
+  float sw = STAMP_SIZE.w;
+  float ts = clamp(ds / sw, 0.0, 1.0);
+  float inner = smoothstep(0.0, bevel, d);
+  float dhs = inner * STAMP_SIZE.z * 6.0 * ts * (1.0 - ts) / sw;
+  float letter = inner * ts * ts * (3.0 - 2.0 * ts);
+
+  vec3 n = normalize(vec3(-dh * g - dhs * sg, 1.0));
 
   vec3 L = LIGHT.xyz;
   float ndl = max(dot(n, L), 0.0);
@@ -99,7 +127,7 @@ void main() {
     col += u[14 + i].rgb * w;
     ws += w;
   }
-  col /= ws;
+  col = col / ws * (1.0 - 0.45 * STAMP_INFO.w * letter);
 
   vec3 lit = col * (diffuse * ao) + spec * (0.8 + 0.2 * col);
   vec3 srgb = clamp(linearToSrgb(lit) + dither(floor(frag)) / 255.0, vec3(0.0), vec3(1.0));

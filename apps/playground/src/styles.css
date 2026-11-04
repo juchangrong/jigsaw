@@ -253,6 +253,19 @@ input:focus-visible {
 .row.check {
   display: flex;
 }
+.row.text {
+  grid-template-columns: 104px 1fr;
+}
+.row.text input {
+  font: inherit;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: inherit;
+  margin: 0;
+  min-width: 0;
+}
 .label {
   color: var(--muted);
   font-size: 13px;

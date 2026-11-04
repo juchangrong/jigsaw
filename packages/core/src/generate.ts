@@ -25,6 +25,7 @@ export function generatePuzzleIcon(options: PuzzleIconOptions): PuzzleIconDescri
   const palette = resolvePalette(opts.gradient.palette, createRng(opts.seed, "palette"));
   const gradientRng = createRng(opts.seed, "gradient");
   const { preset: _preset, ...material } = opts.material;
+  const letters = Array.from(opts.stamp.text);
 
   return {
     metadata: { seed: opts.seed, algorithmVersion: ALGORITHM_VERSION, presetVersion: PRESET_VERSION },
@@ -32,7 +33,7 @@ export function generatePuzzleIcon(options: PuzzleIconOptions): PuzzleIconDescri
     layout: opts.layout,
     background: opts.background,
     palette,
-    pieces: layout.pieces.map((p) => ({
+    pieces: layout.pieces.map((p, i) => ({
       ...p,
       gradient: generateGradient(gradientRng.fork(p.id), {
         palette: palette.colors,
@@ -40,10 +41,12 @@ export function generatePuzzleIcon(options: PuzzleIconOptions): PuzzleIconDescri
         softness: opts.gradient.softness,
       }),
       material: { ...material },
+      stamp: letters[i] ?? "",
     })),
     sharedEdges: layout.sharedEdges,
     lighting: opts.lighting,
     shadow: opts.shadow,
+    stamp: opts.stamp,
     sdfResolution: recommendedSdfResolution(opts.size, layout.scale),
     options: opts,
   };

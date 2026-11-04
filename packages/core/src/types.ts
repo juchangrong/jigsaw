@@ -122,6 +122,27 @@ export interface ShadowParams {
   color: string;
 }
 
+export type StampStyle = "deboss" | "emboss";
+
+export interface StampOptions {
+  /** letters to stamp; character i goes on piece i ("" = no stamp) */
+  text?: string;
+  /** deboss = pressed into the surface, emboss = raised (default deboss) */
+  style?: StampStyle;
+  /** glyph height in piece units, side = 1 (0.15–0.7, default 0.42) */
+  size?: number;
+  /** 0–1, depth of the relief (default 0.5) */
+  depth?: number;
+  /** 0–1, how much the letter darkens the surface color (default 0.25) */
+  ink?: number;
+  /** CSS font family */
+  font?: string;
+  /** CSS font weight, 100–900 (default 700) */
+  weight?: number;
+}
+
+export type ResolvedStamp = Required<StampOptions>;
+
 export interface GeneratorMetadata {
   seed: string;
   algorithmVersion: string;
@@ -144,6 +165,8 @@ export interface PieceDescription {
   material: MaterialParams;
   /** stable hash of the outline, used as the SDF cache key */
   geometryKey: string;
+  /** letter stamped on this piece ("" = none) */
+  stamp: string;
 }
 
 export interface PuzzleIconDescription {
@@ -156,6 +179,7 @@ export interface PuzzleIconDescription {
   sharedEdges: SharedEdge[];
   lighting: LightingParams;
   shadow: ShadowParams;
+  stamp: ResolvedStamp;
   /** recommended SDF resolution (longest side, texels) for this size */
   sdfResolution: number;
   options: ResolvedOptions;
@@ -192,6 +216,7 @@ export interface PuzzleIconOptions {
   material?: Partial<MaterialParams> & { preset?: MaterialPreset };
   lighting?: Partial<LightingParams>;
   shadow?: Partial<ShadowParams>;
+  stamp?: StampOptions;
   background?: string | "transparent";
 }
 
@@ -205,5 +230,6 @@ export interface ResolvedOptions {
   material: MaterialParams & { preset: MaterialPreset };
   lighting: LightingParams;
   shadow: ShadowParams;
+  stamp: ResolvedStamp;
   background: string | "transparent";
 }

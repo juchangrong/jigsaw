@@ -7,6 +7,9 @@ export const PRESET_VERSION = "1.0.0";
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const num = (v: unknown, d: number) => (typeof v === "number" && Number.isFinite(v) ? v : d);
 
+export const DEFAULT_STAMP_FONT =
+  'ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+
 export function defaultPieceCount(layout: LayoutKind): number {
   return layout === "single" ? 1 : layout === "grid" ? 4 : 3;
 }
@@ -24,6 +27,7 @@ export function resolveOptions(o: PuzzleIconOptions): ResolvedOptions {
   const g = o.geometry ?? {};
   const s = o.shadow ?? {};
   const l = o.lighting ?? {};
+  const st = o.stamp ?? {};
 
   return {
     seed: String(o.seed),
@@ -63,6 +67,16 @@ export function resolveOptions(o: PuzzleIconOptions): ResolvedOptions {
       blur: clamp(num(s.blur, DEFAULT_SHADOW.blur), 0, 0.2),
       offset: s.offset ?? DEFAULT_SHADOW.offset,
       color: s.color ?? DEFAULT_SHADOW.color,
+    },
+    stamp: {
+      // one character per piece, whitespace dropped
+      text: Array.from((st.text ?? "").replace(/\s+/g, "")).slice(0, pieceCount).join(""),
+      style: st.style === "emboss" ? "emboss" : "deboss",
+      size: clamp(num(st.size, 0.42), 0.15, 0.7),
+      depth: clamp(num(st.depth, 0.5), 0, 1),
+      ink: clamp(num(st.ink, 0.25), 0, 1),
+      font: st.font?.trim() || DEFAULT_STAMP_FONT,
+      weight: clamp(Math.round(num(st.weight, 700) / 100) * 100, 100, 900),
     },
     background: o.background ?? "transparent",
   };
