@@ -18,6 +18,8 @@ An Icon candidates picker above the list shows candidate icons in batches of 24:
 
 A Gradient switch (a `role="switch"` checkbox, on by default) turns the diffuse gradient off for both the candidates and the cards. Each palette then collapses to its main tone, its second color (tide blue, dusk purple, ember orange or meadow green), passed as a two-color custom palette. The piece is one solid color, shaded only by the bevel and lighting, apart from the generator's small per-spot jitter.
 
+A Tint switch, off by default, gives each tile, both candidates and cards, a light tint of its icon's palette instead of white: the palette's OKLab mix at lightness 0.955, with its chroma scaled by 0.35. With the muted palettes the tints are soft blue, green, peach and lilac.
+
 ## Alternatives considered
 
 **A section on the playground page.** That page is already long. A separate page shows the cards alone, closer to how the list appears in the product.

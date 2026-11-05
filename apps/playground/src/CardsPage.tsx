@@ -1,4 +1,4 @@
-import { deriveSeed, PALETTES, type PaletteName } from "@jigsaw/core";
+import { deriveSeed, hexToOklch, mixOklab, oklchToHex, PALETTES, type PaletteName } from "@jigsaw/core";
 import { PuzzleIcon } from "@jigsaw/react";
 import { useEffect, useId, useState } from "react";
 
@@ -41,7 +41,20 @@ function gradientFor(palette: string, solid: boolean) {
   return { palette: [tone, tone] };
 }
 
-function CardIcon({ seed, palette, style, solid }: { seed: string; palette: string; style: IconStyle; solid: boolean }) {
+/** A light tint of a palette for the tile behind its icon: its OKLab mix at lightness 0.955 and low chroma. */
+const tintCache = new Map<string, string>();
+function tintOf(palette: string): string {
+  let t = tintCache.get(palette);
+  if (!t) {
+    const colors = PALETTES[palette as PaletteName] as readonly string[] | undefined;
+    const [, C, h] = hexToOklch(mixOklab(colors ? [...colors] : ["#888888"]));
+    t = oklchToHex([0.955, Math.min(C, 0.2) * 0.35, h]);
+    tintCache.set(palette, t);
+  }
+  return t;
+}
+
+function CardIcon({ seed, palette, style, solid, tint }: { seed: string; palette: string; style: IconStyle; solid: boolean; tint: boolean }) {
   const gradient = gradientFor(palette, solid);
   if (style === "bare") {
     return (
@@ -51,7 +64,7 @@ function CardIcon({ seed, palette, style, solid }: { seed: string; palette: stri
     );
   }
   return (
-    <span className="card-icon tile" aria-hidden="true">
+    <span className="card-icon tile" style={tint ? { background: tintOf(palette) } : undefined} aria-hidden="true">
       <PuzzleIcon seed={seed} layout="single" gradient={gradient} size={Math.round(ICON_PX * 0.95)} />
     </span>
   );
@@ -90,7 +103,7 @@ function savePicks(picks: Candidate[]) {
 }
 
 /** A grid of candidate icons; clicking one picks or unpicks it. */
-function CandidatePicker({ picks, onChange, solid }: { picks: Candidate[]; onChange: (picks: Candidate[]) => void; solid: boolean }) {
+function CandidatePicker({ picks, onChange, solid, tint }: { picks: Candidate[]; onChange: (picks: Candidate[]) => void; solid: boolean; tint: boolean }) {
   const headingId = useId();
   const [count, setCount] = useState(BATCH);
   const [note, setNote] = useState("");
@@ -126,6 +139,7 @@ function CandidatePicker({ picks, onChange, solid }: { picks: Candidate[]; onCha
               <button
                 type="button"
                 className={`picker-tile${order !== undefined ? " on" : ""}`}
+                style={tint ? { background: tintOf(c.palette) } : undefined}
                 aria-pressed={order !== undefined}
                 aria-label={`Candidate ${i + 1}, ${c.palette}${order !== undefined ? `, pick ${order + 1}` : ""}`}
                 onClick={() => toggle(c)}
@@ -167,6 +181,7 @@ export function CardsPage() {
   const [salt, setSalt] = useState(0);
   const [picks, setPicks] = useState<Candidate[]>(loadPicks);
   const [gradientOn, setGradientOn] = useState(true);
+  const [tintOn, setTintOn] = useState(false);
   useEffect(() => savePicks(picks), [picks]);
   const styles: IconStyle[] = ["tile", "bare"];
   /** icon for the card at list position `index` */
@@ -216,8 +231,12 @@ export function CardsPage() {
             <input type="checkbox" role="switch" checked={gradientOn} onChange={(e) => setGradientOn(e.target.checked)} />
             <span>Gradient</span>
           </label>
+          <label className="row check">
+            <input type="checkbox" role="switch" checked={tintOn} onChange={(e) => setTintOn(e.target.checked)} />
+            <span>Tint</span>
+          </label>
         </div>
-        <CandidatePicker picks={picks} onChange={setPicks} solid={!gradientOn} />
+        <CandidatePicker picks={picks} onChange={setPicks} solid={!gradientOn} tint={tintOn} />
         {SECTIONS.map((section) => (
           <section key={section} className="cards-section" aria-labelledby={`${groupId}-${section}`}>
             <h2 id={`${groupId}-${section}`} className="cards-heading">
@@ -229,7 +248,7 @@ export function CardsPage() {
             <ul className="cards" role="list">
               {INDEXED.filter((item) => item.tag === section).map((item) => (
                 <li key={item.name} className="card">
-                  <CardIcon {...iconFor(item.name, item.index)} style={style} solid={!gradientOn} />
+                  <CardIcon {...iconFor(item.name, item.index)} style={style} solid={!gradientOn} tint={tintOn} />
                   <div className="card-body">
                     <span className="card-name">{item.name}</span>
                     <p className="card-desc">{item.desc || "No description yet"}</p>
