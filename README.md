@@ -34,7 +34,7 @@ pnpm build      # production build of the playground
 import { PuzzleIcon } from "@jigsaw/react";
 
 <PuzzleIcon seed="alpha" size={128} />
-<PuzzleIcon seed="team-42" size={64} layout="cluster" pieceCount={3} gradient={{ palette: "sunset" }} />
+<PuzzleIcon seed="team-42" size={64} layout="cluster" pieceCount={3} gradient={{ palette: "dusk" }} />
 <PuzzleIcon seed="board" size={256} layout="grid" pieceCount={9} material={{ preset: "matteAcrylic" }} background="#FFFFFF" />
 ```
 
@@ -86,7 +86,9 @@ interface PuzzleIconOptions {
     separation?: number;               // gap between pieces (piece units)
     rotation?: number;                 // max degrees, cluster only
   };
-  gradient?: { palette?: "aurora" | "sunset" | "mint" | "candy" | "lagoon" | "peach" | string[]; spots?: 3 | 4 | 5; softness?: number };
+  gradient?: { palette?: PaletteName | string[]; spots?: 3 | 4 | 5; softness?: number };
+  // vivid (picked by seeds): dusk, tide, ember, orchid, meadow, glacier, bloom
+  // pastel (by name only): aurora, sunset, mint, candy, lagoon, peach
   material?: { preset?: "softResin" | "matteAcrylic" | "satinResin"; bevelWidth?; bevelStrength?; roughness?; specularIntensity?; ambientOcclusion?; thickness? };
   lighting?: { direction?: [x, y, z]; intensity?; ambient?; specular? }; // default [-0.5,-0.6,1], 0.85, 0.65, 0.28
   shadow?: { enabled?; opacity?; blur?; offset?: [x, y]; color? };      // off by default; when enabled 0.12, 0.04, [0.01, 0.025]
@@ -107,7 +109,7 @@ interface PuzzleIconOptions {
 1. **Geometry.** Each side gets a `PuzzleEdge` (`flat` / `tab` / `socket` with center, width, depth, neck width, asymmetry, curvature, all normalized to the side). Profiles are 8 cubic Béziers with no kinks: horizontal tangents at the side, vertical at the neck and at the head's widest point. Heads stay round (width ≤ 1.1 × depth, depth 0.20–0.26), the neck rises 0.33 × depth before flaring into the head, and the neck leaves the side through a 0.09-wide fillet, so socket lips are rounded rather than hooked. Head ≥ neck + 0.07 and the neck is widened to ≥ 3 output pixels at the final scale, so outlines never pinch or self-intersect. Outer corners use a continuous-curvature curve that leaves each side 0.15 from the corner, with handles at 0.72 (a circle is 0.55), so they read as soft squircle corners; where interlocked grid pieces meet, corners stay tight so no holes open between them. Neighbors share one `SharedEdge` and walk it in opposite directions, so they fit exactly.
 2. **Layouts.** `single` pieces all use one centred, symmetric connector derived from `tabSize` and `curvature` (no seed), and one scale per output size, so a tab on any single piece fits a socket on any other and every single icon draws its cell at the same size; the seed picks which sides are tabs, sockets or flat. `single` also enforces ≥ 1 non-flat edge, ≤ 3 tabs, not all equal, aspect < 1.3. `grid` keeps pieces interlocked and forms the gap by eroding the SDF (uniform, never overlaps). `cluster` grows a compact patch, then spreads and rotates pieces, damping until no two pieces overlap.
 3. **SDF.** Flatten → scanline mask → exact Felzenszwalb EDT inside and out → signed field (positive inside), refined near the outline with exact point-to-segment distances so bevel normals are smooth. 256 / 512 / 1024 texels chosen from the output size, and cached.
-4. **Shading** (identical in WGSL, GLSL and TS). `h = H·smoothstep(0, b, d)`, normal from central differences of the SDF in piece units (resolution independent, uniform control flow). Lambert + Blinn–Phong normalized so the flat top keeps its color, which makes top/left bevels brighter and bottom/right ones darker. Gradient = normalized Gaussian spots + base color in linear RGB; palettes are varied in OKLCH. Optional soft shadow from the offset SDF (off by default). SDF-based AA, dithered sRGB output, premultiplied "over" compositing.
+4. **Shading** (identical in WGSL, GLSL and TS). `h = H·smoothstep(0, b, d)`, normal from central differences of the SDF in piece units (resolution independent, uniform control flow). Lambert + Blinn–Phong normalized so the flat top keeps its color, which makes top/left bevels brighter and bottom/right ones darker. Gradient = normalized Gaussian spots + base color in linear RGB; palettes are varied in OKLCH. Spots are ranked along a seeded light-flow direction (top-left to bottom-right) and paired with palette colors by lightness, so lighter colors sit toward the light; a few neighbouring ranks swap so a second hue crosses the flow. Optional soft shadow from the offset SDF (off by default). SDF-based AA, dithered sRGB output, premultiplied "over" compositing.
 5. **Stamp.** The letter is drawn with Canvas 2D, fitted to its ink box, thresholded and run through the same EDT, giving a second SDF centred on the piece. It adds a relief `h_s = ±height·smoothstep(0, w, d_s)` on top of the bevel, so the walls of the letter take the same light as the outline. The walls sit just inside the letter's edge, so the surface around it is untouched. Glyphs depend on the platform's fonts, so stamped pixels are not promised to match across machines. Without a canvas (Node) no stamp is drawn unless a rasterizer is set with `setGlyphRasterizer`.
 6. **Backends.** WebGPU (one device, r32float SDF textures in an LRU, dynamic-offset uniforms, readback so preview == export), WebGL2 (same shader math), CPU (reference). All three agree within 1/255.
 
