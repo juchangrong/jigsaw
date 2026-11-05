@@ -87,6 +87,13 @@ const COLOR_SETS: { id: string; label: string; families: Family[] }[] = [
     ],
   },
   {
+    // one gray-white family, so every icon shares a colour and only the shapes
+    // differ; the deep end stays dark enough to read on a white tile
+    id: "mono",
+    label: "Mono",
+    families: [family("gray", 255, 0.008, 0.52, 0.93, 4)],
+  },
+  {
     id: "system",
     label: "System",
     families: [

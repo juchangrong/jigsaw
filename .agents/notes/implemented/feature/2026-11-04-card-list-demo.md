@@ -20,13 +20,14 @@ A Gradient switch (a `role="switch"` checkbox, on by default) turns the diffuse 
 
 A Tint switch, off by default, gives each tile, both candidates and cards, a light tint of its icon's palette instead of white: the palette's OKLab mix at lightness 0.955, with its chroma scaled by 0.35. With the muted palettes the tints are soft blue, green, peach and lilac.
 
-A Colors control switches between five color sets of at most five families each, with swatches for the active set:
+A Colors control switches between six color sets of at most five families each, with swatches for the active set:
 
 - Studio: the muted slate, plum, clay and sage, still the default.
 - Aluminum: graphite, silver, champagne, navy and sky.
 - Titanium: dark, natural, white, blue and desert, at very low chroma.
 - Desktop: soft blue, green, pink, orange and purple.
 - System: refined blue, indigo, teal, orange and pink.
+- Mono: a single gray-white family (OKLCH L 0.52 → 0.93, chroma 0.008 with a faint cool hue), added when the user asked to try one colour in a gray-white style, so only the shapes differ. Its deep end stays dark enough to read on a white tile.
 
 The user asked for combinations in an Apple-like style. The sets take their cue from restrained product finishes, but the names and values are original. Each family except Studio's is generated in `CardsPage.tsx` from OKLCH: four shades from a deep to a light lightness, chroma tapering toward the light end, and a small hue drift. Titanium's white family stops at lightness 0.64–0.9 so it stays visible on a white tile.
 
