@@ -12,3 +12,4 @@ export * from "./color/gradient";
 export * from "./material/presets";
 export * from "./shading";
 export * from "./stamp/glyph";
+export * from "./assembly";

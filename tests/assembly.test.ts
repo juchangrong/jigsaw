@@ -7,55 +7,62 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  assembleSinglePieces,
   buildRenderPlan,
   flattenPath,
-  generatePuzzleIcon,
   rasterizeMask,
-  type EdgeKind,
   type PuzzleIconDescription,
-  type Side,
   type Vec2,
 } from "@jigsaw/core";
 import { encodePNG, unpremultiply } from "@jigsaw/export";
 import { renderPlanCpu } from "../packages/renderer/src/cpu";
 
 const N = 3;
-const pool = Array.from({ length: 800 }, (_, i) => generatePuzzleIcon({ seed: `asm-${i}`, size: 256 }));
-const kind = (d: PuzzleIconDescription, s: Side): EdgeKind => d.pieces[0]!.sides[s].kind;
-const opposite = (k: EdgeKind): EdgeKind => (k === "tab" ? "socket" : k === "socket" ? "tab" : "flat");
 
-/** Pick one seed per cell, row by row: outer sides flat, interior sides
- * complementary to the neighbour already placed. */
-function assemble(): PuzzleIconDescription[] | null {
-  const grid: PuzzleIconDescription[] = [];
-  const used = new Set<PuzzleIconDescription>();
-  const want = (i: number, d: PuzzleIconDescription) => {
-    const x = i % N;
-    const y = Math.floor(i / N);
-    const edge = (s: Side, outer: boolean, need?: EdgeKind) => (outer ? kind(d, s) === "flat" : kind(d, s) !== "flat" && (!need || kind(d, s) === need));
-    return (
-      edge("top", y === 0, y > 0 ? opposite(kind(grid[i - N]!, "bottom")) : undefined) &&
-      edge("left", x === 0, x > 0 ? opposite(kind(grid[i - 1]!, "right")) : undefined) &&
-      edge("right", x === N - 1) &&
-      edge("bottom", y === N - 1)
-    );
-  };
-  const place = (i: number): boolean => {
-    if (i === N * N) return true;
-    for (const d of pool) {
-      if (used.has(d) || !want(i, d)) continue;
-      grid[i] = d;
-      used.add(d);
-      if (place(i + 1)) return true;
-      used.delete(d);
+describe("assembleSinglePieces", () => {
+  it("builds a framed puzzle: flat outside, tab against socket inside", () => {
+    for (const [cols, rows] of [
+      [2, 2],
+      [3, 3],
+      [4, 3],
+    ] as const) {
+      const set = assembleSinglePieces({ seed: `frame-${cols}x${rows}`, size: 256, cols, rows })!;
+      expect(set).toHaveLength(cols * rows);
+      const at = (x: number, y: number) => set.find((p) => p.cell[0] === x && p.cell[1] === y)!.description.pieces[0]!.sides;
+      for (let y = 0; y < rows; y++)
+        for (let x = 0; x < cols; x++) {
+          const s = at(x, y);
+          expect(s.top.kind === "flat").toBe(y === 0);
+          expect(s.left.kind === "flat").toBe(x === 0);
+          expect(s.right.kind === "flat").toBe(x === cols - 1);
+          expect(s.bottom.kind === "flat").toBe(y === rows - 1);
+          if (x > 0) expect(new Set([s.left.kind, at(x - 1, y).right.kind])).toEqual(new Set(["tab", "socket"]));
+          if (y > 0) expect(new Set([s.top.kind, at(x, y - 1).bottom.kind])).toEqual(new Set(["tab", "socket"]));
+        }
+      expect(new Set(set.map((p) => p.description.metadata.seed)).size).toBe(cols * rows);
     }
-    return false;
-  };
-  return place(0) ? grid : null;
-}
+  });
+
+  it("is deterministic and reports where each cell sits in its icon", () => {
+    const a = assembleSinglePieces({ seed: "same", size: 128, cols: 3, rows: 2 })!;
+    const b = assembleSinglePieces({ seed: "same", size: 128, cols: 3, rows: 2 })!;
+    expect(a.map((p) => p.description.metadata.seed)).toEqual(b.map((p) => p.description.metadata.seed));
+    for (const p of a) {
+      const t = p.description.pieces[0]!.transform;
+      expect(p.cellSize).toBe(t.scale);
+      // the cell's top-left corner maps to cellOrigin in icon units
+      expect(p.cellOrigin[0]).toBeCloseTo(t.x - t.scale * t.pivot[0], 12);
+      expect(p.cellOrigin[1]).toBeCloseTo(t.y - t.scale * t.pivot[1], 12);
+    }
+  });
+
+  it("has no answer for a single cell", () => {
+    expect(assembleSinglePieces({ seed: 1, cols: 1, rows: 1 })).toBeNull();
+  });
+});
 
 describe("single pieces assemble without gaps", () => {
-  const set = assemble();
+  const set = assembleSinglePieces({ seed: "asm", size: 256, cols: N, rows: N })?.map((p) => p.description) ?? null;
 
   it("finds a framed 3×3 from different seeds", () => {
     expect(set).not.toBeNull();

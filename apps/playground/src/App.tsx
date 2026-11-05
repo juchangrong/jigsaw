@@ -10,6 +10,7 @@ import {
 } from "@jigsaw/core";
 import { downloadBlob } from "@jigsaw/export";
 import { PuzzleIcon, getSharedGenerator, useRendererBackend } from "@jigsaw/react";
+import { AssemblyDemo } from "./AssemblyDemo";
 import type { RendererPreference, RenderResult } from "@jigsaw/renderer";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
@@ -330,6 +331,8 @@ export function App() {
               </button>
             ))}
           </div>
+
+          <AssemblyDemo options={options} renderer={renderer} backdrop={backdrop} />
         </div>
 
         <aside className="panel">

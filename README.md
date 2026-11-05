@@ -71,6 +71,18 @@ const plan = buildRenderPlan(generatePuzzleIcon({ seed: "alpha", size: 256 }));
 const png = await encodePNG({ width: plan.width, height: plan.height, data: unpremultiply(renderPlanCpu(plan)) });
 ```
 
+Single-piece icons fit each other. `assembleSinglePieces` picks icons, from seeds derived from yours, that close into a framed `cols × rows` puzzle (flat outside, tab against socket inside) and tells you where each one goes:
+
+```ts
+import { assembleSinglePieces } from "@jigsaw/core";
+
+const set = assembleSinglePieces({ seed: "team", size: 128, cols: 3, rows: 3, gradient: { palette: "dusk" } });
+// for each piece: draw <PuzzleIcon seed={p.description.metadata.seed} size={128} />
+// with its icon's top-left at (cell − cellOrigin) × 128 px, cell = p.cell × p.cellSize × 128 px
+```
+
+The playground's Assembly section does exactly this with real `<PuzzleIcon>`s, and can scatter and reassemble the pieces.
+
 ### Options
 
 ```ts
