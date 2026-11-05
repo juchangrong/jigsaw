@@ -13,7 +13,7 @@ import type {
   Vec2,
 } from "../types";
 import { SIDES } from "../types";
-import { flattenPath, mapSegment, pathBounds, pointInPolygon, polygonBounds, reversePath } from "./bezier";
+import { flattenPath, mapSegment, pathBounds, pointInPolygon, polygonBounds, polygonCentroid, reversePath } from "./bezier";
 import { cornerArc, placeEdge, randomEdge, sanitizeEdge, SOFT_CORNER, SQUARE_CORNER, standardEdge, trimEdgeEnds, type CornerShape, type EdgeBias } from "./edge";
 
 /** Minimum neck width in output pixels. */
@@ -323,8 +323,16 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
     // size and two icons line up when placed side by side.
     const k = (1 - 2 * margin) / (opts.layout === "single" ? 1 + 2 * connectorDepth : Math.max(b.maxX - b.minX, b.maxY - b.minY));
     const shadowLift = opts.shadow.enabled ? opts.shadow.offset[1] * 0.5 : 0;
-    const ox = 0.5 - ((b.minX + b.maxX) / 2) * k;
-    const oy = 0.5 - shadowLift - ((b.minY + b.maxY) / 2) * k;
+    // A single piece is centred on its area centroid, not its bounding box: a
+    // knob on one side would otherwise pull the body off-centre (it sits low
+    // under a top knob), and the eye reads an icon by its mass. The bounds
+    // stay inside the canvas.
+    let c: Vec2 = [(b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2];
+    if (opts.layout === "single") c = polygonCentroid(worldPolys(pieces, placement)[0]!);
+    const edge = 0.02;
+    const clampTo = (o: number, lo: number, hi: number) => Math.min(Math.max(o, edge - lo * k), 1 - edge - hi * k);
+    const ox = clampTo(0.5 - c[0] * k, b.minX, b.maxX);
+    const oy = clampTo(0.5 - shadowLift - c[1] * k, b.minY, b.maxY);
     return { k, ox, oy };
   };
 

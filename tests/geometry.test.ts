@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applyTransform,
+  polygonCentroid,
   EDGE_LIMITS,
   edgeProfile,
   flattenPath,
@@ -272,5 +273,24 @@ describe("corner rounding", () => {
     // outer corner of the 2×2 grid vs the shared centre vertex, in piece-local units
     expect(nearest(topLeft.flat, 0, 0)).toBeGreaterThan(0.045);
     expect(nearest(topLeft.flat, 1, 1)).toBeLessThan(1e-9);
+  });
+});
+
+describe("single piece centring", () => {
+  it("puts the piece's area centroid at the centre of the icon", () => {
+    for (let i = 0; i < 40; i++) {
+      const p = generatePuzzleIcon({ seed: `centre-${i}`, size: 256 }).pieces[0]!;
+      const icon = flattenPath(p.path, 0.004).map((q) => applyTransform(p.transform, q));
+      const c = polygonCentroid(icon);
+      expect(c[0]).toBeCloseTo(0.5, 3);
+      expect(c[1]).toBeCloseTo(0.5, 3);
+      // and the whole piece stays inside the canvas
+      for (const q of icon) {
+        expect(q[0]).toBeGreaterThan(0);
+        expect(q[0]).toBeLessThan(1);
+        expect(q[1]).toBeGreaterThan(0);
+        expect(q[1]).toBeLessThan(1);
+      }
+    }
   });
 });

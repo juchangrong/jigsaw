@@ -76,6 +76,26 @@ export function polygonArea(poly: Vec2[]): number {
   return a / 2;
 }
 
+/** Area centroid of a simple polygon (falls back to the vertex mean if degenerate). */
+export function polygonCentroid(poly: Vec2[]): Vec2 {
+  let a = 0;
+  let cx = 0;
+  let cy = 0;
+  for (let i = 0, k = poly.length - 1; i < poly.length; k = i++) {
+    const p = poly[k]!;
+    const q = poly[i]!;
+    const cross = p[0] * q[1] - q[0] * p[1];
+    a += cross;
+    cx += (p[0] + q[0]) * cross;
+    cy += (p[1] + q[1]) * cross;
+  }
+  if (Math.abs(a) < 1e-12) {
+    const n = poly.length || 1;
+    return [poly.reduce((s, p) => s + p[0], 0) / n, poly.reduce((s, p) => s + p[1], 0) / n];
+  }
+  return [cx / (3 * a), cy / (3 * a)];
+}
+
 export function polygonBounds(poly: Vec2[]): Bounds {
   let minX = Infinity;
   let minY = Infinity;

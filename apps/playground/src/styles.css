@@ -334,10 +334,17 @@ input[type="checkbox"] {
   gap: 6px;
 }
 .appicon-tile {
-  display: grid;
-  place-items: center;
+  position: relative;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(20, 20, 40, 0.18);
+}
+/* the canvas can be larger than its tile; centre it on both axes (grid
+   centring would let an oversized item spill to one side only) */
+.appicon-tile > canvas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 .appicon figcaption {
   font-size: 12px;

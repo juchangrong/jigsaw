@@ -11,7 +11,7 @@ export const SURFACE_TEXTURES: readonly SurfaceTexture[] = [
   "polishedMetal",
 ];
 
-export const ALGORITHM_VERSION = "1.6.0";
+export const ALGORITHM_VERSION = "1.7.0";
 export const PRESET_VERSION = "1.2.0";
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
