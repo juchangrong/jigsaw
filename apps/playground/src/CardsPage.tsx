@@ -91,7 +91,7 @@ const COLOR_SETS: { id: string; label: string; families: Family[] }[] = [
     // differ; the deep end stays dark enough to read on a white tile
     id: "mono",
     label: "Mono",
-    families: [family("gray", 255, 0.008, 0.52, 0.93, 4)],
+    families: [family("gray", 255, 0.008, 0.66, 0.96, 4)],
   },
   {
     id: "system",
