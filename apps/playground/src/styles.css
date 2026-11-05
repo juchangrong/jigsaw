@@ -454,7 +454,7 @@ input[type="checkbox"] {
 .cards-heading {
   margin: 0;
   font-size: 17px;
-  font-weight: 600;
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -509,7 +509,7 @@ input[type="checkbox"] {
 }
 .card-name {
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;

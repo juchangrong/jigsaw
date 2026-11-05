@@ -4,18 +4,18 @@ import { useEffect, useId, useState } from "react";
 
 /** Mock items, in the copy style of the product list this page imitates. */
 const ITEMS = [
-  { name: "Opero", tag: "我开发的", desc: "" },
-  { name: "Atlas 数据看板", tag: "我开发的", desc: "汇总业务核心指标，每日自动刷新" },
-  { name: "Nimbus", tag: "我参与的", desc: "" },
-  { name: "Quill 文档助手", tag: "团队共享", desc: "根据会议纪要生成结构化文档" },
-  { name: "Harbor", tag: "我开发的", desc: "内部服务的部署与回滚面板" },
-  { name: "Lumen", tag: "我参与的", desc: "" },
-  { name: "Cobalt", tag: "团队共享", desc: "评测集管理与批量实验" },
-  { name: "Orbit 监控", tag: "我开发的", desc: "告警聚合、值班排班与复盘记录" },
-  { name: "Sprout", tag: "我参与的", desc: "" },
-  { name: "Mosaic", tag: "团队共享", desc: "多来源素材的标注与审核" },
-  { name: "Relay", tag: "我开发的", desc: "跨团队需求流转与进度同步" },
-  { name: "Beacon", tag: "我参与的", desc: "" },
+  { name: "Opero", tag: "Built by me", desc: "" },
+  { name: "Atlas Dashboard", tag: "Built by me", desc: "Key business metrics, refreshed daily" },
+  { name: "Nimbus", tag: "Contributing", desc: "" },
+  { name: "Quill Docs", tag: "Shared with team", desc: "Turns meeting notes into structured docs" },
+  { name: "Harbor", tag: "Built by me", desc: "Deploy and roll back internal services" },
+  { name: "Lumen", tag: "Contributing", desc: "" },
+  { name: "Cobalt", tag: "Shared with team", desc: "Eval sets and batch experiments" },
+  { name: "Orbit Monitor", tag: "Built by me", desc: "Alert grouping, on-call rotas and postmortems" },
+  { name: "Sprout", tag: "Contributing", desc: "" },
+  { name: "Mosaic", tag: "Shared with team", desc: "Label and review assets from many sources" },
+  { name: "Relay", tag: "Built by me", desc: "Hand off requests across teams and track progress" },
+  { name: "Beacon", tag: "Contributing", desc: "" },
 ] as const;
 
 /** Items grouped into sections by their tag, in first-appearance order. */
@@ -232,7 +232,7 @@ export function CardsPage() {
                   <CardIcon {...iconFor(item.name, item.index)} style={style} solid={!gradientOn} />
                   <div className="card-body">
                     <span className="card-name">{item.name}</span>
-                    <p className="card-desc">{item.desc || "暂无描述"}</p>
+                    <p className="card-desc">{item.desc || "No description yet"}</p>
                   </div>
                   <button type="button" className="card-more" aria-label={`More actions for ${item.name}`}>
                     <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
