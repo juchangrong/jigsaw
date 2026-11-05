@@ -230,26 +230,40 @@ describe("corner rounding", () => {
   };
   const nearest = (poly: [number, number][], cx: number, cy: number) => Math.min(...poly.map((q) => Math.hypot(q[0] - cx, q[1] - cy)));
 
-  it("rounds every corner of a single piece softly", () => {
-    for (let i = 0; i < 20; i++) {
-      const [{ flat }] = sampled({ seed: `corner-${i}` });
-      for (const [cx, cy] of [
-        [0, 0],
-        [1, 0],
-        [1, 1],
-        [0, 1],
-      ] as const) {
+  it("rounds a single piece's corner only where both sides are flat", () => {
+    // corner (cx, cy) sits between these two sides
+    const corners = [
+      { at: [0, 0], sides: ["left", "top"] },
+      { at: [1, 0], sides: ["top", "right"] },
+      { at: [1, 1], sides: ["right", "bottom"] },
+      { at: [0, 1], sides: ["bottom", "left"] },
+    ] as const;
+    let soft = 0;
+    let square = 0;
+    for (let i = 0; i < 60; i++) {
+      const [{ p, flat }] = sampled({ seed: `corner-${i}` });
+      for (const c of corners) {
+        const frame = c.sides.every((s) => p.sides[s].kind === "flat");
+        const d = nearest(flat!, c.at[0], c.at[1]);
         // a circular corner of radius r sits r(√2 − 1) from the sharp corner
-        expect(nearest(flat!, cx, cy)).toBeGreaterThan(0.045);
+        if (frame) {
+          expect(d).toBeGreaterThan(0.045);
+          soft++;
+        } else {
+          expect(d).toBeLessThan(1e-9);
+          square++;
+        }
       }
     }
+    expect(soft).toBeGreaterThan(5);
+    expect(square).toBeGreaterThan(50);
   });
 
-  it("keeps tight corners where grid pieces meet and soft ones on the outside", () => {
+  it("keeps square corners where grid pieces meet and soft ones on the outside", () => {
     const pieces = sampled({ seed: "corner-grid", layout: "grid", pieceCount: 4 });
     const topLeft = pieces.find(({ p }) => p.cell[0] === 0 && p.cell[1] === 0)!;
     // outer corner of the 2×2 grid vs the shared centre vertex, in piece-local units
     expect(nearest(topLeft.flat, 0, 0)).toBeGreaterThan(0.045);
-    expect(nearest(topLeft.flat, 1, 1)).toBeLessThan(0.025);
+    expect(nearest(topLeft.flat, 1, 1)).toBeLessThan(1e-9);
   });
 });

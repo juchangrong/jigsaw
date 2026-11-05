@@ -164,10 +164,10 @@ export interface CornerShape {
   handle: number;
 }
 
-/** Outer corners: continuous-curvature, close to an app-icon squircle corner. */
+/** Frame corners (both sides flat): continuous-curvature, close to an app-icon squircle corner. */
 export const SOFT_CORNER: CornerShape = { trim: 0.15, handle: 0.72 };
-/** Corners where interlocked grid pieces meet: small, so no holes open up. */
-export const TIGHT_CORNER: CornerShape = { trim: 0.045, handle: 0.5523 };
+/** Every other corner: square, so pieces that meet there close to a point with no hole. */
+export const SQUARE_CORNER: CornerShape = { trim: 0, handle: 0.5523 };
 
 /** Corner curve from `a` to `b` around the sharp corner `c`. */
 export function cornerArc(a: Vec2, c: Vec2, b: Vec2, handle = 0.5523): BezierSegment {

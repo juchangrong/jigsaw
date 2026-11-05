@@ -2,6 +2,8 @@
 
 Status: implemented
 
+[Soft corners only on the frame](2026-11-04-frame-only-soft-corners.md) later limits the soft corner to frame corners; the shape below is unchanged.
+
 ## Problem
 
 The user found the piece corners too sharp. Every corner was a circular arc with a radius of 0.045 side units, so at icon sizes it read almost as a right angle. The fillet where a tab's neck leaves the side was 0.06 wide and also looked tight.

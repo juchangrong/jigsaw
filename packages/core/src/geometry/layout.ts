@@ -14,7 +14,7 @@ import type {
 } from "../types";
 import { SIDES } from "../types";
 import { flattenPath, mapSegment, pathBounds, pointInPolygon, polygonBounds, reversePath } from "./bezier";
-import { cornerArc, placeEdge, randomEdge, sanitizeEdge, SOFT_CORNER, standardEdge, TIGHT_CORNER, trimEdgeEnds, type CornerShape, type EdgeBias } from "./edge";
+import { cornerArc, placeEdge, randomEdge, sanitizeEdge, SOFT_CORNER, SQUARE_CORNER, standardEdge, trimEdgeEnds, type CornerShape, type EdgeBias } from "./edge";
 
 /** Minimum neck width in output pixels. */
 export const MIN_NECK_PX = 3;
@@ -113,6 +113,8 @@ interface EdgeSlot {
   geometry: BezierSegment[];
   ownerA: string;
   ownerB?: string;
+  /** which side of owner A this is (boundary edges only) */
+  side?: Side;
   /** world-space side for owner A */
   a: Vec2;
   b: Vec2;
@@ -207,25 +209,20 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
     }
     for (const s of free) {
       const id = `${pid}:${s}`;
-      slots.set(id, { edge: edgeFor(s, chosen[s]), shared: false, geometry: [], ownerA: pid, ...worldFrame(c, s) });
+      slots.set(id, { edge: edgeFor(s, chosen[s]), shared: false, geometry: [], ownerA: pid, side: s, ...worldFrame(c, s) });
       sides[s] = { slot: id, reversed: false };
     }
   }
 
-  // Corner shape per grid vertex. Interlocked grid pieces keep tight corners
-  // where they meet, or rounding would open holes between them; every other
-  // corner (single, cluster, the grid's outer corners) is soft.
-  const cornerAt = (v: Vec2): CornerShape => {
-    if (opts.layout !== "grid") return SOFT_CORNER;
-    const [x, y] = [Math.round(v[0]), Math.round(v[1])];
-    const touching = [
-      [x - 1, y - 1],
-      [x, y - 1],
-      [x - 1, y],
-      [x, y],
-    ].filter((c) => present.has(cellKey(c as [number, number]))).length;
-    return touching === 1 ? SOFT_CORNER : TIGHT_CORNER;
-  };
+  // Corner shape, as on a real puzzle: a corner is rounded only where both of
+  // its sides are flat, i.e. a corner of the finished puzzle's frame. Every
+  // other corner is square, so pieces that meet there (in a grid, or single
+  // pieces fitted together) close to a point with no hole or notch.
+  const next = (s: Side) => SIDES[(SIDES.indexOf(s) + 1) % 4]!;
+  const prev = (s: Side) => SIDES[(SIDES.indexOf(s) + 3) % 4]!;
+  const isFlat = (pid: string, s: Side) => slots.get(pieceSides.get(pid)![s].slot)!.edge.kind === "flat";
+  /** shape of the corner between side `s` and the side after it */
+  const cornerAfter = (pid: string, s: Side): CornerShape => (isFlat(pid, s) && isFlat(pid, next(s)) ? SOFT_CORNER : SQUARE_CORNER);
 
   // 2. geometry, built twice: the second pass widens necks for small sizes
   // depth of the shared single-piece connector at the current neck minimum
@@ -234,7 +231,11 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
     if (minNeck !== undefined) connectorDepth = sanitizeEdge(standardEdge("connector", "tab", bias), minNeck).depth;
     for (const slot of slots.values()) {
       if (minNeck !== undefined) slot.edge = sanitizeEdge(slot.edge, minNeck);
-      slot.geometry = trimEdgeEnds(placeEdge(slot.edge, slot.a, slot.b, slot.n), cornerAt(slot.a).trim, cornerAt(slot.b).trim);
+      // a shared edge is never flat, so both of its corners are square
+      const side = slot.shared ? undefined : slot.side;
+      const r0 = side ? cornerAfter(slot.ownerA, prev(side)).trim : 0;
+      const r1 = side ? cornerAfter(slot.ownerA, side).trim : 0;
+      slot.geometry = trimEdgeEnds(placeEdge(slot.edge, slot.a, slot.b, slot.n), r0, r1);
     }
     return cells.map((c) => {
       const pid = pieceId(c);
@@ -250,9 +251,12 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
         const next = sides[SIDES[(si + 1) % 4]!];
         const nslot = slots.get(next.slot)!;
         const nsegs = next.reversed ? reversePath(nslot.geometry) : nslot.geometry;
-        const corner = SIDE_FRAME[s].b;
-        const v: Vec2 = [c[0] + corner[0], c[1] + corner[1]];
-        world.push(cornerArc(segs[segs.length - 1]!.p3, v, nsegs[0]!.p0, cornerAt(v).handle));
+        const shape = cornerAfter(pid, s);
+        if (shape.trim > 0) {
+          const corner = SIDE_FRAME[s].b;
+          const v: Vec2 = [c[0] + corner[0], c[1] + corner[1]];
+          world.push(cornerArc(segs[segs.length - 1]!.p3, v, nsegs[0]!.p0, shape.handle));
+        }
         outSides[s] = {
           kind: ref.reversed ? flip(slot.edge.kind) : slot.edge.kind,
           edgeId: ref.slot,
