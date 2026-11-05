@@ -1,5 +1,6 @@
+import { deriveSeed } from "@jigsaw/core";
 import { PuzzleIcon } from "@jigsaw/react";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 /** Mock items, in the copy style of the product list this page imitates. */
 const ITEMS = [
@@ -19,7 +20,8 @@ const ITEMS = [
 
 /** Items grouped into sections by their tag, in first-appearance order. */
 const SECTIONS = [...new Set(ITEMS.map((item) => item.tag))];
-const INDEXED = ITEMS.map((item, index) => ({ ...item, index }));
+/** `index` is the position on screen (sections in order), so icons rotate the way they are read. */
+const INDEXED = SECTIONS.flatMap((tag) => ITEMS.filter((item) => item.tag === tag)).map((item, index) => ({ ...item, index }));
 
 type IconStyle = "tile" | "bare";
 const ICON_PX = 40;
@@ -42,15 +44,118 @@ function CardIcon({ seed, palette, style }: { seed: string; palette: string; sty
   );
 }
 
+interface Candidate {
+  seed: string;
+  palette: string;
+}
+const BATCH = 24;
+const STORAGE_KEY = "jigsaw.cardCandidates";
+const keyOf = (c: Candidate) => `${c.seed}|${c.palette}`;
+/** The i-th candidate: a fixed seed and one of the four card palettes. */
+const candidateAt = (i: number): Candidate => ({ seed: deriveSeed("card-candidates", i), palette: CARD_PALETTES[i % CARD_PALETTES.length]! });
+
+/** Saved picks: a per-viewer convenience, so any storage failure just starts empty. */
+function loadPicks(): Candidate[] {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const list = raw ? (JSON.parse(raw) as unknown) : [];
+    return Array.isArray(list) ? list.filter((c): c is Candidate => typeof c?.seed === "string" && typeof c?.palette === "string") : [];
+  } catch {
+    return [];
+  }
+}
+function savePicks(picks: Candidate[]) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(picks));
+  } catch {
+    // storage blocked: picks last for this visit only
+  }
+}
+
+/** A grid of candidate icons; clicking one picks or unpicks it. */
+function CandidatePicker({ picks, onChange }: { picks: Candidate[]; onChange: (picks: Candidate[]) => void }) {
+  const headingId = useId();
+  const [count, setCount] = useState(BATCH);
+  const [note, setNote] = useState("");
+  const picked = new Map(picks.map((c, i) => [keyOf(c), i]));
+  const toggle = (c: Candidate) => {
+    const k = keyOf(c);
+    onChange(picked.has(k) ? picks.filter((p) => keyOf(p) !== k) : [...picks, c]);
+  };
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(picks, null, 2));
+      setNote(`Copied ${picks.length} picks`);
+    } catch {
+      setNote("Couldn't copy: clipboard access is blocked");
+    }
+  };
+  return (
+    <section className="picker" aria-labelledby={headingId}>
+      <div className="picker-head">
+        <h2 id={headingId} className="cards-heading">
+          Icon candidates
+        </h2>
+        <span className="muted" aria-live="polite">
+          {picks.length ? `${picks.length} picked, used in pick order` : "Pick the icons the cards may use"}
+          {note ? ` · ${note}` : ""}
+        </span>
+      </div>
+      <ul className="picker-grid" role="list">
+        {Array.from({ length: count }, (_, i) => candidateAt(i)).map((c, i) => {
+          const order = picked.get(keyOf(c));
+          return (
+            <li key={keyOf(c)}>
+              <button
+                type="button"
+                className={`picker-tile${order !== undefined ? " on" : ""}`}
+                aria-pressed={order !== undefined}
+                aria-label={`Candidate ${i + 1}, ${c.palette}${order !== undefined ? `, pick ${order + 1}` : ""}`}
+                onClick={() => toggle(c)}
+              >
+                <PuzzleIcon seed={c.seed} layout="single" gradient={{ palette: c.palette }} size={46} />
+                {order !== undefined && (
+                  <span className="picker-badge" aria-hidden="true">
+                    {order + 1}
+                  </span>
+                )}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="toolbar">
+        <button type="button" onClick={() => setCount((n) => n + BATCH)}>
+          Show more candidates
+        </button>
+        <button type="button" onClick={() => onChange([])} disabled={!picks.length}>
+          Clear picks
+        </button>
+        <button type="button" onClick={copy} disabled={!picks.length}>
+          Copy picks
+        </button>
+      </div>
+    </section>
+  );
+}
+
 /**
- * A product-style card list where every item gets a puzzle icon generated
- * from its name, to judge the icons in the context they are meant for.
+ * A product-style card list where every item gets a puzzle icon, to judge the
+ * icons in the context they are meant for. Icons come from the picks in the
+ * candidate picker, or, with no picks, from each card's name.
  */
 export function CardsPage() {
   const groupId = useId();
   const [style, setStyle] = useState<IconStyle>("tile");
   const [salt, setSalt] = useState(0);
+  const [picks, setPicks] = useState<Candidate[]>(loadPicks);
+  useEffect(() => savePicks(picks), [picks]);
   const styles: IconStyle[] = ["tile", "bare"];
+  /** icon for the card at list position `index` */
+  const iconFor = (name: string, index: number): Candidate =>
+    picks.length
+      ? picks[(index + salt) % picks.length]!
+      : { seed: salt ? `${name}#${salt}` : name, palette: CARD_PALETTES[(index + salt) % CARD_PALETTES.length]! };
 
   return (
     <div className="app cards-app">
@@ -90,6 +195,7 @@ export function CardsPage() {
             Shuffle icons
           </button>
         </div>
+        <CandidatePicker picks={picks} onChange={setPicks} />
         {SECTIONS.map((section) => (
           <section key={section} className="cards-section" aria-labelledby={`${groupId}-${section}`}>
             <h2 id={`${groupId}-${section}`} className="cards-heading">
@@ -101,8 +207,7 @@ export function CardsPage() {
             <ul className="cards" role="list">
               {INDEXED.filter((item) => item.tag === section).map((item) => (
                 <li key={item.name} className="card">
-                  {/* palettes rotate through the whole list, so only four appear and neighbours differ */}
-                  <CardIcon seed={salt ? `${item.name}#${salt}` : item.name} palette={CARD_PALETTES[(item.index + salt) % CARD_PALETTES.length]!} style={style} />
+                  <CardIcon {...iconFor(item.name, item.index)} style={style} />
                   <div className="card-body">
                     <span className="card-name">{item.name}</span>
                     <p className="card-desc">{item.desc || "暂无描述"}</p>
