@@ -387,6 +387,16 @@ input[type="checkbox"] {
   gap: 28px;
   max-width: 1080px;
 }
+.set-swatches {
+  display: inline-flex;
+  gap: 6px;
+}
+.set-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(20, 20, 40, 0.08);
+}
 .picker {
   display: flex;
   flex-direction: column;

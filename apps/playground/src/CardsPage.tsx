@@ -25,37 +25,105 @@ const INDEXED = SECTIONS.flatMap((tag) => ITEMS.filter((item) => item.tag === ta
 
 type IconStyle = "tile" | "bare";
 const ICON_PX = 40;
-/** The list uses at most these four low-saturation palettes, so the page stays calm. */
-const CARD_PALETTES = ["slate", "plum", "clay", "sage"] as const;
-/** picks saved while the list used the vivid palettes keep their seed and move to the matching muted family */
-const LEGACY_PALETTE: Record<string, string> = { tide: "slate", meadow: "sage", ember: "clay", dusk: "plum" };
+/** A color family: four shades from deep to light, used as an icon's gradient palette. */
+interface Family {
+  id: string;
+  colors: string[];
+}
+/**
+ * A family from OKLCH: lightness from `deep` to `light` in four steps, chroma
+ * tapering toward the light end (less chroma reads cleaner near white), and a
+ * small hue drift across the sweep.
+ */
+function family(id: string, hue: number, chroma: number, deep: number, light: number, drift = 10): Family {
+  const taper = [1, 0.95, 0.8, 0.55];
+  return {
+    id,
+    colors: taper.map((k, i) => oklchToHex([deep + ((light - deep) * i) / 3, chroma * k, hue - drift / 2 + (drift * i) / 3])),
+  };
+}
+const core = (id: PaletteName): Family => ({ id, colors: [...PALETTES[id]] });
 
 /**
- * Gradient options for an icon. With the gradient off, the palette collapses
- * to its main tone (its second, mid-light color), so the piece is one solid
+ * Color sets for the list, each at most five families. They take their cue
+ * from restrained product finishes: near-neutral metals with one accent, or a
+ * few soft hues of equal weight. Names and values are original.
+ */
+const COLOR_SETS: { id: string; label: string; families: Family[] }[] = [
+  { id: "studio", label: "Studio", families: [core("slate"), core("plum"), core("clay"), core("sage")] },
+  {
+    id: "aluminum",
+    label: "Aluminum",
+    families: [
+      family("graphite", 265, 0.014, 0.34, 0.74),
+      family("silver", 250, 0.012, 0.58, 0.92),
+      family("champagne", 78, 0.035, 0.6, 0.9),
+      family("navy", 258, 0.06, 0.3, 0.66),
+      family("sky", 232, 0.05, 0.58, 0.9),
+    ],
+  },
+  {
+    id: "titanium",
+    label: "Titanium",
+    families: [
+      family("dark", 265, 0.01, 0.28, 0.6),
+      family("natural", 80, 0.02, 0.55, 0.86),
+      // a white finish has to stay visible on a white tile, so it stops short of white
+      family("white", 95, 0.01, 0.64, 0.9),
+      family("blue", 245, 0.035, 0.36, 0.72),
+      family("desert", 62, 0.045, 0.55, 0.86),
+    ],
+  },
+  {
+    id: "desktop",
+    label: "Desktop",
+    families: [
+      family("blue", 250, 0.11, 0.5, 0.86),
+      family("green", 152, 0.1, 0.5, 0.86),
+      family("pink", 5, 0.1, 0.55, 0.88),
+      family("orange", 55, 0.11, 0.58, 0.88),
+      family("purple", 300, 0.1, 0.5, 0.86),
+    ],
+  },
+  {
+    id: "system",
+    label: "System",
+    families: [
+      family("blue", 255, 0.13, 0.48, 0.84),
+      family("indigo", 282, 0.12, 0.44, 0.82),
+      family("teal", 200, 0.08, 0.5, 0.86),
+      family("orange", 58, 0.13, 0.58, 0.88),
+      family("pink", 8, 0.12, 0.55, 0.86),
+    ],
+  },
+];
+
+/**
+ * Gradient options for an icon. With the gradient off, the family collapses
+ * to its main tone (its second, mid-deep shade), so the piece is one solid
  * color shaded only by the bevel and lighting.
  */
-function gradientFor(palette: string, solid: boolean) {
-  if (!solid) return { palette };
-  const tone = PALETTES[palette as PaletteName]?.[1] ?? "#888888";
+function gradientFor(f: Family, solid: boolean) {
+  if (!solid) return { palette: f.colors };
+  const tone = f.colors[1]!;
   return { palette: [tone, tone] };
 }
 
-/** A light tint of a palette for the tile behind its icon: its OKLab mix at lightness 0.955 and low chroma. */
+/** A light tint of a family for the tile behind its icon: its OKLab mix at lightness 0.955 and low chroma. */
 const tintCache = new Map<string, string>();
-function tintOf(palette: string): string {
-  let t = tintCache.get(palette);
+function tintOf(f: Family): string {
+  const key = f.colors.join();
+  let t = tintCache.get(key);
   if (!t) {
-    const colors = PALETTES[palette as PaletteName] as readonly string[] | undefined;
-    const [, C, h] = hexToOklch(mixOklab(colors ? [...colors] : ["#888888"]));
+    const [, C, h] = hexToOklch(mixOklab(f.colors));
     t = oklchToHex([0.955, Math.min(C, 0.2) * 0.35, h]);
-    tintCache.set(palette, t);
+    tintCache.set(key, t);
   }
   return t;
 }
 
-function CardIcon({ seed, palette, style, solid, tint }: { seed: string; palette: string; style: IconStyle; solid: boolean; tint: boolean }) {
-  const gradient = gradientFor(palette, solid);
+function CardIcon({ seed, family: f, style, solid, tint }: { seed: string; family: Family; style: IconStyle; solid: boolean; tint: boolean }) {
+  const gradient = gradientFor(f, solid);
   if (style === "bare") {
     return (
       <span className="card-icon bare" aria-hidden="true">
@@ -64,32 +132,43 @@ function CardIcon({ seed, palette, style, solid, tint }: { seed: string; palette
     );
   }
   return (
-    <span className="card-icon tile" style={tint ? { background: tintOf(palette) } : undefined} aria-hidden="true">
+    <span className="card-icon tile" style={tint ? { background: tintOf(f) } : undefined} aria-hidden="true">
       <PuzzleIcon seed={seed} layout="single" gradient={gradient} size={Math.round(ICON_PX * 0.95)} />
     </span>
   );
 }
 
+/**
+ * A candidate is a fixed seed and a slot. The slot picks the color family in
+ * whichever set is active (slot mod the set's size), so switching sets
+ * re-colors the same shapes and keeps the picks.
+ */
 interface Candidate {
   seed: string;
-  palette: string;
+  slot: number;
 }
 const BATCH = 24;
 const STORAGE_KEY = "jigsaw.cardCandidates";
-const keyOf = (c: Candidate) => `${c.seed}|${c.palette}`;
-/** The i-th candidate: a fixed seed and one of the four card palettes. */
-const candidateAt = (i: number): Candidate => ({ seed: deriveSeed("card-candidates", i), palette: CARD_PALETTES[i % CARD_PALETTES.length]! });
+const SET_KEY = "jigsaw.cardColorSet";
+const keyOf = (c: Candidate) => c.seed;
+const candidateAt = (i: number): Candidate => ({ seed: deriveSeed("card-candidates", i), slot: i });
+const familyOf = (set: Family[], slot: number) => set[((slot % set.length) + set.length) % set.length]!;
 
 /** Saved picks: a per-viewer convenience, so any storage failure just starts empty. */
 function loadPicks(): Candidate[] {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     const list = raw ? (JSON.parse(raw) as unknown) : [];
-    return Array.isArray(list)
-      ? list
-          .filter((c): c is Candidate => typeof c?.seed === "string" && typeof c?.palette === "string")
-          .map((c) => ({ seed: c.seed, palette: LEGACY_PALETTE[c.palette] ?? c.palette }))
-      : [];
+    if (!Array.isArray(list)) return [];
+    // picks saved before slots existed only have a seed: find its candidate slot
+    let index: Map<string, number> | null = null;
+    const slotOf = (seed: string) => {
+      index ??= new Map(Array.from({ length: 5000 }, (_, i) => [deriveSeed("card-candidates", i), i] as const));
+      return index.get(seed) ?? 0;
+    };
+    return list
+      .filter((c): c is { seed: string; slot?: unknown } => typeof c?.seed === "string")
+      .map((c) => ({ seed: c.seed, slot: typeof c.slot === "number" ? c.slot : slotOf(c.seed) }));
   } catch {
     return [];
   }
@@ -103,7 +182,7 @@ function savePicks(picks: Candidate[]) {
 }
 
 /** A grid of candidate icons; clicking one picks or unpicks it. */
-function CandidatePicker({ picks, onChange, solid, tint }: { picks: Candidate[]; onChange: (picks: Candidate[]) => void; solid: boolean; tint: boolean }) {
+function CandidatePicker({ picks, onChange, solid, tint, set }: { picks: Candidate[]; onChange: (picks: Candidate[]) => void; solid: boolean; tint: boolean; set: Family[] }) {
   const headingId = useId();
   const [count, setCount] = useState(BATCH);
   const [note, setNote] = useState("");
@@ -139,12 +218,12 @@ function CandidatePicker({ picks, onChange, solid, tint }: { picks: Candidate[];
               <button
                 type="button"
                 className={`picker-tile${order !== undefined ? " on" : ""}`}
-                style={tint ? { background: tintOf(c.palette) } : undefined}
+                style={tint ? { background: tintOf(familyOf(set, c.slot)) } : undefined}
                 aria-pressed={order !== undefined}
-                aria-label={`Candidate ${i + 1}, ${c.palette}${order !== undefined ? `, pick ${order + 1}` : ""}`}
+                aria-label={`Candidate ${i + 1}, ${familyOf(set, c.slot).id}${order !== undefined ? `, pick ${order + 1}` : ""}`}
                 onClick={() => toggle(c)}
               >
-                <PuzzleIcon seed={c.seed} layout="single" gradient={gradientFor(c.palette, solid)} size={46} />
+                <PuzzleIcon seed={c.seed} layout="single" gradient={gradientFor(familyOf(set, c.slot), solid)} size={46} />
                 {order !== undefined && (
                   <span className="picker-badge" aria-hidden="true">
                     {order + 1}
@@ -182,13 +261,32 @@ export function CardsPage() {
   const [picks, setPicks] = useState<Candidate[]>(loadPicks);
   const [gradientOn, setGradientOn] = useState(true);
   const [tintOn, setTintOn] = useState(false);
+  const [setId, setSetId] = useState<string>(() => {
+    try {
+      return window.localStorage.getItem(SET_KEY) ?? "studio";
+    } catch {
+      return "studio";
+    }
+  });
+  const colorSet = COLOR_SETS.find((c) => c.id === setId) ?? COLOR_SETS[0]!;
   useEffect(() => savePicks(picks), [picks]);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SET_KEY, colorSet.id);
+    } catch {
+      // storage blocked: the set lasts for this visit only
+    }
+  }, [colorSet.id]);
   const styles: IconStyle[] = ["tile", "bare"];
+  const setsLabelId = useId();
   /** icon for the card at list position `index` */
-  const iconFor = (name: string, index: number): Candidate =>
-    picks.length
-      ? picks[(index + salt) % picks.length]!
-      : { seed: salt ? `${name}#${salt}` : name, palette: CARD_PALETTES[(index + salt) % CARD_PALETTES.length]! };
+  const iconFor = (name: string, index: number): { seed: string; family: Family } => {
+    if (picks.length) {
+      const p = picks[(index + salt) % picks.length]!;
+      return { seed: p.seed, family: familyOf(colorSet.families, p.slot) };
+    }
+    return { seed: salt ? `${name}#${salt}` : name, family: familyOf(colorSet.families, index + salt) };
+  };
 
   return (
     <div className="app cards-app">
@@ -236,7 +334,36 @@ export function CardsPage() {
             <span>Tint</span>
           </label>
         </div>
-        <CandidatePicker picks={picks} onChange={setPicks} solid={!gradientOn} tint={tintOn} />
+        <div className="toolbar">
+          <span className="label" id={setsLabelId}>
+            Colors
+          </span>
+          <div
+            className="segmented"
+            role="radiogroup"
+            aria-labelledby={setsLabelId}
+            onKeyDown={(e) => {
+              const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+              if (!step) return;
+              e.preventDefault();
+              const i = (COLOR_SETS.indexOf(colorSet) + step + COLOR_SETS.length) % COLOR_SETS.length;
+              setSetId(COLOR_SETS[i]!.id);
+              (e.currentTarget.children[i] as HTMLElement | undefined)?.focus();
+            }}
+          >
+            {COLOR_SETS.map((c) => (
+              <button key={c.id} type="button" role="radio" aria-checked={c === colorSet} tabIndex={c === colorSet ? 0 : -1} className={c === colorSet ? "on" : ""} onClick={() => setSetId(c.id)}>
+                {c.label}
+              </button>
+            ))}
+          </div>
+          <span className="set-swatches" aria-label={`${colorSet.label}: ${colorSet.families.map((f) => f.id).join(", ")}`}>
+            {colorSet.families.map((f) => (
+              <span key={f.id} className="set-swatch" title={f.id} style={{ background: `linear-gradient(135deg, ${f.colors.join(", ")})` }} />
+            ))}
+          </span>
+        </div>
+        <CandidatePicker picks={picks} onChange={setPicks} solid={!gradientOn} tint={tintOn} set={colorSet.families} />
         {SECTIONS.map((section) => (
           <section key={section} className="cards-section" aria-labelledby={`${groupId}-${section}`}>
             <h2 id={`${groupId}-${section}`} className="cards-heading">
