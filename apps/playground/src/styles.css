@@ -559,7 +559,8 @@ input[type="checkbox"] {
 .card-icon.outline {
   background: #ffffff;
   box-shadow: inset 0 0 0 1px #e7e7ed;
-  color: var(--text);
+  /* a mid gray line: lighter than text, still about 4:1 on white */
+  color: #7a7a8c;
 }
 .card-icon > .outline-icon {
   position: absolute;
@@ -569,7 +570,7 @@ input[type="checkbox"] {
   display: block;
 }
 .picker-tile .outline-icon {
-  color: var(--text);
+  color: #7a7a8c;
   display: block;
 }
 

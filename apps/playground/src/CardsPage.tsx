@@ -44,7 +44,7 @@ function OutlineIcon({ seed, size }: { seed: string; size: number }) {
   const d = useMemo(() => outlinePath(seed), [seed]);
   return (
     <svg className="outline-icon" width={size} height={size} viewBox="0 0 1 1" aria-hidden="true">
-      <path d={d} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+      <path d={d} fill="none" stroke="currentColor" strokeWidth={1.1} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }
