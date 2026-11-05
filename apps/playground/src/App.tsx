@@ -11,7 +11,7 @@ import {
 import { downloadBlob } from "@jigsaw/export";
 import { PuzzleIcon, getSharedGenerator, useRendererBackend } from "@jigsaw/react";
 import type { RendererPreference, RenderResult } from "@jigsaw/renderer";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 type Backdrop = "checker" | "white" | "dark";
 const SIZES = [32, 64, 128, 256] as const;
@@ -137,14 +137,79 @@ function Slider(props: { label: string; value: number; min: number; max: number;
   );
 }
 
-function Segmented<T extends string | number>(props: { value: T; options: readonly T[]; onChange: (v: T) => void; render?: (v: T) => string; label?: string }) {
+/** Display names for option values that are identifiers in the API. */
+const NAMES: Record<string, string> = {
+  checker: "Checker",
+  white: "White",
+  dark: "Dark",
+  single: "Single",
+  cluster: "Cluster",
+  grid: "Grid",
+  softResin: "Soft resin",
+  matteAcrylic: "Matte acrylic",
+  satinResin: "Satin resin",
+  deboss: "Deboss",
+  emboss: "Emboss",
+  auto: "Auto",
+  webgpu: "WebGPU",
+  webgl2: "WebGL2",
+  cpu: "CPU",
+};
+const nameOf = (v: string | number) => NAMES[String(v)] ?? String(v);
+
+/** Radio group with roving focus: Tab enters at the selection, arrow keys move it. */
+function Segmented<T extends string | number>(props: {
+  value: T;
+  options: readonly T[];
+  onChange: (v: T) => void;
+  render?: (v: T) => string;
+  label?: string;
+  labelledBy?: string;
+}) {
+  const { value, options, onChange, render, label, labelledBy } = props;
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const keys: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+    let next: number;
+    if (e.key in keys) next = (options.indexOf(value) + keys[e.key]! + options.length) % options.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = options.length - 1;
+    else return;
+    e.preventDefault();
+    onChange(options[next]!);
+    refs.current[next]?.focus();
+  };
   return (
-    <div className="segmented" role="radiogroup" aria-label={props.label}>
-      {props.options.map((o) => (
-        <button key={String(o)} role="radio" aria-checked={o === props.value} className={o === props.value ? "on" : ""} onClick={() => props.onChange(o)}>
-          {props.render ? props.render(o) : String(o)}
+    <div className="segmented" role="radiogroup" aria-label={labelledBy ? undefined : label} aria-labelledby={labelledBy} onKeyDown={onKeyDown}>
+      {options.map((o, i) => (
+        <button
+          key={String(o)}
+          ref={(el) => {
+            refs.current[i] = el;
+          }}
+          type="button"
+          role="radio"
+          aria-checked={o === value}
+          tabIndex={o === value ? 0 : -1}
+          className={o === value ? "on" : ""}
+          onClick={() => onChange(o)}
+        >
+          {render ? render(o) : nameOf(o)}
         </button>
       ))}
+    </div>
+  );
+}
+
+/** A labeled segmented control laid out like a slider row. */
+function Choice<T extends string | number>(props: { label: string; value: T; options: readonly T[]; onChange: (v: T) => void; render?: (v: T) => string }) {
+  const id = useId();
+  return (
+    <div className="row choice">
+      <span className="label" id={id}>
+        {props.label}
+      </span>
+      <Segmented {...props} labelledBy={id} />
     </div>
   );
 }
@@ -169,7 +234,7 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key === "r" && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLSelectElement)) randomize();
     };
     window.addEventListener("keydown", onKey);
@@ -179,9 +244,11 @@ export function App() {
   const options = useMemo(() => toOptions(s, size), [s, size]);
   const variants = useMemo(() => Array.from({ length: 12 }, (_, i) => deriveSeed(s.seed, i + 1)), [s.seed]);
 
+  const toastTimer = useRef<ReturnType<typeof setTimeout>>();
   const flash = (m: string) => {
     setToast(m);
-    setTimeout(() => setToast(""), 1800);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(""), 2400);
   };
 
   const doExport = async () => {
@@ -190,7 +257,7 @@ export function App() {
       const opts = { ...options, background: transparent ? "transparent" : BACKDROP_COLOR[backdrop] };
       const blob = await gen.export(opts, { format: exportFormat, size: exportSize, transparent });
       downloadBlob(blob, `puzzle-${s.seed}-${exportSize}.${exportFormat}`);
-      flash(`Exported ${exportSize}px ${exportFormat.toUpperCase()} (${(blob.size / 1024).toFixed(0)} KB)`);
+      flash(`Downloaded ${exportSize} px ${exportFormat === "png" ? "PNG" : "WebP"} (${(blob.size / 1024).toFixed(0)} KB)`);
     } catch (e) {
       flash(`Export failed: ${(e as Error).message}`);
     }
@@ -202,9 +269,9 @@ export function App() {
     const text = JSON.stringify({ metadata: d.metadata, options }, null, 2);
     try {
       await navigator.clipboard.writeText(text);
-      flash("Config copied");
+      flash("Config copied to clipboard");
     } catch {
-      flash("Clipboard unavailable");
+      flash("Couldn't copy: clipboard access is blocked");
     }
   };
 
@@ -212,14 +279,16 @@ export function App() {
     <div className="app">
       <header className="top">
         <div className="brand">
-          <PuzzleIcon seed="brand" size={28} gradient={{ palette: "aurora" }} renderer={renderer} />
+          <span aria-hidden="true">
+            <PuzzleIcon seed="brand" size={28} gradient={{ palette: "aurora" }} renderer={renderer} />
+          </span>
           <h1>Puzzle Icon Playground</h1>
         </div>
         <div className="status">
-          <span className={`badge ${backend ?? ""}`}>{backend ?? "…"}</span>
+          <span className={`badge ${backend ?? ""}`}>{backend ? nameOf(backend) : "Starting"}</span>
           {stats && (
             <span className="muted">
-              {stats.cached ? "cached" : `${stats.ms.toFixed(1)} ms`} · {stats.image.width}px
+              {stats.cached ? "Cached" : `${stats.ms.toFixed(1)} ms`} · {stats.image.width} px
             </span>
           )}
         </div>
@@ -232,13 +301,13 @@ export function App() {
               <span className="label">Seed</span>
               <input value={s.seed} onChange={(e) => set("seed", e.target.value)} spellCheck={false} />
             </label>
-            <button className="primary" onClick={randomize} title="Shortcut: R">
+            <button type="button" className="primary" onClick={randomize} title="Shortcut: R" aria-keyshortcuts="r">
               Randomize
             </button>
           </div>
           <div className="toolbar">
-            <Segmented label="Preview size" value={size} options={SIZES} onChange={setSize} render={(v) => `${v}`} />
-            <Segmented label="Background" value={backdrop} options={["checker", "white", "dark"] as const} onChange={setBackdrop} />
+            <Segmented label="Preview size" value={size} options={SIZES} onChange={setSize} render={(v) => `${v} px`} />
+            <Segmented label="Preview background" value={backdrop} options={["checker", "white", "dark"] as const} onChange={setBackdrop} />
           </div>
 
           <div className={`preview ${backdrop}`}>
@@ -256,7 +325,7 @@ export function App() {
 
           <div className="gallery">
             {variants.map((seed) => (
-              <button key={seed} className={`tile ${backdrop}`} onClick={() => set("seed", seed)} title={seed}>
+              <button key={seed} type="button" className={`tile ${backdrop}`} onClick={() => set("seed", seed)} title={seed} aria-label={`Use seed ${seed}`}>
                 <PuzzleIcon {...options} seed={seed} size={64} renderer={renderer} />
               </button>
             ))}
@@ -265,10 +334,10 @@ export function App() {
 
         <aside className="panel">
           <Section title="Layout">
-            <Segmented label="Layout" value={s.layout} options={["single", "cluster", "grid"] as const} onChange={(v) => set("layout", v)} />
+            <Choice label="Arrangement" value={s.layout} options={["single", "cluster", "grid"] as const} onChange={(v) => set("layout", v)} />
             {s.layout === "cluster" && <Slider label="Pieces" value={s.pieceCount} min={2} max={5} step={1} onChange={(v) => set("pieceCount", v)} format={(v) => String(v)} />}
             {s.layout === "grid" && (
-              <Segmented label="Grid size" value={s.pieceCount >= 9 ? 9 : 4} options={[4, 9] as const} onChange={(v) => set("pieceCount", v)} render={(v) => (v === 4 ? "2×2" : "3×3")} />
+              <Choice label="Grid size" value={s.pieceCount >= 9 ? 9 : 4} options={[4, 9] as const} onChange={(v) => set("pieceCount", v)} render={(v) => (v === 4 ? "2×2" : "3×3")} />
             )}
           </Section>
 
@@ -281,12 +350,12 @@ export function App() {
           </Section>
 
           <Section title="Gradient">
-            <div className="palettes">
-              <button className={s.palette === "" ? "on" : ""} onClick={() => set("palette", "")}>
-                seed
+            <div className="palettes" role="group" aria-label="Palette">
+              <button type="button" className={s.palette === "" ? "on" : ""} aria-pressed={s.palette === ""} onClick={() => set("palette", "")}>
+                From seed
               </button>
               {PALETTE_NAMES.map((name) => (
-                <button key={name} className={s.palette === name ? "on" : ""} onClick={() => set("palette", name)} title={name}>
+                <button key={name} type="button" className={s.palette === name ? "on" : ""} aria-pressed={s.palette === name} onClick={() => set("palette", name)}>
                   <span className="swatch" style={{ background: `linear-gradient(135deg, ${PALETTES[name].join(",")})` }} />
                   {name}
                 </button>
@@ -297,7 +366,7 @@ export function App() {
           </Section>
 
           <Section title="Material">
-            <Segmented label="Preset" value={s.preset} options={Object.keys(MATERIAL_PRESETS) as MaterialPreset[]} onChange={(v) => setS((p) => ({ ...p, preset: v, ...MATERIAL_PRESETS[v] }))} />
+            <Choice label="Preset" value={s.preset} options={Object.keys(MATERIAL_PRESETS) as MaterialPreset[]} onChange={(v) => setS((p) => ({ ...p, preset: v, ...MATERIAL_PRESETS[v] }))} />
             <Slider label="Bevel width" value={s.bevelWidth} min={0.01} max={0.15} step={0.001} onChange={(v) => set("bevelWidth", v)} />
             <Slider label="Bevel strength" value={s.bevelStrength} min={0} max={1.5} step={0.01} onChange={(v) => set("bevelStrength", v)} />
             <Slider label="Thickness" value={s.thickness} min={0} max={0.06} step={0.001} onChange={(v) => set("thickness", v)} />
@@ -319,7 +388,7 @@ export function App() {
             </label>
             {s.stampText && (
               <>
-                <Segmented label="Style" value={s.stampStyle} options={["deboss", "emboss"] as const} onChange={(v) => set("stampStyle", v)} />
+                <Choice label="Style" value={s.stampStyle} options={["deboss", "emboss"] as const} onChange={(v) => set("stampStyle", v)} />
                 <Slider label="Size" value={s.stampSize} min={0.15} max={0.7} step={0.01} onChange={(v) => set("stampSize", v)} />
                 <Slider label="Depth" value={s.stampDepth} min={0} max={1} step={0.01} onChange={(v) => set("stampDepth", v)} />
                 <Slider label="Ink" value={s.stampInk} min={0} max={1} step={0.01} onChange={(v) => set("stampInk", v)} />
@@ -337,26 +406,30 @@ export function App() {
           </Section>
 
           <Section title="Export">
-            <Segmented label="Format" value={exportFormat} options={["png", "webp"] as const} onChange={setExportFormat} render={(v) => v.toUpperCase()} />
-            <Segmented label="Resolution" value={exportSize} options={[256, 512, 1024] as const} onChange={setExportSize} render={(v) => `${v}px`} />
+            <Choice label="Format" value={exportFormat} options={["png", "webp"] as const} onChange={setExportFormat} render={(v) => (v === "png" ? "PNG" : "WebP")} />
+            <Choice label="Resolution" value={exportSize} options={[256, 512, 1024] as const} onChange={setExportSize} render={(v) => `${v} px`} />
             <label className="row check">
               <input type="checkbox" checked={transparent} onChange={(e) => setTransparent(e.target.checked)} />
               <span>Transparent background</span>
             </label>
             <div className="buttons">
-              <button className="primary" onClick={doExport}>
-                Download
+              <button type="button" className="primary" onClick={doExport}>
+                Download {exportFormat === "png" ? "PNG" : "WebP"}
               </button>
-              <button onClick={copyConfig}>Copy config</button>
+              <button type="button" onClick={copyConfig}>
+                Copy config
+              </button>
             </div>
           </Section>
 
           <Section title="Renderer">
-            <Segmented label="Renderer" value={renderer} options={["auto", "webgpu", "webgl2", "cpu"] as const} onChange={setRenderer} />
+            <Choice label="Backend" value={renderer} options={["auto", "webgpu", "webgl2", "cpu"] as const} onChange={setRenderer} />
           </Section>
         </aside>
       </main>
-      {toast && <div className="toast">{toast}</div>}
+      <div className={`toast${toast ? " show" : ""}`} role="status" aria-live="polite">
+        {toast}
+      </div>
     </div>
   );
 }
