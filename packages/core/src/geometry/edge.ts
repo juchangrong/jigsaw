@@ -5,15 +5,14 @@ import { cubic, line, mapSegment, reversePath } from "./bezier";
 export const EDGE_LIMITS = {
   center: [0.42, 0.58],
   width: [0.22, 0.35],
-  depth: [0.2, 0.26],
-  neckWidth: [0.12, 0.2],
+  depth: [0.24, 0.3],
+  /** spacing of the two neck points P3, P6; the narrowest neck is NECK_WAIST × this */
+  neckWidth: [0.18, 0.26],
   asymmetry: 0.08,
   curvature: [0.5, 0.9],
   wave: [0.025, 0.045],
   /** head must be at least this much wider than the neck */
   headOverNeck: 0.07,
-  /** head width ≤ this × depth, so the head stays round instead of a flat cap */
-  headAspect: 1.1,
 } as const;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -72,11 +71,10 @@ export function standardEdge(id: string, kind: EdgeKind, bias: EdgeBias): Puzzle
  * for small output sizes so the connection stays several pixels wide. */
 export function sanitizeEdge(e: PuzzleEdge, minNeck: number = EDGE_LIMITS.neckWidth[0]): PuzzleEdge {
   const L = EDGE_LIMITS;
-  const neckWidth = clamp(Math.max(e.neckWidth, minNeck), L.neckWidth[0], L.neckWidth[1]);
-  let width = clamp(Math.max(e.width, neckWidth + L.headOverNeck), L.width[0], L.width[1]);
-  const depth = clamp(Math.max(e.depth, width / L.headAspect), L.depth[0], L.depth[1]);
-  // a deep-enough tab is not always possible; then narrow the head instead
-  width = Math.max(neckWidth + L.headOverNeck, Math.min(width, depth * L.headAspect));
+  // the pixel minimum applies to the narrowest point of the neck
+  const neckWidth = clamp(Math.max(e.neckWidth, minNeck / NECK_WAIST), L.neckWidth[0], L.neckWidth[1]);
+  const width = clamp(Math.max(e.width, neckWidth + L.headOverNeck), L.width[0], L.width[1]);
+  const depth = clamp(e.depth, L.depth[0], L.depth[1]);
   return {
     ...e,
     center: clamp(e.center, L.center[0], L.center[1]),
@@ -104,53 +102,53 @@ export function edgeProfile(e: PuzzleEdge): BezierSegment[] {
   return tab;
 }
 
+/** The narrowest neck of the profile, as a fraction of the neck-point spacing. */
+export const NECK_WAIST = 0.78;
+
+/**
+ * The tab, as three cubic Béziers whose control points are closed-form in the
+ * edge parameters. With c = center, n = neckWidth / 2, m = 0.3·n (flare),
+ * d = 0.6·asymmetry (lean), w = wave, k = 1.2 + 3·(curvature − 0.5) (inward
+ * dip, 1.2–2.4), λ = 1.1 + 0.5·(width − 0.22) / 0.13 (head size, 1.1–1.6) and
+ * t the tab scale:
+ *
+ *   P0 = (0, 0)           P1 = (0.2, −w)          P2 = (c + m + d, −k·t)
+ *   P3 = (c − n, t)       P4 = P3 + λ·(P3 − P2)
+ *   P6 = (c + n, t)       P5 = P6 + λ·(P6 − P7)   P7 = (c − m + d, −k·t)
+ *   P8 = (0.8, w)         P9 = (1, 0)
+ *
+ *   curve = C(P0, P1, P2, P3) · C(P3, P4, P5, P6) · C(P6, P7, P8, P9)
+ *
+ * P4 and P5 continue the incoming tangents at the neck points P3 and P6, so the
+ * outline is one continuous (G¹) line from corner to corner, like a die-cut
+ * puzzle. The head's top, at the middle of the second curve, is
+ * (¼ + ¾·(1 + λ·(1 + k)))·t, so t is chosen to put it exactly at `depth`. At
+ * the default options this gives a head about 0.30 of the side wide, a neck
+ * about 0.17 at its narrowest (NECK_WAIST × neckWidth) and a near-round head
+ * (rise above its widest point ≈ 0.77 × its half-width): the proportions of a
+ * classic die-cut knob. The side bows by about ±0.44·w near the corners, in an
+ * S, and dips in by the pull of P2 before the neck.
+ */
 function tabProfile(e: PuzzleEdge): BezierSegment[] {
-  const D = e.depth;
-  const hw = e.width / 2;
-  const nh = e.neckWidth / 2;
-  const a = e.asymmetry;
-  const hc = e.center + a * 0.4; // head centre leans with asymmetry
-  const hwL = hw * (1 - a);
-  const hwR = hw * (1 + a);
-  const nL = e.center - nh;
-  const nR = e.center + nh;
-  // Every turn gets room: a wide fillet where the neck leaves the side (the
-  // socket's lips), a tall S-curve from neck to head, and a near-circular
-  // head. Tangents are horizontal at the side and vertical at the neck and the
-  // head's widest point, so the outline has no kinks.
-  const shoulder = 0.09;
-  const K = 0.5 + 0.2 * e.curvature; // head handle factor (0.55 ≈ circle)
-
-  const sL: Vec2 = [nL - shoulder, 0];
-  const sR: Vec2 = [nR + shoulder, 0];
-  const neckV = 0.33 * D;
-  const neckL: Vec2 = [nL, neckV];
-  const neckR: Vec2 = [nR, neckV];
-  const headV = 0.58 * D;
-  const headL: Vec2 = [hc - hwL, headV];
-  const headR: Vec2 = [hc + hwR, headV];
-  const top: Vec2 = [hc, D];
-  const ry = D - headV;
-  const span = headV - neckV;
-
-  // The side runs bow in a gentle S, dipping in before the connector and out
-  // after it. Each run is two curves that are level at the corner, at the
-  // middle and at the fillet, so corners stay square and the bend sits mid-run.
+  const c = e.center;
+  const n = e.neckWidth / 2;
+  const m = 0.3 * n;
+  const d = 0.6 * e.asymmetry;
   const w = e.wave;
-  const mL = sL[0] / 2;
-  const mR = (1 + sR[0]) / 2;
-  return [
-    cubic([0, 0], [mL * 0.5, 0], [mL * 0.5, -w], [mL, -w]),
-    cubic([mL, -w], [mL * 1.5, -w], [mL * 1.5, 0], sL),
-    cubic(sL, [sL[0] + shoulder * 0.6, 0], [nL, neckV * 0.4], neckL),
-    cubic(neckL, [nL, neckV + span * 0.5], [headL[0], headV - span * 0.5], headL),
-    cubic(headL, [headL[0], headV + ry * K], [hc - hwL * K, D], top),
-    cubic(top, [hc + hwR * K, D], [headR[0], headV + ry * K], headR),
-    cubic(headR, [headR[0], headV - span * 0.5], [nR, neckV + span * 0.5], neckR),
-    cubic(neckR, [nR, neckV * 0.4], [sR[0] - shoulder * 0.6, 0], sR),
-    cubic(sR, [sR[0] + (mR - sR[0]) * 0.5, 0], [sR[0] + (mR - sR[0]) * 0.5, w], [mR, w]),
-    cubic([mR, w], [mR + (1 - mR) * 0.5, w], [mR + (1 - mR) * 0.5, 0], [1, 0]),
-  ];
+  const k = 1.2 + 3 * (e.curvature - 0.5);
+  const lam = 1.1 + (0.5 * (e.width - EDGE_LIMITS.width[0])) / (EDGE_LIMITS.width[1] - EDGE_LIMITS.width[0]);
+  const t = e.depth / (0.25 + 0.75 * (1 + lam * (1 + k)));
+  const P0: Vec2 = [0, 0];
+  const P1: Vec2 = [0.2, -w];
+  const P2: Vec2 = [c + m + d, -k * t];
+  const P3: Vec2 = [c - n, t];
+  const P6: Vec2 = [c + n, t];
+  const P7: Vec2 = [c - m + d, -k * t];
+  const P4: Vec2 = [P3[0] + lam * (P3[0] - P2[0]), P3[1] + lam * (P3[1] - P2[1])];
+  const P5: Vec2 = [P6[0] + lam * (P6[0] - P7[0]), P6[1] + lam * (P6[1] - P7[1])];
+  const P8: Vec2 = [0.8, w];
+  const P9: Vec2 = [1, 0];
+  return [cubic(P0, P1, P2, P3), cubic(P3, P4, P5, P6), cubic(P6, P7, P8, P9)];
 }
 
 /** Shorten the straight first/last segment of an edge by `r0` at its start

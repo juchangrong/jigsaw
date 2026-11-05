@@ -316,8 +316,8 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
 
   const fit = (pieces: ReturnType<typeof build>, placement: Placement) => {
     const b = polygonBounds(worldPolys(pieces, placement).flat());
-    // single pieces leave room for a tab on every side, so they need less margin
-    const margin = opts.layout === "single" ? 0.06 : 0.08;
+    // small margin: the deep knobs already leave air around the body
+    const margin = 0.06;
     // Single pieces share one scale: the widest a piece can be is the cell
     // plus a tab on each side, so every single icon draws its cell at the same
     // size and two icons line up when placed side by side.

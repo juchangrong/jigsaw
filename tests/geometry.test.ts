@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyTransform,
   EDGE_LIMITS,
+  edgeProfile,
   flattenPath,
   generatePuzzleIcon,
   MIN_NECK_PX,
@@ -96,8 +97,12 @@ describe("single piece", () => {
       for (const s of SIDES) {
         const side = p.sides[s];
         if (side.kind === "tab") expect(reach[s]).toBeGreaterThan(EDGE_LIMITS.depth[0] - 1e-6);
-        // a socket's side runs bow gently outward by at most the wave; flat sides stay straight
-        else if (side.kind === "socket") expect(reach[s]).toBeLessThan(EDGE_LIMITS.wave[1]);
+        // a socket bulges out by no more than its tab's deepest inward dip (the S
+        // before the neck, point-reflected); flat sides stay straight
+        else if (side.kind === "socket") {
+          const tab = flattenPath(edgeProfile({ ...side.edge, kind: "tab" }), 0.002);
+          expect(reach[s]).toBeLessThan(-Math.min(...tab.map((q) => q[1])) + 1e-3);
+        }
         else expect(reach[s]).toBeLessThan(1e-6);
         if (side.kind === "socket") {
           // the point a little inside the side's centre must be outside the piece

@@ -2,6 +2,8 @@
 
 Status: implemented
 
+[Formula-defined connector profile](2026-11-04-formula-connector-profile.md) later replaces this profile shape with three formula-defined cubics.
+
 ## Problem
 
 After corners became square where pieces meet ([Soft corners only on the frame](2026-11-04-frame-only-soft-corners.md)), the user accepted square corners but shared the reference puzzle again and asked that pieces not be "ruler-straight". In the reference, the sides between a corner and a knob bow gently and the knobs lean. Only the outer frame is straight.
