@@ -27,15 +27,17 @@ git diff --cached --check
 node .agents/skills/covenant/scripts/check-commit-message.mjs <message-file>
 ```
 
-Changes reach `main` through a pull request merged with a merge commit:
+Commit every change to the long-lived `dev` branch and push it; do not open a pull request per change. `dev` reaches `main` through one pull request, merged with a merge commit, only when the maintainer asks:
 
 ```sh
-gh pr create --base main --head <branch> --title "<type(scope): description>" --body-file <file>
+git switch dev && git pull --ff-only origin dev
+git push origin dev
+gh pr create --base main --head dev --title "<type(scope): description>" --body-file <file>
 gh pr merge <number> --merge
 git -C /Users/bytedance/Workspace/jigsaw pull --ff-only origin main
 ```
 
-The main checkout holds `main`; pull there after merging so new worktrees start from the merged state. The repository has no CI yet, so run the commands above before asking for a merge. See [the change workflow](.agents/skills/covenant/references/change-workflow.md#pushing-and-prs).
+The main checkout holds `main`; pull there after merging so new worktrees start from the merged state. The repository has no CI yet, so run the commands above before pushing. See [the change workflow](.agents/skills/covenant/references/change-workflow.md#pushing-and-prs) and [the dev-branch note](.agents/notes/implemented/process/2026-11-04-dev-branch-workflow.md).
 
 ## Conventions
 

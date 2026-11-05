@@ -15,7 +15,7 @@ The repository adopts covenant at level L0, with no CI and no host settings.
 - Decision records live in `.agents/notes/`, whose README owns note naming, format and the note threshold. `formatAdopted` is 2026-11-04.
 - `.agents/scripts/verify-covenant.mjs` runs the notes, budgets, links, wrap, language and docs-placement checks configured in `.agents/covenant.json`. `AGENTS.md` has a 1,500-word budget.
 - Commit messages are English Conventional Commits, checked with the skill's `check-commit-message.mjs`.
-- Changes reach `main` through a pull request merged with a merge commit, as PR #1 was.
+- Changes reach `main` through a pull request merged with a merge commit, as PR #1 was. Since [Commit to a dev branch](2026-11-04-dev-branch-workflow.md), that pull request comes from `dev`.
 - Three project rules move into `AGENTS.md`: shader parity across `shading.ts`, WGSL and GLSL; randomness only from `createRng`, with version bumps when output changes; and golden signatures re-baselined in the same change as an intended image change.
 
 The hard-wrapped paragraphs in `README.md` and `docs/design.md` are joined into one line each so the wrap check passes. Their words are unchanged.
