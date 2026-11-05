@@ -275,7 +275,7 @@ export function App() {
           <Section title="Geometry">
             <Slider label="Tab size" value={s.tabSize} min={0} max={1} step={0.01} onChange={(v) => set("tabSize", v)} />
             <Slider label="Curvature" value={s.curvature} min={0} max={1} step={0.01} onChange={(v) => set("curvature", v)} />
-            <Slider label="Asymmetry" value={s.asymmetry} min={0} max={1} step={0.01} onChange={(v) => set("asymmetry", v)} />
+            {s.layout !== "single" && <Slider label="Asymmetry" value={s.asymmetry} min={0} max={1} step={0.01} onChange={(v) => set("asymmetry", v)} />}
             {s.layout !== "single" && <Slider label="Separation" value={s.separation} min={0} max={0.3} step={0.005} onChange={(v) => set("separation", v)} />}
             {s.layout === "cluster" && <Slider label="Rotation" value={s.rotation} min={0} max={20} step={0.5} onChange={(v) => set("rotation", v)} format={(v) => `${v}°`} />}
           </Section>

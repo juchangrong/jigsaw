@@ -72,6 +72,7 @@ Neighbors traverse the same geometry in opposite directions, so pieces fit exact
 
 - At least one non-flat edge, at most 3 tabs, not all 4 edges the same kind.
 - Visually balanced; bounding-box aspect ratio stays reasonable (≈ 0.75–1.33).
+- Single pieces interlock with each other. They share one centred, symmetric connector derived from the geometry options (not the seed), and one scale per output size, so any single piece's tab fits any other single piece's socket. Outlines therefore vary only by which sides are tabs, sockets or flat; seeds also vary palette, gradient and stamp.
 
 ### 3.4 Layouts
 
@@ -184,7 +185,7 @@ tests/               geometry, deterministic, rendering tests
 
 ## 15. Phases
 
-1. PRNG + single-piece Bézier + mask preview (100 valid distinct outlines).
+1. PRNG + single-piece Bézier + mask preview (valid outlines; single pieces vary by side kinds, since they share one connector).
 2. SDF + WebGPU material + shadow (a single-color piece already looks real).
 3. Diffuse gradient + presets.
 4. Shared-edge multi-piece layouts.

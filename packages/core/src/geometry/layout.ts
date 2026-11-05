@@ -14,7 +14,7 @@ import type {
 } from "../types";
 import { SIDES } from "../types";
 import { flattenPath, mapSegment, pathBounds, pointInPolygon, polygonBounds, reversePath } from "./bezier";
-import { cornerArc, placeEdge, randomEdge, sanitizeEdge, SOFT_CORNER, TIGHT_CORNER, trimEdgeEnds, type CornerShape, type EdgeBias } from "./edge";
+import { cornerArc, placeEdge, randomEdge, sanitizeEdge, SOFT_CORNER, standardEdge, TIGHT_CORNER, trimEdgeEnds, type CornerShape, type EdgeBias } from "./edge";
 
 /** Minimum neck width in output pixels. */
 export const MIN_NECK_PX = 3;
@@ -174,7 +174,9 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
       const k = slots.get(ref.slot)!.edge.kind;
       return ref.reversed ? flip(k) : k;
     };
-    const edgeFor = (s: Side, kind: EdgeKind) => randomEdge(geomRng.fork(`${pid}:${s}`), `${pid}:${s}`, kind, bias);
+    // single pieces share one connector so they fit each other
+    const edgeFor = (s: Side, kind: EdgeKind) =>
+      opts.layout === "single" ? standardEdge(`${pid}:${s}`, kind, bias) : randomEdge(geomRng.fork(`${pid}:${s}`), `${pid}:${s}`, kind, bias);
     let chosen: Record<Side, EdgeKind> | null = null;
     if (opts.layout === "grid") {
       chosen = {} as Record<Side, EdgeKind>;
@@ -226,7 +228,10 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
   };
 
   // 2. geometry, built twice: the second pass widens necks for small sizes
+  // depth of the shared single-piece connector at the current neck minimum
+  let connectorDepth = standardEdge("connector", "tab", bias).depth;
   const build = (minNeck?: number) => {
+    if (minNeck !== undefined) connectorDepth = sanitizeEdge(standardEdge("connector", "tab", bias), minNeck).depth;
     for (const slot of slots.values()) {
       if (minNeck !== undefined) slot.edge = sanitizeEdge(slot.edge, minNeck);
       slot.geometry = trimEdgeEnds(placeEdge(slot.edge, slot.a, slot.b, slot.n), cornerAt(slot.a).trim, cornerAt(slot.b).trim);
@@ -307,8 +312,12 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
 
   const fit = (pieces: ReturnType<typeof build>, placement: Placement) => {
     const b = polygonBounds(worldPolys(pieces, placement).flat());
-    const margin = opts.layout === "single" ? 0.1 : 0.08;
-    const k = (1 - 2 * margin) / Math.max(b.maxX - b.minX, b.maxY - b.minY);
+    // single pieces leave room for a tab on every side, so they need less margin
+    const margin = opts.layout === "single" ? 0.06 : 0.08;
+    // Single pieces share one scale: the widest a piece can be is the cell
+    // plus a tab on each side, so every single icon draws its cell at the same
+    // size and two icons line up when placed side by side.
+    const k = (1 - 2 * margin) / (opts.layout === "single" ? 1 + 2 * connectorDepth : Math.max(b.maxX - b.minX, b.maxY - b.minY));
     const shadowLift = opts.shadow.enabled ? opts.shadow.offset[1] * 0.5 : 0;
     const ox = 0.5 - ((b.minX + b.maxX) / 2) * k;
     const oy = 0.5 - shadowLift - ((b.minY + b.maxY) / 2) * k;

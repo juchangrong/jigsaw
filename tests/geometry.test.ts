@@ -31,9 +31,22 @@ const toWorld = (p: PieceDescription) =>
 describe("single piece", () => {
   const icons = seeds(100).map((seed) => generatePuzzleIcon({ seed, size: 128 }));
 
-  it("produces 100 valid, distinct outlines", () => {
-    const keys = new Set(icons.map((d) => d.pieces[0]!.geometryKey));
-    expect(keys.size).toBe(100);
+  // Single pieces share one connector so any two fit together (see
+  // tests/interlock.test.ts); an outline is therefore set by its side kinds.
+  it("varies the outline through its side kinds", () => {
+    const kindsOf = (d: (typeof icons)[number]) => SIDES.map((s) => d.pieces[0]!.sides[s].kind).join(",");
+    const byKinds = new Map<string, Set<string>>();
+    for (const d of icons) {
+      const k = kindsOf(d);
+      if (!byKinds.has(k)) byKinds.set(k, new Set());
+      byKinds.get(k)!.add(d.pieces[0]!.geometryKey);
+    }
+    // the same kinds always give the same outline, different kinds a different one
+    for (const keys of byKinds.values()) expect(keys.size).toBe(1);
+    const outlines = new Set([...byKinds.values()].map((k) => [...k][0]));
+    expect(outlines.size).toBe(byKinds.size);
+    // 100 seeds reach a wide spread of the valid kind combinations
+    expect(byKinds.size).toBeGreaterThanOrEqual(30);
   });
 
   it("paths are closed and continuous", () => {

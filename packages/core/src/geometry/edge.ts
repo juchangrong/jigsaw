@@ -43,6 +43,28 @@ export function randomEdge(rng: Rng, id: string, kind: EdgeKind, bias: EdgeBias)
   return sanitizeEdge(e);
 }
 
+/**
+ * The connector every single piece uses, so any single piece's tab fits any
+ * other single piece's socket. It depends only on the geometry options (no
+ * seed), is centred, and has no asymmetry: walking a side backwards mirrors
+ * the profile, and a centred symmetric profile is its own mirror, so a tab and
+ * the neighbouring socket trace the same curve.
+ */
+export function standardEdge(id: string, kind: EdgeKind, bias: EdgeBias): PuzzleEdge {
+  const L = EDGE_LIMITS;
+  const t = clamp(bias.tabSize, 0, 1);
+  return sanitizeEdge({
+    id,
+    kind,
+    center: 0.5,
+    width: lerp(L.width[0], L.width[1], t),
+    depth: lerp(L.depth[0], L.depth[1], t),
+    neckWidth: lerp(L.neckWidth[0], L.neckWidth[1], 0.5),
+    asymmetry: 0,
+    curvature: lerp(L.curvature[0], L.curvature[1], clamp(bias.curvature, 0, 1)),
+  });
+}
+
 /** Clamp all parameters into range and enforce head ≥ neck + margin so the
  * outline can never pinch or self-intersect. `minNeck` (side units) is raised
  * for small output sizes so the connection stays several pixels wide. */
