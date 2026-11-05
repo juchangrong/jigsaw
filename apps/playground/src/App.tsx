@@ -305,6 +305,9 @@ export function App() {
             <PuzzleIcon seed="brand" size={28} gradient={{ palette: "aurora" }} renderer={renderer} />
           </span>
           <h1>Puzzle Icon Playground</h1>
+          <a className="nav-link" href="#/cards">
+            Card list demo
+          </a>
         </div>
         <div className="status">
           <span className={`badge ${backend ?? ""}`}>{backend ? nameOf(backend) : "Starting"}</span>
