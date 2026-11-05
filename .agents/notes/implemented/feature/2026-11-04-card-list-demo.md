@@ -4,7 +4,7 @@ Status: implemented
 
 ## Problem
 
-The user wanted to see generated puzzle icons in a real product context: a list of item cards like their own product's (name, a muted tag such as "我开发的", a description that falls back to "暂无描述", and a "more" button). The playground had only single-page icon previews.
+The user wanted to see generated puzzle icons in a real product context: a list of item cards like their own product's. Each card has a name, a muted ownership tag ("developed by me"), a description that falls back to a "no description yet" placeholder, and a "more" button. The playground had only single-page icon previews.
 
 ## Decision
 
