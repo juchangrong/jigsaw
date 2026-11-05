@@ -207,3 +207,36 @@ describe("multi-piece layouts", () => {
     });
   }
 });
+
+describe("corner rounding", () => {
+  // Distance from a sharp cell corner to the nearest outline point (piece-local
+  // units): larger means rounder.
+  const sampled = (o: Parameters<typeof generatePuzzleIcon>[0]) => {
+    const d = generatePuzzleIcon(o);
+    return d.pieces.map((p) => ({ p, flat: flattenPath(p.path, 0.002) }));
+  };
+  const nearest = (poly: [number, number][], cx: number, cy: number) => Math.min(...poly.map((q) => Math.hypot(q[0] - cx, q[1] - cy)));
+
+  it("rounds every corner of a single piece softly", () => {
+    for (let i = 0; i < 20; i++) {
+      const [{ flat }] = sampled({ seed: `corner-${i}` });
+      for (const [cx, cy] of [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+      ] as const) {
+        // a circular corner of radius r sits r(√2 − 1) from the sharp corner
+        expect(nearest(flat!, cx, cy)).toBeGreaterThan(0.045);
+      }
+    }
+  });
+
+  it("keeps tight corners where grid pieces meet and soft ones on the outside", () => {
+    const pieces = sampled({ seed: "corner-grid", layout: "grid", pieceCount: 4 });
+    const topLeft = pieces.find(({ p }) => p.cell[0] === 0 && p.cell[1] === 0)!;
+    // outer corner of the 2×2 grid vs the shared centre vertex, in piece-local units
+    expect(nearest(topLeft.flat, 0, 0)).toBeGreaterThan(0.045);
+    expect(nearest(topLeft.flat, 1, 1)).toBeLessThan(0.025);
+  });
+});

@@ -75,7 +75,8 @@ export function edgeProfile(e: PuzzleEdge): BezierSegment[] {
   const hwR = hw * (1 + a);
   const nL = e.center - nh;
   const nR = e.center + nh;
-  const shoulder = 0.06;
+  // fillet where the neck leaves the side; wide enough to read as soft
+  const shoulder = 0.075;
   const K = 0.4 + 0.35 * e.curvature; // ellipse handle factor (0.55 ≈ circle)
 
   const sL: Vec2 = [nL - shoulder, 0];
@@ -102,12 +103,12 @@ export function edgeProfile(e: PuzzleEdge): BezierSegment[] {
   ];
 }
 
-/** Shorten the straight first/last segment of an edge by `r` at both ends
- * (used to round the piece corners). */
-export function trimEdgeEnds(segs: BezierSegment[], r: number): BezierSegment[] {
-  if (r <= 0) return segs;
+/** Shorten the straight first/last segment of an edge by `r0` at its start
+ * and `r1` at its end (used to round the piece corners). */
+export function trimEdgeEnds(segs: BezierSegment[], r0: number, r1: number = r0): BezierSegment[] {
+  if (r0 <= 0 && r1 <= 0) return segs;
   const out = segs.slice();
-  const move = (from: Vec2, to: Vec2): Vec2 => {
+  const move = (from: Vec2, to: Vec2, r: number): Vec2 => {
     const dx = to[0] - from[0];
     const dy = to[1] - from[1];
     const l = Math.hypot(dx, dy) || 1;
@@ -116,17 +117,31 @@ export function trimEdgeEnds(segs: BezierSegment[], r: number): BezierSegment[] 
   const first = out[0]!;
   const last = out[out.length - 1]!;
   if (out.length === 1) {
-    out[0] = line(move(first.p0, first.p3), move(first.p3, first.p0));
+    out[0] = line(move(first.p0, first.p3, r0), move(first.p3, first.p0, r1));
     return out;
   }
-  out[0] = line(move(first.p0, first.p3), first.p3);
-  out[out.length - 1] = line(last.p0, move(last.p3, last.p0));
+  out[0] = line(move(first.p0, first.p3, r0), first.p3);
+  out[out.length - 1] = line(last.p0, move(last.p3, last.p0, r1));
   return out;
 }
 
-/** Quarter-ish arc from `a` to `b` around the sharp corner `c`. */
-export function cornerArc(a: Vec2, c: Vec2, b: Vec2): BezierSegment {
-  const k = 0.5523;
+/** How a corner is rounded: `trim` is where the curve leaves each side (side
+ * units), `handle` places the control points that fraction of the way to the
+ * sharp corner. 0.5523 draws a circular arc; larger values ease the curvature
+ * in from the sides like a squircle corner. */
+export interface CornerShape {
+  trim: number;
+  handle: number;
+}
+
+/** Outer corners: continuous-curvature, close to an app-icon squircle corner. */
+export const SOFT_CORNER: CornerShape = { trim: 0.15, handle: 0.72 };
+/** Corners where interlocked grid pieces meet: small, so no holes open up. */
+export const TIGHT_CORNER: CornerShape = { trim: 0.045, handle: 0.5523 };
+
+/** Corner curve from `a` to `b` around the sharp corner `c`. */
+export function cornerArc(a: Vec2, c: Vec2, b: Vec2, handle = 0.5523): BezierSegment {
+  const k = handle;
   return cubic(a, [a[0] + (c[0] - a[0]) * k, a[1] + (c[1] - a[1]) * k], [b[0] + (c[0] - b[0]) * k, b[1] + (c[1] - b[1]) * k], b);
 }
 
