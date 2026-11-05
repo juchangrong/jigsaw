@@ -1,4 +1,4 @@
-import { deriveSeed } from "@jigsaw/core";
+import { deriveSeed, PALETTES, type PaletteName } from "@jigsaw/core";
 import { PuzzleIcon } from "@jigsaw/react";
 import { useEffect, useId, useState } from "react";
 
@@ -28,8 +28,19 @@ const ICON_PX = 40;
 /** The list uses at most these four palettes, so the page stays calm. */
 const CARD_PALETTES = ["tide", "dusk", "ember", "meadow"] as const;
 
-function CardIcon({ seed, palette, style }: { seed: string; palette: string; style: IconStyle }) {
-  const gradient = { palette };
+/**
+ * Gradient options for an icon. With the gradient off, the palette collapses
+ * to its main tone (its second, mid-light color), so the piece is one solid
+ * color shaded only by the bevel and lighting.
+ */
+function gradientFor(palette: string, solid: boolean) {
+  if (!solid) return { palette };
+  const tone = PALETTES[palette as PaletteName]?.[1] ?? "#888888";
+  return { palette: [tone, tone] };
+}
+
+function CardIcon({ seed, palette, style, solid }: { seed: string; palette: string; style: IconStyle; solid: boolean }) {
+  const gradient = gradientFor(palette, solid);
   if (style === "bare") {
     return (
       <span className="card-icon bare" aria-hidden="true">
@@ -73,7 +84,7 @@ function savePicks(picks: Candidate[]) {
 }
 
 /** A grid of candidate icons; clicking one picks or unpicks it. */
-function CandidatePicker({ picks, onChange }: { picks: Candidate[]; onChange: (picks: Candidate[]) => void }) {
+function CandidatePicker({ picks, onChange, solid }: { picks: Candidate[]; onChange: (picks: Candidate[]) => void; solid: boolean }) {
   const headingId = useId();
   const [count, setCount] = useState(BATCH);
   const [note, setNote] = useState("");
@@ -113,7 +124,7 @@ function CandidatePicker({ picks, onChange }: { picks: Candidate[]; onChange: (p
                 aria-label={`Candidate ${i + 1}, ${c.palette}${order !== undefined ? `, pick ${order + 1}` : ""}`}
                 onClick={() => toggle(c)}
               >
-                <PuzzleIcon seed={c.seed} layout="single" gradient={{ palette: c.palette }} size={46} />
+                <PuzzleIcon seed={c.seed} layout="single" gradient={gradientFor(c.palette, solid)} size={46} />
                 {order !== undefined && (
                   <span className="picker-badge" aria-hidden="true">
                     {order + 1}
@@ -149,6 +160,7 @@ export function CardsPage() {
   const [style, setStyle] = useState<IconStyle>("tile");
   const [salt, setSalt] = useState(0);
   const [picks, setPicks] = useState<Candidate[]>(loadPicks);
+  const [gradientOn, setGradientOn] = useState(true);
   useEffect(() => savePicks(picks), [picks]);
   const styles: IconStyle[] = ["tile", "bare"];
   /** icon for the card at list position `index` */
@@ -194,8 +206,12 @@ export function CardsPage() {
           <button type="button" onClick={() => setSalt((n) => n + 1)}>
             Shuffle icons
           </button>
+          <label className="row check">
+            <input type="checkbox" role="switch" checked={gradientOn} onChange={(e) => setGradientOn(e.target.checked)} />
+            <span>Gradient</span>
+          </label>
         </div>
-        <CandidatePicker picks={picks} onChange={setPicks} />
+        <CandidatePicker picks={picks} onChange={setPicks} solid={!gradientOn} />
         {SECTIONS.map((section) => (
           <section key={section} className="cards-section" aria-labelledby={`${groupId}-${section}`}>
             <h2 id={`${groupId}-${section}`} className="cards-heading">
@@ -207,7 +223,7 @@ export function CardsPage() {
             <ul className="cards" role="list">
               {INDEXED.filter((item) => item.tag === section).map((item) => (
                 <li key={item.name} className="card">
-                  <CardIcon {...iconFor(item.name, item.index)} style={style} />
+                  <CardIcon {...iconFor(item.name, item.index)} style={style} solid={!gradientOn} />
                   <div className="card-body">
                     <span className="card-name">{item.name}</span>
                     <p className="card-desc">{item.desc || "暂无描述"}</p>

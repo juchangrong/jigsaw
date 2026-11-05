@@ -16,6 +16,8 @@ The mock copy is Chinese because it imitates the product UI. Page chrome stays E
 
 An Icon candidates picker above the list shows candidate icons in batches of 24: fixed seeds derived from `card-candidates`, rotating through the same four palettes. Clicking a tile picks or unpicks it (`aria-pressed`, with a numbered badge for pick order). Once anything is picked, the cards use only the picks, cycling in pick order by on-screen position, so neighbouring rows differ. Picks are saved in `localStorage` as a per-viewer convenience: a storage failure just starts empty. They can be cleared or copied as JSON (`seed` and `palette` per pick), which is enough to reproduce each icon.
 
+A Gradient switch (a `role="switch"` checkbox, on by default) turns the diffuse gradient off for both the candidates and the cards. Each palette then collapses to its main tone, its second color (tide blue, dusk purple, ember orange or meadow green), passed as a two-color custom palette. The piece is one solid color, shaded only by the bevel and lighting, apart from the generator's small per-spot jitter.
+
 ## Alternatives considered
 
 **A section on the playground page.** That page is already long. A separate page shows the cards alone, closer to how the list appears in the product.
