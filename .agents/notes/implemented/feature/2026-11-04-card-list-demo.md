@@ -41,7 +41,7 @@ The Icon control offers Glass (the default), Plain tile and Bare piece. Glass fo
 
 Candidate tiles stay plain, because there the tile is a selection control.
 
-Hovering a card icon spins the piece once through 360° over 720 ms with an ease-out-quart curve, while the tile, rim and gloss stay still. It is a CSS keyframe on the canvas that keeps its centring translate. There is no spin under `prefers-reduced-motion`. The baked lighting turns with the piece during the spin and is back in place at the end.
+Hovering a card icon turns the piece a quarter turn (90°) over 420 ms with an ease-out-quart curve, and it eases back when the pointer leaves. The tile, rim and gloss stay still. It is a CSS transition on the canvas that keeps its centring translate, and there is no rotation under `prefers-reduced-motion`. A first version spun the piece a full 360° on hover; the user asked for 90°. With a quarter turn a one-shot animation would snap back, so it is a transition held while hovering. The baked lighting turns with the piece.
 
 ## Alternatives considered
 

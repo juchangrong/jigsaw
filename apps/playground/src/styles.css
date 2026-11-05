@@ -555,21 +555,20 @@ input[type="checkbox"] {
 .card-icon.glass > canvas {
   z-index: 1;
 }
-/* hovering an icon spins the piece once; the tile, rim and gloss stay put */
-@keyframes piece-spin {
-  from {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  to {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
+/* hovering an icon turns the piece a quarter turn and back on leave; the
+   tile, rim and gloss stay put */
+.card-icon > canvas {
+  transition: transform 420ms cubic-bezier(0.25, 1, 0.5, 1);
 }
 .card-icon:hover > canvas {
-  animation: piece-spin 720ms cubic-bezier(0.25, 1, 0.5, 1);
+  transform: translate(-50%, -50%) rotate(90deg);
 }
 @media (prefers-reduced-motion: reduce) {
+  .card-icon > canvas {
+    transition: none;
+  }
   .card-icon:hover > canvas {
-    animation: none;
+    transform: translate(-50%, -50%);
   }
 }
 .card-icon > canvas {
