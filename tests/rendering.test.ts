@@ -13,7 +13,16 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { inflateSync } from "node:zlib";
 import { beforeAll, describe, expect, it } from "vitest";
-import { buildRenderPlan, generatePuzzleIcon, sampleSdf, toLocal, type PuzzleIconOptions } from "@jigsaw/core";
+import {
+  buildRenderPlan,
+  evalGradientLinear,
+  generatePuzzleIcon,
+  gradientToLinear,
+  linearToSrgbChannel,
+  sampleSdf,
+  toLocal,
+  type PuzzleIconOptions,
+} from "@jigsaw/core";
 import { encodePNG, unpremultiply } from "@jigsaw/export";
 import { renderPlanCpu } from "../packages/renderer/src/cpu";
 
@@ -133,13 +142,14 @@ describe("material properties", () => {
   });
 
   it("keeps the flat top close to the albedo (no global over-exposure)", () => {
-    const { plan, px } = render(flat);
+    const { d, plan, px } = render(flat);
     const c = Math.floor(plan.width / 2);
     const i = (c * plan.width + c) * 4;
-    // #A49CF0 → (164, 156, 240)
-    expect(Math.abs(px[i]! - 164)).toBeLessThanOrEqual(6);
-    expect(Math.abs(px[i + 1]! - 156)).toBeLessThanOrEqual(6);
-    expect(Math.abs(px[i + 2]! - 240)).toBeLessThanOrEqual(6);
+    // albedo = the gradient's own color at this pixel, including per-spot jitter
+    const albedo = evalGradientLinear(gradientToLinear(d.pieces[0]!.gradient), toLocal(plan.pieces[0]!, c, c));
+    for (let k = 0; k < 3; k++) {
+      expect(Math.abs(px[i + k]! - Math.round(linearToSrgbChannel(albedo[k]!) * 255))).toBeLessThanOrEqual(6);
+    }
   });
 
   it("has no banding in the diffuse gradient", () => {
