@@ -1,6 +1,6 @@
-import { deriveSeed, hexToOklch, mixOklab, oklchToHex, PALETTES, type PaletteName } from "@jigsaw/core";
+import { applyTransform, deriveSeed, generatePuzzleIcon, hexToOklch, mixOklab, oklchToHex, PALETTES, type PaletteName } from "@jigsaw/core";
 import { PuzzleIcon } from "@jigsaw/react";
-import { useEffect, useId, useState, type CSSProperties } from "react";
+import { useEffect, useId, useMemo, useState, type CSSProperties } from "react";
 
 /** Mock items, in the copy style of the product list this page imitates. */
 const ITEMS = [
@@ -23,8 +23,31 @@ const SECTIONS = [...new Set(ITEMS.map((item) => item.tag))];
 /** `index` is the position on screen (sections in order), so icons rotate the way they are read. */
 const INDEXED = SECTIONS.flatMap((tag) => ITEMS.filter((item) => item.tag === tag)).map((item, index) => ({ ...item, index }));
 
-type IconStyle = "glass" | "tile" | "bare";
-const STYLE_NAMES: Record<IconStyle, string> = { glass: "Glass", tile: "Plain tile", bare: "Bare piece" };
+type IconStyle = "glass" | "tile" | "outline" | "bare";
+const STYLE_NAMES: Record<IconStyle, string> = { glass: "Glass", tile: "Plain tile", outline: "Outline", bare: "Bare piece" };
+
+/** SVG path data for a seed's single piece, in icon units ([0,1]²). */
+function outlinePath(seed: string): string {
+  const p = generatePuzzleIcon({ seed, layout: "single" }).pieces[0]!;
+  const pt = (q: [number, number]) => {
+    const [x, y] = applyTransform(p.transform, q);
+    return `${x.toFixed(4)} ${y.toFixed(4)}`;
+  };
+  return `M ${pt(p.path[0]!.p0)} ` + p.path.map((s) => `C ${pt(s.p1)} ${pt(s.p2)} ${pt(s.p3)}`).join(" ") + " Z";
+}
+
+/**
+ * The piece as a single line: the same Bézier outline the renderer fills,
+ * stroked at a fixed screen width in the text colour.
+ */
+function OutlineIcon({ seed, size }: { seed: string; size: number }) {
+  const d = useMemo(() => outlinePath(seed), [seed]);
+  return (
+    <svg className="outline-icon" width={size} height={size} viewBox="0 0 1 1" aria-hidden="true">
+      <path d={d} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
 const ICON_PX = 40;
 /** A color family: four shades from deep to light, used as an icon's gradient palette. */
 interface Family {
@@ -132,6 +155,14 @@ function tintOf(f: Family): string {
 
 function CardIcon({ seed, family: f, style, solid, tint }: { seed: string; family: Family; style: IconStyle; solid: boolean; tint: boolean }) {
   const gradient = gradientFor(f, solid);
+  if (style === "outline") {
+    return (
+      <span className="card-icon tile outline" aria-hidden="true">
+        {/* the outline fills about half the tile, like line icons in a product list */}
+        <OutlineIcon seed={seed} size={Math.round(ICON_PX * 0.68)} />
+      </span>
+    );
+  }
   if (style === "bare") {
     return (
       <span className="card-icon bare" aria-hidden="true">
@@ -194,7 +225,7 @@ function savePicks(picks: Candidate[]) {
 }
 
 /** A grid of candidate icons; clicking one picks or unpicks it. */
-function CandidatePicker({ picks, onChange, solid, tint, set }: { picks: Candidate[]; onChange: (picks: Candidate[]) => void; solid: boolean; tint: boolean; set: Family[] }) {
+function CandidatePicker({ picks, onChange, solid, tint, set, outline }: { picks: Candidate[]; onChange: (picks: Candidate[]) => void; solid: boolean; tint: boolean; set: Family[]; outline: boolean }) {
   const headingId = useId();
   const [count, setCount] = useState(BATCH);
   const [note, setNote] = useState("");
@@ -235,7 +266,7 @@ function CandidatePicker({ picks, onChange, solid, tint, set }: { picks: Candida
                 aria-label={`Candidate ${i + 1}, ${familyOf(set, c.slot).id}${order !== undefined ? `, pick ${order + 1}` : ""}`}
                 onClick={() => toggle(c)}
               >
-                <PuzzleIcon seed={c.seed} layout="single" gradient={gradientFor(familyOf(set, c.slot), solid)} size={46} />
+                {outline ? <OutlineIcon seed={c.seed} size={40} /> : <PuzzleIcon seed={c.seed} layout="single" gradient={gradientFor(familyOf(set, c.slot), solid)} size={46} />}
                 {order !== undefined && (
                   <span className="picker-badge" aria-hidden="true">
                     {order + 1}
@@ -289,7 +320,7 @@ export function CardsPage() {
       // storage blocked: the set lasts for this visit only
     }
   }, [colorSet.id]);
-  const styles: IconStyle[] = ["glass", "tile", "bare"];
+  const styles: IconStyle[] = ["glass", "tile", "outline", "bare"];
   const setsLabelId = useId();
   /** icon for the card at list position `index` */
   const iconFor = (name: string, index: number): { seed: string; family: Family } => {
@@ -375,7 +406,7 @@ export function CardsPage() {
             ))}
           </span>
         </div>
-        <CandidatePicker picks={picks} onChange={setPicks} solid={!gradientOn} tint={tintOn} set={colorSet.families} />
+        <CandidatePicker picks={picks} onChange={setPicks} solid={!gradientOn} tint={tintOn} set={colorSet.families} outline={style === "outline"} />
         {SECTIONS.map((section) => (
           <section key={section} className="cards-section" aria-labelledby={`${groupId}-${section}`}>
             <h2 id={`${groupId}-${section}`} className="cards-heading">
