@@ -41,6 +41,8 @@ The Icon control offers Glass (the default), Plain tile and Bare piece. Glass fo
 
 Candidate tiles stay plain, because there the tile is a selection control.
 
+Hovering a card icon spins the piece once through 360° over 720 ms with an ease-out-quart curve, while the tile, rim and gloss stay still. It is a CSS keyframe on the canvas that keeps its centring translate. There is no spin under `prefers-reduced-motion`. The baked lighting turns with the piece during the spin and is back in place at the end.
+
 ## Alternatives considered
 
 **A section on the playground page.** That page is already long. A separate page shows the cards alone, closer to how the list appears in the product.

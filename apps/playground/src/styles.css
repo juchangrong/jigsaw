@@ -555,6 +555,23 @@ input[type="checkbox"] {
 .card-icon.glass > canvas {
   z-index: 1;
 }
+/* hovering an icon spins the piece once; the tile, rim and gloss stay put */
+@keyframes piece-spin {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+.card-icon:hover > canvas {
+  animation: piece-spin 720ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-icon:hover > canvas {
+    animation: none;
+  }
+}
 .card-icon > canvas {
   position: absolute;
   left: 50%;
