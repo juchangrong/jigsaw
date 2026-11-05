@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Procedural puzzle-piece icon generator: a seed becomes a top-down jigsaw piece with a diffuse gradient and a soft-resin bevel, rendered with WebGPU and WebGL2/CPU fallbacks. The design spec is [docs/design.md](docs/design.md); usage is in [README.md](README.md).
+Procedural puzzle-piece icon generator: a seed becomes a top-down jigsaw piece with a diffuse gradient and a soft-resin bevel, rendered with WebGPU and WebGL2/CPU fallbacks. The design spec is [docs/design.md](docs/design.md), the product context for UI work is [docs/PRODUCT.md](docs/PRODUCT.md), and usage is in [README.md](README.md).
 
 ## Repository layout
 
