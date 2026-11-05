@@ -3,10 +3,12 @@ import {
   MATERIAL_PRESETS,
   PALETTE_NAMES,
   PALETTES,
+  SURFACE_TEXTURES,
   type LayoutKind,
   type MaterialPreset,
   type PuzzleIconOptions,
   type StampStyle,
+  type SurfaceTexture,
 } from "@jigsaw/core";
 import { downloadBlob } from "@jigsaw/export";
 import { PuzzleIcon, getSharedGenerator, useRendererBackend } from "@jigsaw/react";
@@ -16,6 +18,15 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, type Keyboard
 
 type Backdrop = "checker" | "white" | "dark";
 const SIZES = [32, 64, 128, 256] as const;
+const TEXTURE_LABELS: Record<SurfaceTexture, string> = {
+  none: "None",
+  paper: "Paper",
+  linen: "Linen",
+  frosted: "Frosted",
+  wood: "Wood",
+  brushedMetal: "Brushed metal",
+  polishedMetal: "Polished metal",
+};
 const BACKDROP_COLOR: Record<Backdrop, string> = { checker: "#FFFFFF", white: "#FFFFFF", dark: "#15151D" };
 
 interface State {
@@ -37,6 +48,9 @@ interface State {
   specularIntensity: number;
   ambientOcclusion: number;
   thickness: number;
+  texture: SurfaceTexture;
+  textureStrength: number;
+  textureScale: number;
   lightAngle: number; // degrees, 0 = from the right, counter-clockwise
   lightElevation: number;
   intensity: number;
@@ -64,6 +78,9 @@ const initial: State = {
   softness: 0.5,
   preset: "softResin",
   ...MATERIAL_PRESETS.softResin,
+  texture: "none",
+  textureStrength: 0.6,
+  textureScale: 1,
   // default direction [-0.5, -0.6, 1]
   lightAngle: 129.8,
   lightElevation: 52,
@@ -103,6 +120,9 @@ function toOptions(s: State, size: number): PuzzleIconOptions {
       specularIntensity: s.specularIntensity,
       ambientOcclusion: s.ambientOcclusion,
       thickness: s.thickness,
+      texture: s.texture,
+      textureStrength: s.textureStrength,
+      textureScale: s.textureScale,
     },
     // screen space: x right, y down → angle measured counter-clockwise on screen
     lighting: {
@@ -203,10 +223,10 @@ function Segmented<T extends string | number>(props: {
 }
 
 /** A labeled segmented control laid out like a slider row. */
-function Choice<T extends string | number>(props: { label: string; value: T; options: readonly T[]; onChange: (v: T) => void; render?: (v: T) => string }) {
+function Choice<T extends string | number>(props: { label: string; value: T; options: readonly T[]; onChange: (v: T) => void; render?: (v: T) => string; wrap?: boolean }) {
   const id = useId();
   return (
-    <div className="row choice">
+    <div className={props.wrap ? "row choice wrap" : "row choice"}>
       <span className="label" id={id}>
         {props.label}
       </span>
@@ -376,6 +396,13 @@ export function App() {
             <Slider label="Roughness" value={s.roughness} min={0.05} max={1} step={0.01} onChange={(v) => set("roughness", v)} />
             <Slider label="Specular" value={s.specularIntensity} min={0} max={1} step={0.01} onChange={(v) => set("specularIntensity", v)} />
             <Slider label="Occlusion" value={s.ambientOcclusion} min={0} max={0.6} step={0.01} onChange={(v) => set("ambientOcclusion", v)} />
+            <Choice label="Texture" value={s.texture} options={SURFACE_TEXTURES} onChange={(v) => set("texture", v)} render={(v) => TEXTURE_LABELS[v]} wrap />
+            {s.texture !== "none" && (
+              <>
+                <Slider label="Strength" value={s.textureStrength} min={0} max={1} step={0.01} onChange={(v) => set("textureStrength", v)} />
+                <Slider label="Grain" value={s.textureScale} min={0.25} max={4} step={0.05} onChange={(v) => set("textureScale", v)} format={(v) => `${v.toFixed(2)}×`} />
+              </>
+            )}
           </Section>
 
           <Section title="Stamp">

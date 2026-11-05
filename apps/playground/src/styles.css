@@ -356,6 +356,12 @@ input[type="checkbox"] {
   min-width: 0;
   white-space: nowrap;
 }
+.row.choice.wrap .segmented {
+  flex-wrap: wrap;
+}
+.row.choice.wrap .segmented button {
+  flex: 1 0 auto;
+}
 .row.text input {
   font: inherit;
   padding: 5px 8px;

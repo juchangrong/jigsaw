@@ -98,6 +98,17 @@ Neighbors traverse the same geometry in opposite directions, so pieces fit exact
 - Lambert + simplified Blinn–Phong. Lighting is normalized so the flat top keeps the true gradient color; top and left bevels get brighter, opposite bevels slightly darker. Never fake highlights with a fixed white stroke.
 - `softResin` preset: `bevelWidth 0.055`, `bevelStrength 0.7`, `roughness 0.48`, `specularIntensity 0.3`, `ambientOcclusion 0.18`, `thickness 0.025`.
 
+### 5.1 Surface textures
+
+`material.texture` layers a procedural finish on any preset: `none` (default), `paper`, `linen`, `frosted`, `wood`, `brushedMetal`, `polishedMetal`. `textureStrength` (0–1, default 0.6) scales the bump and albedo variation; `textureScale` (0.25–4, default 1) scales the grain.
+
+- Height field: value noise with an analytic gradient, summed as fbm, in grain-aligned piece-local coordinates. Each piece gets a lattice seed (0–65535) and a grain angle (±0.3 rad) from the `texture` stream, forked by piece id. The lattice hash is 32-bit integer math keeping 24 bits, so CPU and GPU see identical lattice values.
+- Recipes (cells per piece unit at scale 1): paper is isotropic fbm at 70 plus crossed fibers (10 × 140); linen is two crossed thread layers (14 × 160); frosted is fine grain at 150 plus 30; wood is warped growth rings (12) with pores (4 × 110); brushed metal is streaks (2 × 320 and 1 × 60); polished metal is a faint orange peel at 12.
+- Antialiasing: each octave fades out between 0.5 and 1 lattice cells per output pixel, and wood rings between 0.25 and 0.5 cycles per pixel, so fine grain averages to flat at small sizes instead of aliasing.
+- The bump adds `bump × ∇h` to the bevel and stamp slopes before normalizing; albedo is multiplied by `1 + albedo × h`.
+- Each texture also scales the Blinn-Phong exponent and specular (`TEXTURE_LOOKS` in `packages/core/src/material/texture.ts`). The two metals set `metal = 1`: diffuse drops to 15 %, the highlight is tinted by the base color, and a studio environment is reflected: a gradient towards the light with one bright and one dark band, indexed by the reflected view vector plus a position term so it also drifts across the flat face.
+- `none` skips all texture terms, so untextured output is byte-for-byte what it was before textures existed.
+
 ## 6. Diffuse gradient
 
 ```ts
@@ -123,7 +134,7 @@ Soft ambient shadow, off by default and enabled with `shadow.enabled`: `opacity 
 ## 9. Determinism
 
 - Seeded PRNG only (Mulberry32), never `Math.random`.
-- Separate streams: `seed:geometry`, `seed:palette`, `seed:gradient`, `seed:layout`.
+- Separate streams: `seed:geometry`, `seed:palette`, `seed:gradient`, `seed:layout`, `seed:texture`.
 - `GeneratorMetadata { seed, algorithmVersion, presetVersion }`.
 - Per-pixel identity across GPUs is **not** promised.
 
@@ -137,7 +148,7 @@ interface PuzzleIconOptions {
   pieceCount?: number;
   geometry?: { tabSize?: number; curvature?: number; asymmetry?: number; separation?: number; rotation?: number };
   gradient?: { palette?: PaletteName | string[]; spots?: number; softness?: number };
-  material?: Partial<MaterialParams> & { preset?: MaterialPreset };
+  material?: Partial<MaterialParams> & Partial<TextureParams> & { preset?: MaterialPreset };
   lighting?: Partial<LightingParams>;
   shadow?: { enabled?: boolean; opacity?: number; blur?: number };
   background?: string | "transparent";

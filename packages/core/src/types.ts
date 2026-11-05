@@ -106,6 +106,25 @@ export interface MaterialParams {
   thickness: number;
 }
 
+/** Procedural surface finish layered on the material. */
+export type SurfaceTexture = "none" | "paper" | "linen" | "frosted" | "wood" | "brushedMetal" | "polishedMetal";
+
+export interface TextureParams {
+  texture: SurfaceTexture;
+  /** 0–1, depth of the bump and albedo variation */
+  textureStrength: number;
+  /** grain size multiplier (1 = default, larger = coarser) */
+  textureScale: number;
+}
+
+/** Material of one generated piece: shared params plus its texture placement. */
+export interface PieceMaterial extends MaterialParams, TextureParams {
+  /** integer seed of the noise lattice, 0–65535 */
+  textureSeed: number;
+  /** direction of grain and streaks, radians in piece-local space */
+  textureAngle: number;
+}
+
 export interface LightingParams {
   /** direction towards the light, screen space (x right, y down, z to viewer) */
   direction: [number, number, number];
@@ -164,7 +183,7 @@ export interface PieceDescription {
    * gap between neighbours; the path itself stays exact */
   inset: number;
   gradient: PieceGradient;
-  material: MaterialParams;
+  material: PieceMaterial;
   /** stable hash of the outline, used as the SDF cache key */
   geometryKey: string;
   /** letter stamped on this piece ("" = none) */
@@ -215,7 +234,7 @@ export interface PuzzleIconOptions {
   pieceCount?: number;
   geometry?: GeometryOptions;
   gradient?: GradientOptions;
-  material?: Partial<MaterialParams> & { preset?: MaterialPreset };
+  material?: Partial<MaterialParams> & Partial<TextureParams> & { preset?: MaterialPreset };
   lighting?: Partial<LightingParams>;
   shadow?: Partial<ShadowParams>;
   stamp?: StampOptions;
@@ -229,7 +248,7 @@ export interface ResolvedOptions {
   pieceCount: number;
   geometry: Required<GeometryOptions>;
   gradient: { palette: string | string[] | null; spots: number | null; softness: number };
-  material: MaterialParams & { preset: MaterialPreset };
+  material: MaterialParams & TextureParams & { preset: MaterialPreset };
   lighting: LightingParams;
   shadow: ShadowParams;
   stamp: ResolvedStamp;

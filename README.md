@@ -20,7 +20,7 @@ pnpm build      # production build of the playground
 
 | Package | What it does |
 | --- | --- |
-| `@jigsaw/core` | Seeded PRNG (Mulberry32, separate `geometry` / `palette` / `gradient` / `layout` streams), cubic-Bézier edge profiles, shared-edge layouts (`single`, `cluster`, `grid`), mask rasterization + exact EDT signed distance field, OKLCH palettes, Gaussian-spot gradients, material presets, render plan + reference shading. No GPU needed. |
+| `@jigsaw/core` | Seeded PRNG (Mulberry32, separate `geometry` / `palette` / `gradient` / `layout` / `texture` streams), cubic-Bézier edge profiles, shared-edge layouts (`single`, `cluster`, `grid`), mask rasterization + exact EDT signed distance field, OKLCH palettes, Gaussian-spot gradients, material presets, render plan + reference shading. No GPU needed. |
 | `@jigsaw/renderer` | WebGPU backend (`shaders/puzzle.wgsl`), WebGL2 fallback (`shaders/puzzle.frag.glsl`), CPU fallback, and the `PuzzleIconGenerator` API. One shared device, cached SDF textures. |
 | `@jigsaw/export` | Pure-TS PNG encoder (with sRGB chunk, straight alpha) and WebP via the browser canvas. |
 | `@jigsaw/react` | `<PuzzleIcon />` component and `useRendererBackend()`. |
@@ -101,7 +101,13 @@ interface PuzzleIconOptions {
   gradient?: { palette?: PaletteName | string[]; spots?: 3 | 4 | 5; softness?: number };
   // vivid (picked by seeds): dusk, tide, ember, orchid, meadow, glacier, bloom
   // pastel (by name only): aurora, sunset, mint, candy, lagoon, peach
-  material?: { preset?: "softResin" | "matteAcrylic" | "satinResin"; bevelWidth?; bevelStrength?; roughness?; specularIntensity?; ambientOcclusion?; thickness? };
+  material?: {
+    preset?: "softResin" | "matteAcrylic" | "satinResin";
+    bevelWidth?; bevelStrength?; roughness?; specularIntensity?; ambientOcclusion?; thickness?;
+    texture?: "none" | "paper" | "linen" | "frosted" | "wood" | "brushedMetal" | "polishedMetal"; // default none
+    textureStrength?: number;          // 0–1 bump and albedo variation (default 0.6)
+    textureScale?: number;             // grain size, 0.25–4 (default 1, larger = coarser)
+  };
   lighting?: { direction?: [x, y, z]; intensity?; ambient?; specular? }; // default [-0.5,-0.6,1], 0.85, 0.65, 0.28
   shadow?: { enabled?; opacity?; blur?; offset?: [x, y]; color? };      // off by default; when enabled 0.12, 0.04, [0.01, 0.025]
   stamp?: {                            // letter stamp, off by default

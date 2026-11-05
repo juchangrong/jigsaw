@@ -1,5 +1,15 @@
 import { DEFAULT_LIGHTING, DEFAULT_SHADOW, MATERIAL_PRESETS } from "./material/presets";
-import type { LayoutKind, PuzzleIconOptions, ResolvedOptions } from "./types";
+import type { LayoutKind, PuzzleIconOptions, ResolvedOptions, SurfaceTexture } from "./types";
+
+export const SURFACE_TEXTURES: readonly SurfaceTexture[] = [
+  "none",
+  "paper",
+  "linen",
+  "frosted",
+  "wood",
+  "brushedMetal",
+  "polishedMetal",
+];
 
 export const ALGORITHM_VERSION = "1.6.0";
 export const PRESET_VERSION = "1.2.0";
@@ -54,6 +64,9 @@ export function resolveOptions(o: PuzzleIconOptions): ResolvedOptions {
       specularIntensity: clamp(num(m.specularIntensity, base.specularIntensity), 0, 1),
       ambientOcclusion: clamp(num(m.ambientOcclusion, base.ambientOcclusion), 0, 1),
       thickness: clamp(num(m.thickness, base.thickness), 0, 0.1),
+      texture: m.texture && SURFACE_TEXTURES.includes(m.texture) ? m.texture : "none",
+      textureStrength: clamp(num(m.textureStrength, 0.6), 0, 1),
+      textureScale: clamp(num(m.textureScale, 1), 0.25, 4),
     },
     lighting: {
       direction: l.direction ?? DEFAULT_LIGHTING.direction,
