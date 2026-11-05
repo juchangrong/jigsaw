@@ -192,8 +192,13 @@ describe("material properties", () => {
 
   it("re-renders large exports from a higher-resolution SDF", () => {
     const d = generatePuzzleIcon({ seed: "res", size: 128 });
-    expect(buildRenderPlan(d, { size: 128 }).pieces[0]!.sdf.width).toBeLessThanOrEqual(300);
-    expect(buildRenderPlan(d, { size: 1024 }).pieces[0]!.sdf.width).toBeGreaterThan(900);
+    // the resolution applies to the longer side of the SDF
+    const side = (size: number) => {
+      const f = buildRenderPlan(d, { size }).pieces[0]!.sdf;
+      return Math.max(f.width, f.height);
+    };
+    expect(side(128)).toBeLessThanOrEqual(300);
+    expect(side(1024)).toBeGreaterThan(900);
   });
 });
 

@@ -15,7 +15,7 @@ The user found the piece corners too sharp. Every corner was a circular arc with
 
 Single pieces, cluster pieces and the outer corners of a grid use `SOFT_CORNER`. In a grid, a vertex touched by more than one piece uses `TIGHT_CORNER`. Interlocked pieces meet there, and large corners would open diamond-shaped holes between them. `trimEdgeEnds` now trims each end of an edge separately, so a shared edge can have one soft end and one tight end.
 
-The neck fillet widens from 0.06 to 0.075. The straight run before it stays at least 0.245 long, which is more than the 0.15 corner trim.
+The neck fillet widens from 0.06 to 0.075; [Round tab heads and soft socket lips](2026-11-04-round-tab-profile.md) widens it again to 0.09.
 
 Output changes, so `ALGORITHM_VERSION` is `1.1.0` and `tests/golden/signatures.json` is re-baselined.
 
@@ -25,7 +25,7 @@ Output changes, so `ALGORITHM_VERSION` is `1.1.0` and `tests/golden/signatures.j
 
 **Round every corner the same, including grid junctions.** It lost because soft corners at the vertex where four grid pieces meet leave a visible hole in an interlocked grid.
 
-**A user-facing roundness option.** It was not requested, and the safe range is limited by the neck position: the corner trim must stay below 0.245. A fixed value keeps that constraint out of the API.
+**A user-facing roundness option.** It was not requested, and the safe range is limited by the neck position: the corner trim must stay below the straight run before the neck fillet. A fixed value keeps that constraint out of the API.
 
 ## Consequences
 

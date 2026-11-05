@@ -298,7 +298,7 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
       const { center, rot } = placement[i]!;
       const cs = Math.cos(rot);
       const sn = Math.sin(rot);
-      return flattenPath(p.path, 0.02).map((q): Vec2 => {
+      return flattenPath(p.path, 0.01).map((q): Vec2 => {
         const x = q[0] - 0.5;
         const y = q[1] - 0.5;
         return [center[0] + cs * x - sn * y, center[1] + sn * x + cs * y];
@@ -320,16 +320,24 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
   let placement = place(spread, rotScale);
   let pieces = build();
   let { k, ox, oy } = fit(pieces, placement);
-  const minNeck = MIN_NECK_PX / (k * opts.size);
-  pieces = build(minNeck);
-  if (isCluster) {
-    for (let it = 0; it < 12 && polygonsOverlap(worldPolys(pieces, placement)); it++) {
-      spread += 0.04;
-      rotScale *= 0.75;
-      placement = place(spread, rotScale);
+  // Widening a neck can deepen its tab (heads stay round), and spreading a
+  // cluster widens the bounds; both shrink the scale, so repeat until the
+  // pixel minimum holds at the final scale.
+  for (let pass = 0; pass < 6; pass++) {
+    // 3% headroom so a last small shrink of the scale cannot undercut it
+    pieces = build((1.03 * MIN_NECK_PX) / (k * opts.size));
+    if (isCluster) {
+      for (let it = 0; it < 24 && polygonsOverlap(worldPolys(pieces, placement)); it++) {
+        spread += 0.04;
+        rotScale *= 0.75;
+        placement = place(spread, rotScale);
+      }
     }
+    const next = fit(pieces, placement);
+    const settled = next.k >= k - 1e-9;
+    ({ k, ox, oy } = next);
+    if (settled && pass > 0) break;
   }
-  ({ k, ox, oy } = fit(pieces, placement));
 
   const sharedEdges: SharedEdge[] = [];
   for (const [id, slot] of slots) {

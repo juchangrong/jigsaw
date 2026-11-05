@@ -23,7 +23,7 @@ export interface PuzzleEdge {
   center: number;
   /** 0.22 – 0.35, head width */
   width: number;
-  /** 0.12 – 0.22 */
+  /** 0.20 – 0.26 */
   depth: number;
   /** 0.12 – 0.20 */
   neckWidth: number;
@@ -129,7 +129,7 @@ export interface StampOptions {
   text?: string;
   /** deboss = pressed into the surface, emboss = raised (default deboss) */
   style?: StampStyle;
-  /** glyph height in piece units, side = 1 (0.15–0.7, default 0.42) */
+  /** glyph height in piece units, side = 1 (0.15–0.7, default 0.36) */
   size?: number;
   /** 0–1, depth of the relief (default 0.5) */
   depth?: number;

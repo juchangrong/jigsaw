@@ -72,7 +72,7 @@ export function resolveOptions(o: PuzzleIconOptions): ResolvedOptions {
       // one character per piece, whitespace dropped
       text: Array.from((st.text ?? "").replace(/\s+/g, "")).slice(0, pieceCount).join(""),
       style: st.style === "emboss" ? "emboss" : "deboss",
-      size: clamp(num(st.size, 0.42), 0.15, 0.7),
+      size: clamp(num(st.size, 0.36), 0.15, 0.7),
       depth: clamp(num(st.depth, 0.5), 0, 1),
       ink: clamp(num(st.ink, 0.25), 0, 1),
       font: st.font?.trim() || DEFAULT_STAMP_FONT,
