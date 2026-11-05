@@ -9,9 +9,9 @@ const SHAPES = [
   // `fill` is the icon canvas size relative to the tile. A single icon keeps
   // room for a tab on every side (its reach is about 0.89 of the canvas), so the
   // canvas can be a little larger than the tile; the tile clips like an icon mask.
-  { id: "rounded", label: "Rounded square", radius: "22.5%", fill: 1.04 },
+  { id: "rounded", label: "Rounded square", radius: "22.5%", fill: 0.95 },
   // a circle cuts deeper into the corners, so the piece sits a bit smaller
-  { id: "circle", label: "Circle", radius: "50%", fill: 0.96 },
+  { id: "circle", label: "Circle", radius: "50%", fill: 0.88 },
 ] as const;
 const TILES = ["tint", "deep", "white"] as const;
 type Tile = (typeof TILES)[number];

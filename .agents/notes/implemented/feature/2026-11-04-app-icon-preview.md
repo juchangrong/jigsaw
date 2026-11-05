@@ -10,7 +10,7 @@ The user asked to see a single puzzle piece used as an app icon, both as a round
 
 The playground's App icon section (`apps/playground/src/AppIconPreview.tsx`) draws the current icon on an opaque tile, clipped like an icon mask. It shows two shapes, a rounded square with a 22.5% corner radius (the app-icon proportion) and a circle, each at 120, 80, 60 and 40 px.
 
-The tile background is Tint or Deep, derived from the icon's own palette (its OKLab mix at lightness 0.955 or 0.24 with low chroma), or White. The icon canvas is 1.04× the tile for the rounded square and 0.96× for the circle. A single icon keeps room for a tab on every side (its reach is about 0.89 of the canvas), so the piece fills the tile without its tabs or corners being clipped. The section follows the global preview backdrop, and the tile-background control is a keyboard radio group like the others.
+The tile background is Tint or Deep, derived from the icon's own palette (its OKLab mix at lightness 0.955 or 0.24 with low chroma), or White. The icon canvas is 0.95× the tile for the rounded square and 0.88× for the circle (first 1.04× and 0.96×; the user asked for the piece a little smaller, about 9%). A single icon keeps room for a tab on every side (its reach is about 0.89 of the canvas), so the piece fills the tile without its tabs or corners being clipped. The section follows the global preview backdrop, and the tile-background control is a keyboard radio group like the others.
 
 ## Alternatives considered
 
