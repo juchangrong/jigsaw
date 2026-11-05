@@ -96,6 +96,8 @@ describe("single piece", () => {
       for (const s of SIDES) {
         const side = p.sides[s];
         if (side.kind === "tab") expect(reach[s]).toBeGreaterThan(EDGE_LIMITS.depth[0] - 1e-6);
+        // a socket's side runs bow gently outward by at most the wave; flat sides stay straight
+        else if (side.kind === "socket") expect(reach[s]).toBeLessThan(EDGE_LIMITS.wave[1]);
         else expect(reach[s]).toBeLessThan(1e-6);
         if (side.kind === "socket") {
           // the point a little inside the side's centre must be outside the piece

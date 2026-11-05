@@ -50,12 +50,13 @@ describe("single pieces interlock across seeds", () => {
     const params = icons.flatMap((d) =>
       SIDES.map((s) => piece(d).sides[s].edge)
         .filter((e) => e.kind !== "flat")
-        .map(({ center, width, depth, neckWidth, asymmetry, curvature }) => ({ center, width, depth, neckWidth, asymmetry, curvature })),
+        .map(({ center, width, depth, neckWidth, asymmetry, curvature, wave }) => ({ center, width, depth, neckWidth, asymmetry, curvature, wave })),
     );
     expect(params.length).toBeGreaterThan(200);
     for (const p of params) expect(p).toEqual(params[0]);
-    expect(params[0]!.center).toBe(0.5);
-    expect(params[0]!.asymmetry).toBe(0);
+    // the shared connector leans and waves like a real puzzle piece
+    expect(params[0]!.asymmetry).not.toBe(0);
+    expect(params[0]!.wave).toBeGreaterThan(0);
   });
 
   it("draw the cell at the same size in every icon", () => {

@@ -2,6 +2,8 @@
 
 Status: implemented
 
+[Hand-cut connector edges](2026-11-04-hand-cut-connectors.md) later lets the shared connector lean and wave by making sockets point reflections of tabs; it is no longer centred and symmetric.
+
 ## Problem
 
 The user asked that single-piece icons fit each other. They did not: each side of a single piece drew its own center, width, depth, neck and asymmetry from the seed, so a tab from one seed did not match a socket from another. Each icon was also scaled to its own bounds, so the body cell was a different size in every icon.

@@ -31,6 +31,8 @@ export interface PuzzleEdge {
   asymmetry: number;
   /** 0.5 – 0.9 */
   curvature: number;
+  /** 0.025 – 0.045: how far each side run bows (peak offset) in a gentle S between corner and connector */
+  wave: number;
 }
 
 /** An edge shared by two neighbouring pieces. `geometry` is in layout (world)

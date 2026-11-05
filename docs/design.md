@@ -73,7 +73,8 @@ Neighbors traverse the same geometry in opposite directions, so pieces fit exact
 - At least one non-flat edge, at most 3 tabs, not all 4 edges the same kind.
 - Visually balanced; bounding-box aspect ratio stays reasonable (≈ 0.75–1.33).
 - Corners: rounded only where both sides are flat (the frame corners of an assembled puzzle); every other corner is square, so pieces close with no gaps.
-- Single pieces interlock with each other. They share one centred, symmetric connector derived from the geometry options (not the seed), and one scale per output size, so any single piece's tab fits any other single piece's socket. Outlines therefore vary only by which sides are tabs, sockets or flat; seeds also vary palette, gradient and stamp.
+- Connector sides are hand-cut, not ruler-straight: the side runs bow in a gentle S and heads lean slightly; only the frame (flat sides) is straight. Sockets are the point reflection of tabs, so leaning, wavy connectors still fit exactly.
+- Single pieces interlock with each other. They share one connector derived from the geometry options (not the seed), and one scale per output size, so any single piece's tab fits any other single piece's socket. Outlines therefore vary only by which sides are tabs, sockets or flat; seeds also vary palette, gradient and stamp.
 
 ### 3.4 Layouts
 

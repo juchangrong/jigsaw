@@ -1,6 +1,6 @@
 import type { Rng } from "../prng";
 import type { BezierSegment, EdgeKind, PuzzleEdge, Vec2 } from "../types";
-import { cubic, line, mapSegment } from "./bezier";
+import { cubic, line, mapSegment, reversePath } from "./bezier";
 
 export const EDGE_LIMITS = {
   center: [0.42, 0.58],
@@ -9,6 +9,7 @@ export const EDGE_LIMITS = {
   neckWidth: [0.12, 0.2],
   asymmetry: 0.08,
   curvature: [0.5, 0.9],
+  wave: [0.025, 0.045],
   /** head must be at least this much wider than the neck */
   headOverNeck: 0.07,
   /** head width ≤ this × depth, so the head stays round instead of a flat cap */
@@ -39,6 +40,7 @@ export function randomEdge(rng: Rng, id: string, kind: EdgeKind, bias: EdgeBias)
     neckWidth: lerp(L.neckWidth[0], L.neckWidth[1], rng.next()),
     asymmetry: rng.signed(L.asymmetry) * clamp(bias.asymmetry, 0, 1),
     curvature: lerp(L.curvature[0], L.curvature[1], mix(rng.next(), bias.curvature)),
+    wave: lerp(L.wave[0], L.wave[1], rng.next()),
   };
   return sanitizeEdge(e);
 }
@@ -46,9 +48,8 @@ export function randomEdge(rng: Rng, id: string, kind: EdgeKind, bias: EdgeBias)
 /**
  * The connector every single piece uses, so any single piece's tab fits any
  * other single piece's socket. It depends only on the geometry options (no
- * seed), is centred, and has no asymmetry: walking a side backwards mirrors
- * the profile, and a centred symmetric profile is its own mirror, so a tab and
- * the neighbouring socket trace the same curve.
+ * seed). Sockets are the point reflection of tabs (see `edgeProfile`), so the
+ * connector may lean and wave and still meet its neighbour exactly.
  */
 export function standardEdge(id: string, kind: EdgeKind, bias: EdgeBias): PuzzleEdge {
   const L = EDGE_LIMITS;
@@ -60,8 +61,9 @@ export function standardEdge(id: string, kind: EdgeKind, bias: EdgeBias): Puzzle
     width: lerp(L.width[0], L.width[1], t),
     depth: lerp(L.depth[0], L.depth[1], t),
     neckWidth: lerp(L.neckWidth[0], L.neckWidth[1], 0.5),
-    asymmetry: 0,
+    asymmetry: L.asymmetry * 0.6 * clamp(bias.asymmetry, 0, 1),
     curvature: lerp(L.curvature[0], L.curvature[1], clamp(bias.curvature, 0, 1)),
+    wave: lerp(L.wave[0], L.wave[1], 0.6),
   });
 }
 
@@ -83,6 +85,7 @@ export function sanitizeEdge(e: PuzzleEdge, minNeck: number = EDGE_LIMITS.neckWi
     neckWidth,
     asymmetry: clamp(e.asymmetry, -L.asymmetry, L.asymmetry),
     curvature: clamp(e.curvature, L.curvature[0], L.curvature[1]),
+    wave: clamp(e.wave ?? L.wave[0], L.wave[0], L.wave[1]),
   };
 }
 
@@ -92,8 +95,17 @@ export function sanitizeEdge(e: PuzzleEdge, minNeck: number = EDGE_LIMITS.neckWi
  */
 export function edgeProfile(e: PuzzleEdge): BezierSegment[] {
   if (e.kind === "flat") return [line([0, 0], [1, 0])];
-  const s = e.kind === "tab" ? 1 : -1;
-  const D = e.depth * s;
+  const tab = tabProfile(e);
+  // A socket is the tab's point reflection (u → 1 − u, v → −v, walked
+  // backwards). The neighbour walks the shared side the other way and sees it
+  // as exactly this tab, so tabs and sockets fit even when the profile leans
+  // or waves.
+  if (e.kind === "socket") return reversePath(tab.map((seg) => mapSegment(seg, ([u, v]) => [1 - u, -v])));
+  return tab;
+}
+
+function tabProfile(e: PuzzleEdge): BezierSegment[] {
+  const D = e.depth;
   const hw = e.width / 2;
   const nh = e.neckWidth / 2;
   const a = e.asymmetry;
@@ -121,15 +133,23 @@ export function edgeProfile(e: PuzzleEdge): BezierSegment[] {
   const ry = D - headV;
   const span = headV - neckV;
 
+  // The side runs bow in a gentle S, dipping in before the connector and out
+  // after it. Each run is two curves that are level at the corner, at the
+  // middle and at the fillet, so corners stay square and the bend sits mid-run.
+  const w = e.wave;
+  const mL = sL[0] / 2;
+  const mR = (1 + sR[0]) / 2;
   return [
-    line([0, 0], sL),
+    cubic([0, 0], [mL * 0.5, 0], [mL * 0.5, -w], [mL, -w]),
+    cubic([mL, -w], [mL * 1.5, -w], [mL * 1.5, 0], sL),
     cubic(sL, [sL[0] + shoulder * 0.6, 0], [nL, neckV * 0.4], neckL),
     cubic(neckL, [nL, neckV + span * 0.5], [headL[0], headV - span * 0.5], headL),
     cubic(headL, [headL[0], headV + ry * K], [hc - hwL * K, D], top),
     cubic(top, [hc + hwR * K, D], [headR[0], headV + ry * K], headR),
     cubic(headR, [headR[0], headV - span * 0.5], [nR, neckV + span * 0.5], neckR),
     cubic(neckR, [nR, neckV * 0.4], [sR[0] - shoulder * 0.6, 0], sR),
-    line(sR, [1, 0]),
+    cubic(sR, [sR[0] + (mR - sR[0]) * 0.5, 0], [sR[0] + (mR - sR[0]) * 0.5, w], [mR, w]),
+    cubic([mR, w], [mR + (1 - mR) * 0.5, w], [mR + (1 - mR) * 0.5, 0], [1, 0]),
   ];
 }
 
@@ -150,8 +170,9 @@ export function trimEdgeEnds(segs: BezierSegment[], r0: number, r1: number = r0)
     out[0] = line(move(first.p0, first.p3, r0), move(first.p3, first.p0, r1));
     return out;
   }
-  out[0] = line(move(first.p0, first.p3, r0), first.p3);
-  out[out.length - 1] = line(last.p0, move(last.p3, last.p0, r1));
+  // only rewrite an end that is trimmed, so a curved end segment stays curved
+  if (r0 > 0) out[0] = line(move(first.p0, first.p3, r0), first.p3);
+  if (r1 > 0) out[out.length - 1] = line(last.p0, move(last.p3, last.p0, r1));
   return out;
 }
 
