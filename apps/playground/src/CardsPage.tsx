@@ -17,8 +17,12 @@ const ITEMS = [
   { name: "Beacon", tag: "我参与的", desc: "" },
 ] as const;
 
+/** Items grouped into sections by their tag, in first-appearance order. */
+const SECTIONS = [...new Set(ITEMS.map((item) => item.tag))];
+const INDEXED = ITEMS.map((item, index) => ({ ...item, index }));
+
 type IconStyle = "tile" | "bare";
-const ICON_PX = 48;
+const ICON_PX = 40;
 /** The list uses at most these four palettes, so the page stays calm. */
 const CARD_PALETTES = ["tide", "dusk", "ember", "meadow"] as const;
 
@@ -86,28 +90,35 @@ export function CardsPage() {
             Shuffle icons
           </button>
         </div>
-        <ul className="cards" role="list">
-          {ITEMS.map((item, i) => (
-            <li key={item.name} className="card">
-              {/* palettes rotate through the list, so neighbours differ and only four appear */}
-              <CardIcon seed={salt ? `${item.name}#${salt}` : item.name} palette={CARD_PALETTES[(i + salt) % CARD_PALETTES.length]!} style={style} />
-              <div className="card-body">
-                <div className="card-title">
-                  <span className="card-name">{item.name}</span>
-                  <span className="card-tag">{item.tag}</span>
-                </div>
-                <p className="card-desc">{item.desc || "暂无描述"}</p>
-              </div>
-              <button type="button" className="card-more" aria-label={`More actions for ${item.name}`}>
-                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-                  <circle cx="3" cy="8" r="1.4" fill="currentColor" />
-                  <circle cx="8" cy="8" r="1.4" fill="currentColor" />
-                  <circle cx="13" cy="8" r="1.4" fill="currentColor" />
-                </svg>
-              </button>
-            </li>
-          ))}
-        </ul>
+        {SECTIONS.map((section) => (
+          <section key={section} className="cards-section" aria-labelledby={`${groupId}-${section}`}>
+            <h2 id={`${groupId}-${section}`} className="cards-heading">
+              {section}
+              <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                <path d="M5 2.5 9.5 7 5 11.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </h2>
+            <ul className="cards" role="list">
+              {INDEXED.filter((item) => item.tag === section).map((item) => (
+                <li key={item.name} className="card">
+                  {/* palettes rotate through the whole list, so only four appear and neighbours differ */}
+                  <CardIcon seed={salt ? `${item.name}#${salt}` : item.name} palette={CARD_PALETTES[(item.index + salt) % CARD_PALETTES.length]!} style={style} />
+                  <div className="card-body">
+                    <span className="card-name">{item.name}</span>
+                    <p className="card-desc">{item.desc || "暂无描述"}</p>
+                  </div>
+                  <button type="button" className="card-more" aria-label={`More actions for ${item.name}`}>
+                    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+                      <circle cx="4" cy="9" r="1.4" fill="currentColor" />
+                      <circle cx="9" cy="9" r="1.4" fill="currentColor" />
+                      <circle cx="14" cy="9" r="1.4" fill="currentColor" />
+                    </svg>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
       </main>
     </div>
   );
