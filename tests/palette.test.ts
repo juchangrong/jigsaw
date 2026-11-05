@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generatePuzzleIcon, hexToOklch, PALETTES, PASTEL_PALETTES, SEED_PALETTE_NAMES, VIVID_PALETTES } from "@jigsaw/core";
+import { generatePuzzleIcon, hexToOklch, MUTED_PALETTES, PALETTES, PASTEL_PALETTES, SEED_PALETTE_NAMES, VIVID_PALETTES } from "@jigsaw/core";
 
 const SEEDS = Array.from({ length: 200 }, (_, i) => `palette-${i}`);
 
@@ -13,11 +13,17 @@ describe("palettes", () => {
     for (const name of Object.keys(PASTEL_PALETTES)) {
       expect(generatePuzzleIcon({ seed: 1, gradient: { palette: name } }).palette.name).toBe(name);
     }
-    expect(Object.keys(PALETTES)).toEqual([...Object.keys(VIVID_PALETTES), ...Object.keys(PASTEL_PALETTES)]);
+    expect(Object.keys(PALETTES)).toEqual([...Object.keys(VIVID_PALETTES), ...Object.keys(MUTED_PALETTES), ...Object.keys(PASTEL_PALETTES)]);
   });
 
-  it("orders each vivid palette from deep to light", () => {
-    for (const colors of Object.values(VIVID_PALETTES)) {
+  it("keeps the muted palettes low in chroma", () => {
+    for (const colors of Object.values(MUTED_PALETTES)) {
+      for (const c of colors) expect(hexToOklch(c)[1]).toBeLessThan(0.07);
+    }
+  });
+
+  it("orders each vivid and muted palette from deep to light", () => {
+    for (const colors of [...Object.values(VIVID_PALETTES), ...Object.values(MUTED_PALETTES)]) {
       const L = colors.map((c) => hexToOklch(c)[0]);
       expect(L).toEqual([...L].sort((a, b) => a - b));
     }

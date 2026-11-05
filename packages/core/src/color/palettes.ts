@@ -16,6 +16,21 @@ export const VIVID_PALETTES = {
   bloom: ["#D4358F", "#F2607E", "#FF9B7A", "#FFD79A"],
 } as const satisfies Record<string, readonly string[]>;
 
+/**
+ * Muted palettes: low chroma (0.03–0.065 in OKLCH), each a sweep within one
+ * hue family from a deep shade (L 0.46) to a soft light shade (L 0.82), with a
+ * little hue drift. Built from those OKLCH values; selectable by name, not
+ * picked by seeds.
+ */
+export const MUTED_PALETTES = {
+  slate: ["#395C77", "#607D9B", "#8BA0BD", "#B9C4DA"],
+  sage: ["#486042", "#668368", "#8AA792", "#B4CBBE"],
+  clay: ["#784B3F", "#9A6E5D", "#BA9582", "#D7BFAE"],
+  plum: ["#664E6B", "#8B708B", "#B095AA", "#D3BDCA"],
+  fog: ["#415D64", "#657F89", "#8DA2AD", "#B9C6CF"],
+  moss: ["#5A5A39", "#797E5E", "#9AA387", "#BEC8B6"],
+} as const satisfies Record<string, readonly string[]>;
+
 /** The original pastel palettes; selectable by name, not picked by seeds. */
 export const PASTEL_PALETTES = {
   aurora: ["#B9A0FF", "#7DE5ED", "#6478F2"],
@@ -26,7 +41,7 @@ export const PASTEL_PALETTES = {
   peach: ["#FFC4A3", "#FF9AA2", "#FFE0B5"],
 } as const satisfies Record<string, readonly string[]>;
 
-export const PALETTES = { ...VIVID_PALETTES, ...PASTEL_PALETTES };
+export const PALETTES = { ...VIVID_PALETTES, ...MUTED_PALETTES, ...PASTEL_PALETTES };
 
 export type PaletteName = keyof typeof PALETTES;
 export const PALETTE_NAMES = Object.keys(PALETTES) as PaletteName[];

@@ -100,6 +100,7 @@ interface PuzzleIconOptions {
   };
   gradient?: { palette?: PaletteName | string[]; spots?: 3 | 4 | 5; softness?: number };
   // vivid (picked by seeds): dusk, tide, ember, orchid, meadow, glacier, bloom
+  // muted (by name only): slate, sage, clay, plum, fog, moss
   // pastel (by name only): aurora, sunset, mint, candy, lagoon, peach
   material?: {
     preset?: "softResin" | "matteAcrylic" | "satinResin";

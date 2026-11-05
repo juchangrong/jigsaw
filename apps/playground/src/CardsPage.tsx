@@ -25,8 +25,10 @@ const INDEXED = SECTIONS.flatMap((tag) => ITEMS.filter((item) => item.tag === ta
 
 type IconStyle = "tile" | "bare";
 const ICON_PX = 40;
-/** The list uses at most these four palettes, so the page stays calm. */
-const CARD_PALETTES = ["tide", "dusk", "ember", "meadow"] as const;
+/** The list uses at most these four low-saturation palettes, so the page stays calm. */
+const CARD_PALETTES = ["slate", "plum", "clay", "sage"] as const;
+/** picks saved while the list used the vivid palettes keep their seed and move to the matching muted family */
+const LEGACY_PALETTE: Record<string, string> = { tide: "slate", meadow: "sage", ember: "clay", dusk: "plum" };
 
 /**
  * Gradient options for an icon. With the gradient off, the palette collapses
@@ -70,7 +72,11 @@ function loadPicks(): Candidate[] {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     const list = raw ? (JSON.parse(raw) as unknown) : [];
-    return Array.isArray(list) ? list.filter((c): c is Candidate => typeof c?.seed === "string" && typeof c?.palette === "string") : [];
+    return Array.isArray(list)
+      ? list
+          .filter((c): c is Candidate => typeof c?.seed === "string" && typeof c?.palette === "string")
+          .map((c) => ({ seed: c.seed, palette: LEGACY_PALETTE[c.palette] ?? c.palette }))
+      : [];
   } catch {
     return [];
   }

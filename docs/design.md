@@ -118,6 +118,7 @@ interface GradientSpot { position: [number, number]; color: string; radius: numb
 - 3–5 Gaussian spots per piece; normalized weighted sum plus a base color and base weight (avoids division by zero).
 - Mixing happens in linear RGB; palettes are built/jittered in OKLCH.
 - Vivid presets, picked by seeds: each is an analogous hue sweep from a saturated deep anchor to a luminous highlight, ordered deep to light (`dusk`, `tide`, `ember`, `orchid`, `meadow`, `glacier`, `bloom`; values in `packages/core/src/color/palettes.ts`).
+- Muted presets, by name only: low-chroma sweeps (OKLCH chroma 0.03–0.065, lightness 0.46 → 0.82) within one hue family: `slate`, `sage`, `clay`, `plum`, `fog`, `moss`.
 - Pastel presets, by name only: aurora `#B9A0FF #7DE5ED #6478F2`, sunset `#FFE18C #FF91B2 #CB91F5`, mint `#91EFC8 #71CBEF #9F9CFF`, candy `#FFA6CF #A6A3FF #82D9FF`, plus `lagoon` and `peach`.
 - Lighter colors sit toward the light (top-left) and the deep anchor opposite, along a seeded flow direction, so the gradient agrees with the bevel lighting.
 - Spot positions come from the seed. Pieces may share a palette but each gets its own spots.
