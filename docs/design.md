@@ -46,14 +46,14 @@ interface PuzzleEdge {
   kind: EdgeKind;
   center: number;     // 0.42 – 0.58
   width: number;      // 0.22 – 0.35  (head width)
-  depth: number;      // 0.12 – 0.22
+  depth: number;      // 0.20 – 0.26
   neckWidth: number;  // 0.12 – 0.20
   asymmetry: number;  // ±0.08
   curvature: number;  // 0.5 – 0.9
 }
 ```
 
-All values are normalized to the side length. The generator must prevent self-intersection and overly thin necks (head width ≥ neck + margin; the neck is widened so it is at least a few output pixels wide at the target size).
+All values are normalized to the side length. The generator must prevent self-intersection and overly thin necks (head width ≥ neck + margin; the neck is widened so it is at least a few output pixels wide at the target size). Heads stay round: head width ≤ 1.1 × depth, so a wide head gets a deeper tab rather than a flat cap.
 
 ### 3.2 Shared edges (multi-piece layouts)
 

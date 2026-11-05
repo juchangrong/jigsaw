@@ -71,7 +71,7 @@ const initial: State = {
   specular: 0.28,
   stampText: "",
   stampStyle: "deboss",
-  stampSize: 0.42,
+  stampSize: 0.36,
   stampDepth: 0.5,
   stampInk: 0.25,
   stampWeight: 700,

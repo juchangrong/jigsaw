@@ -14,12 +14,12 @@ import type {
 } from "../types";
 import { SIDES } from "../types";
 import { flattenPath, mapSegment, pathBounds, pointInPolygon, polygonBounds, reversePath } from "./bezier";
-import { cornerArc, placeEdge, randomEdge, sanitizeEdge, trimEdgeEnds, type EdgeBias } from "./edge";
+import { cornerArc, placeEdge, randomEdge, sanitizeEdge, SOFT_CORNER, TIGHT_CORNER, trimEdgeEnds, type CornerShape, type EdgeBias } from "./edge";
 
 /** Minimum neck width in output pixels. */
 export const MIN_NECK_PX = 3;
 /** Corner rounding radius in piece units. */
-export const CORNER_RADIUS = 0.045;
+export const CORNER_RADIUS = SOFT_CORNER.trim;
 
 export interface LayoutPiece {
   id: string;
@@ -210,11 +210,26 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
     }
   }
 
+  // Corner shape per grid vertex. Interlocked grid pieces keep tight corners
+  // where they meet, or rounding would open holes between them; every other
+  // corner (single, cluster, the grid's outer corners) is soft.
+  const cornerAt = (v: Vec2): CornerShape => {
+    if (opts.layout !== "grid") return SOFT_CORNER;
+    const [x, y] = [Math.round(v[0]), Math.round(v[1])];
+    const touching = [
+      [x - 1, y - 1],
+      [x, y - 1],
+      [x - 1, y],
+      [x, y],
+    ].filter((c) => present.has(cellKey(c as [number, number]))).length;
+    return touching === 1 ? SOFT_CORNER : TIGHT_CORNER;
+  };
+
   // 2. geometry, built twice: the second pass widens necks for small sizes
   const build = (minNeck?: number) => {
     for (const slot of slots.values()) {
       if (minNeck !== undefined) slot.edge = sanitizeEdge(slot.edge, minNeck);
-      slot.geometry = trimEdgeEnds(placeEdge(slot.edge, slot.a, slot.b, slot.n), CORNER_RADIUS);
+      slot.geometry = trimEdgeEnds(placeEdge(slot.edge, slot.a, slot.b, slot.n), cornerAt(slot.a).trim, cornerAt(slot.b).trim);
     }
     return cells.map((c) => {
       const pid = pieceId(c);
@@ -231,7 +246,8 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
         const nslot = slots.get(next.slot)!;
         const nsegs = next.reversed ? reversePath(nslot.geometry) : nslot.geometry;
         const corner = SIDE_FRAME[s].b;
-        world.push(cornerArc(segs[segs.length - 1]!.p3, [c[0] + corner[0], c[1] + corner[1]], nsegs[0]!.p0));
+        const v: Vec2 = [c[0] + corner[0], c[1] + corner[1]];
+        world.push(cornerArc(segs[segs.length - 1]!.p3, v, nsegs[0]!.p0, cornerAt(v).handle));
         outSides[s] = {
           kind: ref.reversed ? flip(slot.edge.kind) : slot.edge.kind,
           edgeId: ref.slot,
@@ -282,7 +298,7 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
       const { center, rot } = placement[i]!;
       const cs = Math.cos(rot);
       const sn = Math.sin(rot);
-      return flattenPath(p.path, 0.02).map((q): Vec2 => {
+      return flattenPath(p.path, 0.01).map((q): Vec2 => {
         const x = q[0] - 0.5;
         const y = q[1] - 0.5;
         return [center[0] + cs * x - sn * y, center[1] + sn * x + cs * y];
@@ -304,16 +320,24 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
   let placement = place(spread, rotScale);
   let pieces = build();
   let { k, ox, oy } = fit(pieces, placement);
-  const minNeck = MIN_NECK_PX / (k * opts.size);
-  pieces = build(minNeck);
-  if (isCluster) {
-    for (let it = 0; it < 12 && polygonsOverlap(worldPolys(pieces, placement)); it++) {
-      spread += 0.04;
-      rotScale *= 0.75;
-      placement = place(spread, rotScale);
+  // Widening a neck can deepen its tab (heads stay round), and spreading a
+  // cluster widens the bounds; both shrink the scale, so repeat until the
+  // pixel minimum holds at the final scale.
+  for (let pass = 0; pass < 6; pass++) {
+    // 3% headroom so a last small shrink of the scale cannot undercut it
+    pieces = build((1.03 * MIN_NECK_PX) / (k * opts.size));
+    if (isCluster) {
+      for (let it = 0; it < 24 && polygonsOverlap(worldPolys(pieces, placement)); it++) {
+        spread += 0.04;
+        rotScale *= 0.75;
+        placement = place(spread, rotScale);
+      }
     }
+    const next = fit(pieces, placement);
+    const settled = next.k >= k - 1e-9;
+    ({ k, ox, oy } = next);
+    if (settled && pass > 0) break;
   }
-  ({ k, ox, oy } = fit(pieces, placement));
 
   const sharedEdges: SharedEdge[] = [];
   for (const [id, slot] of slots) {

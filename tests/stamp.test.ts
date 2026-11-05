@@ -36,6 +36,8 @@ afterAll(() => {
 });
 
 const BASE: PuzzleIconOptions = { seed: "stamp-test", size: 256, shadow: { enabled: false } };
+/** side of the stamp square (piece units) at the default glyph size */
+const SIDE = resolveOptions({ seed: 0 }).stamp.size / 0.62;
 
 function render(o: PuzzleIconOptions) {
   const plan = buildRenderPlan(generatePuzzleIcon(o));
@@ -76,9 +78,9 @@ describe("stamp options", () => {
 
 describe("glyph SDF", () => {
   it("is positive inside the letter and measures distance in piece units", () => {
-    const f = buildStampSdf("I", { font: "x", weight: 700, size: 0.42, resolution: 256 })!;
+    const f = buildStampSdf("I", { font: "x", weight: 700, size: SIDE * 0.62, resolution: 256 })!;
     expect(f).not.toBeNull();
-    const side = 0.42 / 0.62;
+    const side = SIDE;
     const left = f.originX + 0.4 * side; // left edge of the bar
     expect(sampleSdf(f, 0.5, 0.5)).toBeGreaterThan(0);
     expect(sampleSdf(f, left - 0.05, 0.5)).toBeCloseTo(-0.05, 2);
@@ -89,8 +91,18 @@ describe("glyph SDF", () => {
 
 describe("stamp rendering", () => {
   const plain = render(BASE);
-  const top = 0.5 - (0.42 / 0.62) * 0.31; // top edge of the bar, piece-local
-  const bottom = 0.5 + (0.42 / 0.62) * 0.31;
+  const top = 0.5 - SIDE * 0.31; // top edge of the bar, piece-local
+  const bottom = 0.5 + SIDE * 0.31;
+  /** Luma changes against the plain render across the wall that runs from
+   * `edge` a wall width into the letter (`dir` = +1 down, −1 up). */
+  const across = (px: Uint8ClampedArray, p: PiecePlan, edge: number, dir: 1 | -1) => {
+    const out: number[] = [];
+    for (let t = 0; t <= 1; t += 0.125) {
+      const i = pixelAt(p, 0.5, edge + dir * t * p.stampBevel, 256);
+      out.push(luma(px, i) - luma(plain.px, i));
+    }
+    return out;
+  };
 
   it("leaves the image unchanged without a letter", () => {
     const empty = render({ ...BASE, stamp: { text: "" } });
@@ -112,11 +124,13 @@ describe("stamp rendering", () => {
   it("debossed walls: the side facing the light is in shade, the far side is lit", () => {
     const s = render({ ...BASE, stamp: { text: "I", style: "deboss", ink: 0 } });
     const p = s.plan.pieces[0]!;
-    // walls run from the edge to w inside it; sample their middle
-    const t = pixelAt(p, 0.5, top + p.stampBevel / 2, 256);
-    const b = pixelAt(p, 0.5, bottom - p.stampBevel / 2, 256);
-    expect(luma(s.px, t) - luma(plain.px, t)).toBeLessThan(-4);
-    expect(luma(s.px, b) - luma(plain.px, b)).toBeGreaterThan(4);
+    // walls run from the edge to w inside it; each shades one way only
+    const tw = across(s.px, p, top, 1);
+    const bw = across(s.px, p, bottom, -1);
+    expect(Math.min(...tw)).toBeLessThan(-4);
+    expect(Math.max(...tw)).toBeLessThan(1.5);
+    expect(Math.max(...bw)).toBeGreaterThan(4);
+    expect(Math.min(...bw)).toBeGreaterThan(-1.5);
     // the floor of the letter is flat: same light as the surface
     const c = pixelAt(p, 0.5, 0.5, 256);
     expect(Math.abs(luma(s.px, c) - luma(plain.px, c))).toBeLessThan(1.5);
@@ -125,10 +139,12 @@ describe("stamp rendering", () => {
   it("embossed walls are lit the other way round", () => {
     const s = render({ ...BASE, stamp: { text: "I", style: "emboss", ink: 0 } });
     const p = s.plan.pieces[0]!;
-    const t = pixelAt(p, 0.5, top + p.stampBevel / 2, 256);
-    const b = pixelAt(p, 0.5, bottom - p.stampBevel / 2, 256);
-    expect(luma(s.px, t) - luma(plain.px, t)).toBeGreaterThan(4);
-    expect(luma(s.px, b) - luma(plain.px, b)).toBeLessThan(-4);
+    const tw = across(s.px, p, top, 1);
+    const bw = across(s.px, p, bottom, -1);
+    expect(Math.max(...tw)).toBeGreaterThan(4);
+    expect(Math.min(...tw)).toBeGreaterThan(-1.5);
+    expect(Math.min(...bw)).toBeLessThan(-4);
+    expect(Math.max(...bw)).toBeLessThan(1.5);
   });
 
   it("leaves no ring outside the letter", () => {
@@ -137,7 +153,7 @@ describe("stamp rendering", () => {
       const p = s.plan.pieces[0]!;
       const px = p.pxLocal;
       // one pixel outside each edge of the bar
-      const left = 0.5 - (0.42 / 0.62) * 0.1;
+      const left = 0.5 - SIDE * 0.1;
       for (const [x, y] of [
         [0.5, top - 1.5 * px],
         [0.5, bottom + 1.5 * px],

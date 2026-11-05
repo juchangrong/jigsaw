@@ -93,7 +93,7 @@ interface PuzzleIconOptions {
   stamp?: {                            // letter stamp, off by default
     text?: string;                     // character i goes on piece i, e.g. "R" or "ABC"
     style?: "deboss" | "emboss";       // pressed in (default) or raised
-    size?: number;                     // glyph height, piece units (0.15–0.7, default 0.42)
+    size?: number;                     // glyph height, piece units (0.15–0.7, default 0.36)
     depth?: number;                    // 0–1 relief (default 0.5)
     ink?: number;                      // 0–1 darkening inside the letter (default 0.25)
     font?: string; weight?: number;    // CSS font family, 100–900 (default system sans, 700)
@@ -104,7 +104,7 @@ interface PuzzleIconOptions {
 
 ## How it works
 
-1. **Geometry.** Each side gets a `PuzzleEdge` (`flat` / `tab` / `socket` with center, width, depth, neck width, asymmetry, curvature, all normalized to the side). Profiles are 8 cubic Béziers; head ≥ neck + 0.07 and the neck is widened to ≥ 3 output pixels, so outlines never pinch or self-intersect. Corners are rounded. Neighbors share one `SharedEdge` and walk it in opposite directions, so they fit exactly.
+1. **Geometry.** Each side gets a `PuzzleEdge` (`flat` / `tab` / `socket` with center, width, depth, neck width, asymmetry, curvature, all normalized to the side). Profiles are 8 cubic Béziers with no kinks: horizontal tangents at the side, vertical at the neck and at the head's widest point. Heads stay round (width ≤ 1.1 × depth, depth 0.20–0.26), the neck rises 0.33 × depth before flaring into the head, and the neck leaves the side through a 0.09-wide fillet, so socket lips are rounded rather than hooked. Head ≥ neck + 0.07 and the neck is widened to ≥ 3 output pixels at the final scale, so outlines never pinch or self-intersect. Outer corners use a continuous-curvature curve that leaves each side 0.15 from the corner, with handles at 0.72 (a circle is 0.55), so they read as soft squircle corners; where interlocked grid pieces meet, corners stay tight so no holes open between them. Neighbors share one `SharedEdge` and walk it in opposite directions, so they fit exactly.
 2. **Layouts.** `single` enforces ≥ 1 non-flat edge, ≤ 3 tabs, not all equal, aspect < 1.3. `grid` keeps pieces interlocked and forms the gap by eroding the SDF (uniform, never overlaps). `cluster` grows a compact patch, then spreads and rotates pieces, damping until no two pieces overlap.
 3. **SDF.** Flatten → scanline mask → exact Felzenszwalb EDT inside and out → signed field (positive inside), refined near the outline with exact point-to-segment distances so bevel normals are smooth. 256 / 512 / 1024 texels chosen from the output size, and cached.
 4. **Shading** (identical in WGSL, GLSL and TS). `h = H·smoothstep(0, b, d)`, normal from central differences of the SDF in piece units (resolution independent, uniform control flow). Lambert + Blinn–Phong normalized so the flat top keeps its color, which makes top/left bevels brighter and bottom/right ones darker. Gradient = normalized Gaussian spots + base color in linear RGB; palettes are varied in OKLCH. Optional soft shadow from the offset SDF (off by default). SDF-based AA, dithered sRGB output, premultiplied "over" compositing.

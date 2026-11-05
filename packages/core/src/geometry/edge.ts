@@ -5,12 +5,14 @@ import { cubic, line, mapSegment } from "./bezier";
 export const EDGE_LIMITS = {
   center: [0.42, 0.58],
   width: [0.22, 0.35],
-  depth: [0.12, 0.22],
+  depth: [0.2, 0.26],
   neckWidth: [0.12, 0.2],
   asymmetry: 0.08,
   curvature: [0.5, 0.9],
   /** head must be at least this much wider than the neck */
   headOverNeck: 0.07,
+  /** head width ≤ this × depth, so the head stays round instead of a flat cap */
+  headAspect: 1.1,
 } as const;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -47,12 +49,15 @@ export function randomEdge(rng: Rng, id: string, kind: EdgeKind, bias: EdgeBias)
 export function sanitizeEdge(e: PuzzleEdge, minNeck: number = EDGE_LIMITS.neckWidth[0]): PuzzleEdge {
   const L = EDGE_LIMITS;
   const neckWidth = clamp(Math.max(e.neckWidth, minNeck), L.neckWidth[0], L.neckWidth[1]);
-  const width = clamp(Math.max(e.width, neckWidth + L.headOverNeck), L.width[0], L.width[1]);
+  let width = clamp(Math.max(e.width, neckWidth + L.headOverNeck), L.width[0], L.width[1]);
+  const depth = clamp(Math.max(e.depth, width / L.headAspect), L.depth[0], L.depth[1]);
+  // a deep-enough tab is not always possible; then narrow the head instead
+  width = Math.max(neckWidth + L.headOverNeck, Math.min(width, depth * L.headAspect));
   return {
     ...e,
     center: clamp(e.center, L.center[0], L.center[1]),
     width,
-    depth: clamp(e.depth, L.depth[0], L.depth[1]),
+    depth,
     neckWidth,
     asymmetry: clamp(e.asymmetry, -L.asymmetry, L.asymmetry),
     curvature: clamp(e.curvature, L.curvature[0], L.curvature[1]),
@@ -75,12 +80,16 @@ export function edgeProfile(e: PuzzleEdge): BezierSegment[] {
   const hwR = hw * (1 + a);
   const nL = e.center - nh;
   const nR = e.center + nh;
-  const shoulder = 0.06;
-  const K = 0.4 + 0.35 * e.curvature; // ellipse handle factor (0.55 ≈ circle)
+  // Every turn gets room: a wide fillet where the neck leaves the side (the
+  // socket's lips), a tall S-curve from neck to head, and a near-circular
+  // head. Tangents are horizontal at the side and vertical at the neck and the
+  // head's widest point, so the outline has no kinks.
+  const shoulder = 0.09;
+  const K = 0.5 + 0.2 * e.curvature; // head handle factor (0.55 ≈ circle)
 
   const sL: Vec2 = [nL - shoulder, 0];
   const sR: Vec2 = [nR + shoulder, 0];
-  const neckV = 0.28 * D;
+  const neckV = 0.33 * D;
   const neckL: Vec2 = [nL, neckV];
   const neckR: Vec2 = [nR, neckV];
   const headV = 0.58 * D;
@@ -88,26 +97,26 @@ export function edgeProfile(e: PuzzleEdge): BezierSegment[] {
   const headR: Vec2 = [hc + hwR, headV];
   const top: Vec2 = [hc, D];
   const ry = D - headV;
-  const pinch = 0.015;
+  const span = headV - neckV;
 
   return [
     line([0, 0], sL),
-    cubic(sL, [sL[0] + shoulder * 0.7, 0], [nL + pinch, 0.14 * D], neckL),
-    cubic(neckL, [nL - pinch, 0.42 * D], [headL[0], headV - 0.16 * D], headL),
+    cubic(sL, [sL[0] + shoulder * 0.6, 0], [nL, neckV * 0.4], neckL),
+    cubic(neckL, [nL, neckV + span * 0.5], [headL[0], headV - span * 0.5], headL),
     cubic(headL, [headL[0], headV + ry * K], [hc - hwL * K, D], top),
     cubic(top, [hc + hwR * K, D], [headR[0], headV + ry * K], headR),
-    cubic(headR, [headR[0], headV - 0.16 * D], [nR + pinch, 0.42 * D], neckR),
-    cubic(neckR, [nR - pinch, 0.14 * D], [sR[0] - shoulder * 0.7, 0], sR),
+    cubic(headR, [headR[0], headV - span * 0.5], [nR, neckV + span * 0.5], neckR),
+    cubic(neckR, [nR, neckV * 0.4], [sR[0] - shoulder * 0.6, 0], sR),
     line(sR, [1, 0]),
   ];
 }
 
-/** Shorten the straight first/last segment of an edge by `r` at both ends
- * (used to round the piece corners). */
-export function trimEdgeEnds(segs: BezierSegment[], r: number): BezierSegment[] {
-  if (r <= 0) return segs;
+/** Shorten the straight first/last segment of an edge by `r0` at its start
+ * and `r1` at its end (used to round the piece corners). */
+export function trimEdgeEnds(segs: BezierSegment[], r0: number, r1: number = r0): BezierSegment[] {
+  if (r0 <= 0 && r1 <= 0) return segs;
   const out = segs.slice();
-  const move = (from: Vec2, to: Vec2): Vec2 => {
+  const move = (from: Vec2, to: Vec2, r: number): Vec2 => {
     const dx = to[0] - from[0];
     const dy = to[1] - from[1];
     const l = Math.hypot(dx, dy) || 1;
@@ -116,17 +125,31 @@ export function trimEdgeEnds(segs: BezierSegment[], r: number): BezierSegment[] 
   const first = out[0]!;
   const last = out[out.length - 1]!;
   if (out.length === 1) {
-    out[0] = line(move(first.p0, first.p3), move(first.p3, first.p0));
+    out[0] = line(move(first.p0, first.p3, r0), move(first.p3, first.p0, r1));
     return out;
   }
-  out[0] = line(move(first.p0, first.p3), first.p3);
-  out[out.length - 1] = line(last.p0, move(last.p3, last.p0));
+  out[0] = line(move(first.p0, first.p3, r0), first.p3);
+  out[out.length - 1] = line(last.p0, move(last.p3, last.p0, r1));
   return out;
 }
 
-/** Quarter-ish arc from `a` to `b` around the sharp corner `c`. */
-export function cornerArc(a: Vec2, c: Vec2, b: Vec2): BezierSegment {
-  const k = 0.5523;
+/** How a corner is rounded: `trim` is where the curve leaves each side (side
+ * units), `handle` places the control points that fraction of the way to the
+ * sharp corner. 0.5523 draws a circular arc; larger values ease the curvature
+ * in from the sides like a squircle corner. */
+export interface CornerShape {
+  trim: number;
+  handle: number;
+}
+
+/** Outer corners: continuous-curvature, close to an app-icon squircle corner. */
+export const SOFT_CORNER: CornerShape = { trim: 0.15, handle: 0.72 };
+/** Corners where interlocked grid pieces meet: small, so no holes open up. */
+export const TIGHT_CORNER: CornerShape = { trim: 0.045, handle: 0.5523 };
+
+/** Corner curve from `a` to `b` around the sharp corner `c`. */
+export function cornerArc(a: Vec2, c: Vec2, b: Vec2, handle = 0.5523): BezierSegment {
+  const k = handle;
   return cubic(a, [a[0] + (c[0] - a[0]) * k, a[1] + (c[1] - a[1]) * k], [b[0] + (c[0] - b[0]) * k, b[1] + (c[1] - b[1]) * k], b);
 }
 
