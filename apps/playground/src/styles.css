@@ -414,6 +414,9 @@ input[type="checkbox"] {
 .card-icon.tile {
   border-radius: 12px;
   overflow: hidden;
+  background: #ffffff;
+  /* a white tile on a white card needs an edge to read as a tile */
+  box-shadow: inset 0 0 0 1px #e7e7ed;
 }
 .card-icon > canvas {
   position: absolute;

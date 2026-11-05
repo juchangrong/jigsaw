@@ -1,6 +1,5 @@
-import { hexToOklch, mixOklab, oklchToHex } from "@jigsaw/core";
-import { getSharedGenerator, PuzzleIcon } from "@jigsaw/react";
-import { useId, useMemo, useState } from "react";
+import { PuzzleIcon } from "@jigsaw/react";
+import { useId, useState } from "react";
 
 /** Mock items, in the copy style of the product list this page imitates. */
 const ITEMS = [
@@ -20,24 +19,21 @@ const ITEMS = [
 
 type IconStyle = "tile" | "bare";
 const ICON_PX = 48;
+/** The list uses at most these four palettes, so the page stays calm. */
+const CARD_PALETTES = ["tide", "dusk", "ember", "meadow"] as const;
 
-function CardIcon({ seed, style }: { seed: string; style: IconStyle }) {
-  // the tile takes a light tint of the icon's own palette
-  const tint = useMemo(() => {
-    const mix = mixOklab(getSharedGenerator().generate({ seed, layout: "single" }).palette.colors);
-    const [, C, h] = hexToOklch(mix);
-    return oklchToHex([0.955, Math.min(C, 0.2) * 0.18, h]);
-  }, [seed]);
+function CardIcon({ seed, palette, style }: { seed: string; palette: string; style: IconStyle }) {
+  const gradient = { palette };
   if (style === "bare") {
     return (
       <span className="card-icon bare" aria-hidden="true">
-        <PuzzleIcon seed={seed} layout="single" size={ICON_PX} />
+        <PuzzleIcon seed={seed} layout="single" gradient={gradient} size={ICON_PX} />
       </span>
     );
   }
   return (
-    <span className="card-icon tile" style={{ background: tint }} aria-hidden="true">
-      <PuzzleIcon seed={seed} layout="single" size={Math.round(ICON_PX * 0.95)} />
+    <span className="card-icon tile" aria-hidden="true">
+      <PuzzleIcon seed={seed} layout="single" gradient={gradient} size={Math.round(ICON_PX * 0.95)} />
     </span>
   );
 }
@@ -91,9 +87,10 @@ export function CardsPage() {
           </button>
         </div>
         <ul className="cards" role="list">
-          {ITEMS.map((item) => (
+          {ITEMS.map((item, i) => (
             <li key={item.name} className="card">
-              <CardIcon seed={salt ? `${item.name}#${salt}` : item.name} style={style} />
+              {/* palettes rotate through the list, so neighbours differ and only four appear */}
+              <CardIcon seed={salt ? `${item.name}#${salt}` : item.name} palette={CARD_PALETTES[(i + salt) % CARD_PALETTES.length]!} style={style} />
               <div className="card-body">
                 <div className="card-title">
                   <span className="card-name">{item.name}</span>
