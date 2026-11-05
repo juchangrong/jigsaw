@@ -32,6 +32,15 @@ The user asked for combinations in an Apple-like style. The sets take their cue 
 
 Candidates now carry a slot instead of a palette, and the active set colours slot `i` with family `i mod set size`. Switching sets therefore recolours the same shapes and keeps the picks. Picks saved earlier as seed and palette get their slot back by looking up the seed among the first 5,000 candidates. The chosen set is remembered in `localStorage`.
 
+The Icon control offers Glass (the default), Plain tile and Bare piece. Glass follows the Liquid Glass look of recent app icons, built in CSS from four layers:
+
+- a translucent body: a white sheen from 0.92 to 0.35 alpha over `--glass-tint`, which is the palette tint when Tint is on, with an 8 px backdrop blur;
+- a 1 px masked rim, brightest at the top-left and bottom-right;
+- a gloss over the upper half, above the piece;
+- a small two-step lift shadow with at most 8 px blur.
+
+Candidate tiles stay plain, because there the tile is a selection control.
+
 ## Alternatives considered
 
 **A section on the playground page.** That page is already long. A separate page shows the cards alone, closer to how the list appears in the product.

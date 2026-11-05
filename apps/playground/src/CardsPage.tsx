@@ -1,6 +1,6 @@
 import { deriveSeed, hexToOklch, mixOklab, oklchToHex, PALETTES, type PaletteName } from "@jigsaw/core";
 import { PuzzleIcon } from "@jigsaw/react";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, type CSSProperties } from "react";
 
 /** Mock items, in the copy style of the product list this page imitates. */
 const ITEMS = [
@@ -23,7 +23,8 @@ const SECTIONS = [...new Set(ITEMS.map((item) => item.tag))];
 /** `index` is the position on screen (sections in order), so icons rotate the way they are read. */
 const INDEXED = SECTIONS.flatMap((tag) => ITEMS.filter((item) => item.tag === tag)).map((item, index) => ({ ...item, index }));
 
-type IconStyle = "tile" | "bare";
+type IconStyle = "glass" | "tile" | "bare";
+const STYLE_NAMES: Record<IconStyle, string> = { glass: "Glass", tile: "Plain tile", bare: "Bare piece" };
 const ICON_PX = 40;
 /** A color family: four shades from deep to light, used as an icon's gradient palette. */
 interface Family {
@@ -132,7 +133,11 @@ function CardIcon({ seed, family: f, style, solid, tint }: { seed: string; famil
     );
   }
   return (
-    <span className="card-icon tile" style={tint ? { background: tintOf(f) } : undefined} aria-hidden="true">
+    <span
+      className={`card-icon tile${style === "glass" ? " glass" : ""}`}
+      style={tint ? ({ "--glass-tint": tintOf(f), background: style === "glass" ? undefined : tintOf(f) } as CSSProperties) : undefined}
+      aria-hidden="true"
+    >
       <PuzzleIcon seed={seed} layout="single" gradient={gradient} size={Math.round(ICON_PX * 0.95)} />
     </span>
   );
@@ -256,7 +261,7 @@ function CandidatePicker({ picks, onChange, solid, tint, set }: { picks: Candida
  */
 export function CardsPage() {
   const groupId = useId();
-  const [style, setStyle] = useState<IconStyle>("tile");
+  const [style, setStyle] = useState<IconStyle>("glass");
   const [salt, setSalt] = useState(0);
   const [picks, setPicks] = useState<Candidate[]>(loadPicks);
   const [gradientOn, setGradientOn] = useState(true);
@@ -277,7 +282,7 @@ export function CardsPage() {
       // storage blocked: the set lasts for this visit only
     }
   }, [colorSet.id]);
-  const styles: IconStyle[] = ["tile", "bare"];
+  const styles: IconStyle[] = ["glass", "tile", "bare"];
   const setsLabelId = useId();
   /** icon for the card at list position `index` */
   const iconFor = (name: string, index: number): { seed: string; family: Family } => {
@@ -318,7 +323,7 @@ export function CardsPage() {
           >
             {styles.map((s) => (
               <button key={s} type="button" role="radio" aria-checked={s === style} tabIndex={s === style ? 0 : -1} className={s === style ? "on" : ""} onClick={() => setStyle(s)}>
-                {s === "tile" ? "On a tile" : "Bare piece"}
+                {STYLE_NAMES[s]}
               </button>
             ))}
           </div>
