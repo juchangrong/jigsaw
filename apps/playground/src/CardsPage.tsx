@@ -1,4 +1,4 @@
-import { applyTransform, deriveSeed, generatePuzzleIcon, hexToOklch, mixOklab, oklchToHex, PALETTES, type PaletteName, type Side, type Vec2 } from "@jigsaw/core";
+import { applyTransform, deriveSeed, generatePuzzleIcon, hashString, hexToOklch, mixOklab, oklchToHex, PALETTES, type EdgeKind, type PaletteName, type Vec2 } from "@jigsaw/core";
 import { PuzzleIcon } from "@jigsaw/react";
 import { useEffect, useId, useMemo, useState, type CSSProperties } from "react";
 
@@ -23,8 +23,24 @@ const SECTIONS = [...new Set(ITEMS.map((item) => item.tag))];
 /** `index` is the position on screen (sections in order), so icons rotate the way they are read. */
 const INDEXED = SECTIONS.flatMap((tag) => ITEMS.filter((item) => item.tag === tag)).map((item, index) => ({ ...item, index }));
 
-type IconStyle = "glass" | "tile" | "outline" | "abstract" | "bare";
-const STYLE_NAMES: Record<IconStyle, string> = { glass: "Glass", tile: "Plain tile", outline: "Outline", abstract: "Abstract", bare: "Bare piece" };
+type IconStyle = "glass" | "tile" | "outline" | "abstract" | "solid" | "bare";
+const STYLE_NAMES: Record<IconStyle, string> = { glass: "Glass", tile: "Plain tile", outline: "Outline", abstract: "Abstract", solid: "Solid", bare: "Bare piece" };
+/** which switches change anything in each style */
+const USES_GRADIENT: IconStyle[] = ["glass", "tile", "bare"];
+const USES_TINT: IconStyle[] = ["glass", "tile", "abstract"];
+const isGlyph = (s: IconStyle) => s === "abstract" || s === "solid";
+
+/** side kinds (top, right, bottom, left) of a seed's realistic piece */
+const kindsCache = new Map<string, EdgeKind[]>();
+function pieceKinds(seed: string): EdgeKind[] {
+  let k = kindsCache.get(seed);
+  if (!k) {
+    const sides = generatePuzzleIcon({ seed, layout: "single" }).pieces[0]!.sides;
+    k = (["top", "right", "bottom", "left"] as const).map((side) => sides[side].kind);
+    kindsCache.set(seed, k);
+  }
+  return k;
+}
 
 /** SVG path data for a seed's single piece, in icon units ([0,1]²). */
 function outlinePath(seed: string): string {
@@ -51,39 +67,63 @@ function OutlineIcon({ seed, size }: { seed: string; size: number }) {
 /**
  * Abstract glyph: the piece reduced to a pictogram, in the modernist manner of
  * grid-built signage. Everything is a straight line or a circular arc on one
- * grid: a unit square with one corner radius, and knobs and notches that are
- * the same circle, centred KNOB_OFFSET outside or inside the side. No wave, no
- * lean, no gradient. The seed only decides which sides carry a knob, a notch
- * or nothing, the same choice the realistic piece makes.
+ * grid, and every arc has the same radius: the corners of a unit square, and
+ * knobs and notches that are the same circle centred KNOB_OFFSET outside or
+ * inside the side. No wave, no lean, no gradient.
  */
-const KNOB_R = 0.165;
+const GLYPH_R = 0.18;
 const KNOB_OFFSET = 0.06;
-const CORNER_R = 0.2;
-const GLYPH_SIDES: { side: Side; a: Vec2; d: Vec2; n: Vec2 }[] = [
-  { side: "top", a: [0, 0], d: [1, 0], n: [0, -1] },
-  { side: "right", a: [1, 0], d: [0, 1], n: [1, 0] },
-  { side: "bottom", a: [1, 1], d: [-1, 0], n: [0, 1] },
-  { side: "left", a: [0, 1], d: [0, -1], n: [-1, 0] },
+const GLYPH_SIDES: { a: Vec2; d: Vec2; n: Vec2 }[] = [
+  { a: [0, 0], d: [1, 0], n: [0, -1] },
+  { a: [1, 0], d: [0, 1], n: [1, 0] },
+  { a: [1, 1], d: [-1, 0], n: [0, 1] },
+  { a: [0, 1], d: [0, -1], n: [-1, 0] },
 ];
-const glyphCache = new Map<string, { d: string; viewBox: string }>();
-function abstractGlyph(seed: string): { d: string; viewBox: string } {
-  const sides = generatePuzzleIcon({ seed, layout: "single" }).pieces[0]!.sides;
-  const kinds = GLYPH_SIDES.map((g) => sides[g.side].kind);
+/**
+ * The side arrangements that still read as a puzzle piece at 24 px: one or two
+ * knobs, one or two notches, at most one flat side. Three knobs read as a
+ * cross, three notches as an X, and two flat sides as a blob.
+ */
+const isIconic = (kinds: EdgeKind[]) => {
+  const count = (k: EdgeKind) => kinds.filter((x) => x === k).length;
+  return count("tab") >= 1 && count("tab") <= 2 && count("socket") >= 1 && count("socket") <= 2 && count("flat") <= 1;
+};
+const GLYPH_SET: EdgeKind[][] = (() => {
+  const all: EdgeKind[][] = [];
+  const kinds: EdgeKind[] = ["tab", "socket", "flat"];
+  for (const a of kinds) for (const b of kinds) for (const c of kinds) for (const d of kinds) if (isIconic([a, b, c, d])) all.push([a, b, c, d]);
+  return all;
+})();
+/** A seed keeps its own piece's arrangement when that is iconic; otherwise it takes one from the set by hash. */
+function glyphKinds(seed: string): EdgeKind[] {
+  const own = pieceKinds(seed);
+  return isIconic(own) ? own : GLYPH_SET[hashString(`glyph:${seed}`) % GLYPH_SET.length]!;
+}
+
+interface Glyph {
+  /** the side arrangement, stable per shape */
+  key: string;
+  d: string;
+  viewBox: string;
+}
+const glyphCache = new Map<string, Glyph>();
+function abstractGlyph(seed: string): Glyph {
+  const kinds = glyphKinds(seed);
   const key = kinds.join();
   const hit = glyphCache.get(key);
   if (hit) return hit;
 
   // one clockwise path: along each side, around its knob or notch, round the corner
-  const half = Math.sqrt(KNOB_R * KNOB_R - KNOB_OFFSET * KNOB_OFFSET);
+  const half = Math.sqrt(GLYPH_R * GLYPH_R - KNOB_OFFSET * KNOB_OFFSET);
   const f = (v: number) => v.toFixed(4);
   const at = (g: (typeof GLYPH_SIDES)[number], t: number) => `${f(g.a[0] + g.d[0] * t)} ${f(g.a[1] + g.d[1] * t)}`;
-  let d = `M ${at(GLYPH_SIDES[0]!, CORNER_R)}`;
+  let d = `M ${at(GLYPH_SIDES[0]!, GLYPH_R)}`;
   GLYPH_SIDES.forEach((g, i) => {
     if (kinds[i] !== "flat") {
       // the arc on the far side of the chord is the larger one; a knob turns clockwise, a notch the other way
-      d += ` L ${at(g, 0.5 - half)} A ${KNOB_R} ${KNOB_R} 0 1 ${kinds[i] === "tab" ? 1 : 0} ${at(g, 0.5 + half)}`;
+      d += ` L ${at(g, 0.5 - half)} A ${GLYPH_R} ${GLYPH_R} 0 1 ${kinds[i] === "tab" ? 1 : 0} ${at(g, 0.5 + half)}`;
     }
-    d += ` L ${at(g, 1 - CORNER_R)} A ${CORNER_R} ${CORNER_R} 0 0 1 ${at(GLYPH_SIDES[(i + 1) % 4]!, CORNER_R)}`;
+    d += ` L ${at(g, 1 - GLYPH_R)} A ${GLYPH_R} ${GLYPH_R} 0 0 1 ${at(GLYPH_SIDES[(i + 1) % 4]!, GLYPH_R)}`;
   });
   d += " Z";
 
@@ -92,12 +132,12 @@ function abstractGlyph(seed: string): { d: string; viewBox: string } {
     const o = kinds[i] === "tab" ? KNOB_OFFSET : -KNOB_OFFSET;
     return { kind: kinds[i]!, x: g.a[0] + g.d[0] * 0.5 + g.n[0] * o, y: g.a[1] + g.d[1] * 0.5 + g.n[1] * o };
   });
-  const inCircle = (x: number, y: number, c: { x: number; y: number }, r: number) => (x - c.x) ** 2 + (y - c.y) ** 2 <= r * r;
+  const inCircle = (x: number, y: number, c: { x: number; y: number }) => (x - c.x) ** 2 + (y - c.y) ** 2 <= GLYPH_R * GLYPH_R;
   const inBody = (x: number, y: number) => {
     if (x < 0 || x > 1 || y < 0 || y > 1) return false;
-    const cx = Math.min(Math.max(x, CORNER_R), 1 - CORNER_R);
-    const cy = Math.min(Math.max(y, CORNER_R), 1 - CORNER_R);
-    return (x - cx) ** 2 + (y - cy) ** 2 <= CORNER_R * CORNER_R;
+    const cx = Math.min(Math.max(x, GLYPH_R), 1 - GLYPH_R);
+    const cy = Math.min(Math.max(y, GLYPH_R), 1 - GLYPH_R);
+    return (x - cx) ** 2 + (y - cy) ** 2 <= GLYPH_R * GLYPH_R;
   };
   let n = 0;
   let sx = 0;
@@ -105,17 +145,17 @@ function abstractGlyph(seed: string): { d: string; viewBox: string } {
   const N = 120;
   for (let j = 0; j < N; j++)
     for (let i = 0; i < N; i++) {
-      const x = -0.25 + (1.5 * (i + 0.5)) / N;
-      const y = -0.25 + (1.5 * (j + 0.5)) / N;
-      const filled = (inBody(x, y) || circles.some((c) => c.kind === "tab" && inCircle(x, y, c, KNOB_R))) && !circles.some((c) => c.kind === "socket" && inCircle(x, y, c, KNOB_R));
+      const x = -0.3 + (1.6 * (i + 0.5)) / N;
+      const y = -0.3 + (1.6 * (j + 0.5)) / N;
+      const filled = (inBody(x, y) || circles.some((c) => c.kind === "tab" && inCircle(x, y, c))) && !circles.some((c) => c.kind === "socket" && inCircle(x, y, c));
       if (filled) {
         n++;
         sx += x;
         sy += y;
       }
     }
-  const view = 1.64; // room for a knob on both sides around any centroid
-  const out = { d, viewBox: `${f(sx / n - view / 2)} ${f(sy / n - view / 2)} ${view} ${view}` };
+  const view = 1.68; // room for a knob on both sides around any centroid
+  const out: Glyph = { key, d, viewBox: `${f(sx / n - view / 2)} ${f(sy / n - view / 2)} ${view} ${view}` };
   glyphCache.set(key, out);
   return out;
 }
@@ -242,9 +282,20 @@ function tintOf(f: Family): string {
 function glyphColor(f: Family): string {
   return [...f.colors].reverse().find((c) => hexToOklch(c)[0] <= 0.68) ?? f.colors[0]!;
 }
+/** The fill of a solid tile under a white glyph: a deeper shade (lightness at most 0.6), else the deepest. */
+function tileColor(f: Family): string {
+  return [...f.colors].reverse().find((c) => hexToOklch(c)[0] <= 0.6) ?? f.colors[0]!;
+}
 
 function CardIcon({ seed, family: f, style, solid, tint }: { seed: string; family: Family; style: IconStyle; solid: boolean; tint: boolean }) {
   const gradient = gradientFor(f, solid);
+  if (style === "solid") {
+    return (
+      <span className="card-icon tile solid" style={{ background: tileColor(f) }} aria-hidden="true">
+        <AbstractIcon seed={seed} size={Math.round(ICON_PX * 0.8)} color="#ffffff" />
+      </span>
+    );
+  }
   if (style === "abstract") {
     return (
       <span className="card-icon tile abstract" style={tint ? { background: tintOf(f) } : undefined} aria-hidden="true">
@@ -288,6 +339,8 @@ interface Candidate {
   slot: number;
 }
 const BATCH = 24;
+/** how many candidates to look through for distinct ones */
+const SCAN_LIMIT = 400;
 const STORAGE_KEY = "jigsaw.cardCandidates";
 const SET_KEY = "jigsaw.cardColorSet";
 const keyOf = (c: Candidate) => c.seed;
@@ -322,18 +375,54 @@ function savePicks(picks: Candidate[]) {
 }
 
 /** A grid of candidate icons; clicking one picks or unpicks it. */
-function CandidatePicker({ picks, onChange, solid, tint, set, style }: { picks: Candidate[]; onChange: (picks: Candidate[]) => void; solid: boolean; tint: boolean; set: Family[]; style: IconStyle }) {
+function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidate[]) => void; solid: boolean; tint: boolean; set: Family[]; setId: string; style: IconStyle }) {
+  const { picks, onChange, solid, tint, set, setId, style } = props;
   const headingId = useId();
   const [count, setCount] = useState(BATCH);
   const [note, setNote] = useState("");
   const picked = new Map(picks.map((c, i) => [keyOf(c), i]));
+  const pickedKey = picks.map(keyOf).join();
+  // Line and glyph styles have few distinct shapes, so candidates that would
+  // look identical are skipped (a picked one always stays visible).
+  const { list, exhausted } = useMemo(() => {
+    const lookKey = (c: Candidate) =>
+      style === "outline" ? pieceKinds(c.seed).join() : isGlyph(style) ? `${abstractGlyph(c.seed).key}|${familyOf(set, c.slot).id}` : c.seed;
+    const chosen = new Set(pickedKey.split(","));
+    const seen = new Set<string>();
+    const out: Candidate[] = [];
+    let i = 0;
+    for (; i < SCAN_LIMIT && out.length < count; i++) {
+      const c = candidateAt(i);
+      const k = lookKey(c);
+      if (seen.has(k) && !chosen.has(c.seed)) continue;
+      seen.add(k);
+      out.push(c);
+    }
+    return { list: out, exhausted: out.length < count };
+  }, [count, style, set, pickedKey]);
   const toggle = (c: Candidate) => {
     const k = keyOf(c);
     onChange(picked.has(k) ? picks.filter((p) => keyOf(p) !== k) : [...picks, c]);
   };
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(JSON.stringify(picks, null, 2));
+      // everything needed to redraw each pick elsewhere: its seed, its colours and, for vector styles, its path
+      const payload = {
+        style,
+        colorSet: setId,
+        picks: picks.map((p) => {
+          const fam = familyOf(set, p.slot);
+          const g = isGlyph(style) ? abstractGlyph(p.seed) : null;
+          return {
+            seed: p.seed,
+            family: fam.id,
+            colors: fam.colors,
+            ...(g ? { glyph: { path: g.d, viewBox: g.viewBox, fill: style === "solid" ? "#ffffff" : glyphColor(fam), tile: style === "solid" ? tileColor(fam) : "#ffffff" } } : {}),
+            ...(style === "outline" ? { outline: { path: outlinePath(p.seed), viewBox: "0 0 1 1" } } : {}),
+          };
+        }),
+      };
+      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
       setNote(`Copied ${picks.length} picks`);
     } catch {
       setNote("Couldn't copy: clipboard access is blocked");
@@ -351,14 +440,14 @@ function CandidatePicker({ picks, onChange, solid, tint, set, style }: { picks: 
         </span>
       </div>
       <ul className="picker-grid" role="list">
-        {Array.from({ length: count }, (_, i) => candidateAt(i)).map((c, i) => {
+        {list.map((c, i) => {
           const order = picked.get(keyOf(c));
           return (
             <li key={keyOf(c)}>
               <button
                 type="button"
                 className={`picker-tile${order !== undefined ? " on" : ""}`}
-                style={tint ? { background: tintOf(familyOf(set, c.slot)) } : undefined}
+                style={tint && USES_TINT.includes(style) ? { background: tintOf(familyOf(set, c.slot)) } : undefined}
                 aria-pressed={order !== undefined}
                 aria-label={`Candidate ${i + 1}, ${familyOf(set, c.slot).id}${order !== undefined ? `, pick ${order + 1}` : ""}`}
                 onClick={() => toggle(c)}
@@ -367,6 +456,10 @@ function CandidatePicker({ picks, onChange, solid, tint, set, style }: { picks: 
                   <OutlineIcon seed={c.seed} size={40} />
                 ) : style === "abstract" ? (
                   <AbstractIcon seed={c.seed} size={46} color={glyphColor(familyOf(set, c.slot))} />
+                ) : style === "solid" ? (
+                  <span className="picker-solid" style={{ background: tileColor(familyOf(set, c.slot)) }}>
+                    <AbstractIcon seed={c.seed} size={36} color="#ffffff" />
+                  </span>
                 ) : (
                   <PuzzleIcon seed={c.seed} layout="single" gradient={gradientFor(familyOf(set, c.slot), solid)} size={46} />
                 )}
@@ -381,7 +474,7 @@ function CandidatePicker({ picks, onChange, solid, tint, set, style }: { picks: 
         })}
       </ul>
       <div className="toolbar">
-        <button type="button" onClick={() => setCount((n) => n + BATCH)}>
+        <button type="button" onClick={() => setCount((n) => n + BATCH)} disabled={exhausted} title={exhausted ? "This style has no more distinct shapes" : undefined}>
           Show more candidates
         </button>
         <button type="button" onClick={() => onChange([])} disabled={!picks.length}>
@@ -423,7 +516,7 @@ export function CardsPage() {
       // storage blocked: the set lasts for this visit only
     }
   }, [colorSet.id]);
-  const styles: IconStyle[] = ["glass", "tile", "outline", "abstract", "bare"];
+  const styles: IconStyle[] = ["glass", "tile", "outline", "abstract", "solid", "bare"];
   const setsLabelId = useId();
   /** icon for the card at list position `index` */
   const iconFor = (name: string, index: number): { seed: string; family: Family } => {
@@ -472,11 +565,11 @@ export function CardsPage() {
             Shuffle icons
           </button>
           <label className="row check">
-            <input type="checkbox" role="switch" checked={gradientOn} onChange={(e) => setGradientOn(e.target.checked)} />
+            <input type="checkbox" role="switch" checked={gradientOn} disabled={!USES_GRADIENT.includes(style)} onChange={(e) => setGradientOn(e.target.checked)} />
             <span>Gradient</span>
           </label>
           <label className="row check">
-            <input type="checkbox" role="switch" checked={tintOn} onChange={(e) => setTintOn(e.target.checked)} />
+            <input type="checkbox" role="switch" checked={tintOn} disabled={!USES_TINT.includes(style)} onChange={(e) => setTintOn(e.target.checked)} />
             <span>Tint</span>
           </label>
         </div>
@@ -509,7 +602,7 @@ export function CardsPage() {
             ))}
           </span>
         </div>
-        <CandidatePicker picks={picks} onChange={setPicks} solid={!gradientOn} tint={tintOn} set={colorSet.families} style={style} />
+        <CandidatePicker picks={picks} onChange={setPicks} solid={!gradientOn} tint={tintOn} set={colorSet.families} setId={colorSet.id} style={style} />
         {SECTIONS.map((section) => (
           <section key={section} className="cards-section" aria-labelledby={`${groupId}-${section}`}>
             <h2 id={`${groupId}-${section}`} className="cards-heading">

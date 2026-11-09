@@ -44,9 +44,18 @@ Candidate tiles stay plain, because there the tile is a selection control.
 
 Hovering a card icon turns the piece a quarter turn (90°) over 420 ms with an ease-out-quart curve, and it eases back when the pointer leaves. The tile, rim and gloss stay still. It is a CSS transition on the canvas that keeps its centring translate, and there is no rotation under `prefers-reduced-motion`. A first version spun the piece a full 360° on hover; the user asked for 90°. With a quarter turn a one-shot animation would snap back, so it is a transition held while hovering. The baked lighting turns with the piece.
 
-An Abstract icon style redraws the piece as a pictogram, because the user found the realistic shape too literal for an icon and asked for a designed, less generated look. It follows the modernist practice of building signs on a grid from basic shapes: a unit square with a 0.2 corner radius, and knobs and notches that are the same circle (radius 0.165), centred 0.06 outside or inside the side. The glyph is one SVG path of straight lines and circular arcs, filled with one flat colour, with no wave, lean, gradient, bevel or gloss. The seed only decides which sides carry a knob, a notch or nothing, taken from the same single piece the other styles draw.
+An Abstract icon style redraws the piece as a pictogram, because the user found the realistic shape too literal for an icon and asked for a designed, less generated look. It follows the modernist practice of building signs on a grid from basic shapes: a unit square with rounded corners, and knobs and notches that are the same circle, centred 0.06 outside or inside the side (the radii are given in the refinements below). The glyph is one SVG path of straight lines and circular arcs, filled with one flat colour, with no wave, lean, gradient, bevel or gloss. The seed only decides which sides carry a knob, a notch or nothing.
 
 The colour is the lightest shade of the family at OKLCH lightness 0.68 or below, so it stands clear of a white tile. The view is centred on the glyph's area centroid, found by sampling, and the glyph fills about 60% of the tile. Candidates switch to the glyph too, and the hover quarter-turn applies.
+
+A review of the abstract glyphs led to four refinements:
+
+- **Curated shapes.** Only arrangements with one or two knobs, one or two notches and at most one flat side are drawn: 30 of the 81 possible. At about 24 px, three knobs read as a cross, three notches as an X and two flat sides as a blob. A seed keeps its own piece's arrangement when it qualifies, and otherwise takes one from the set by hash.
+- **One radius.** Corners, knobs and notches all use radius 0.18, replacing the earlier 0.2 corners and 0.165 knobs.
+- **Solid style.** A white glyph on a tile filled with the family's colour (its lightest shade at lightness 0.6 or below, else its deepest), which is the usual app-icon treatment. With the Mono set the white glyph has 3.09:1 against its tile.
+- **Distinct candidates.** In Outline, Abstract and Solid, candidates that would look identical are skipped: the same side arrangement in Outline, or the same glyph and family in the glyph styles. A picked candidate always stays visible. The picker looks through up to 400 candidates and disables "Show more candidates" when no distinct ones remain.
+
+The Gradient and Tint switches are disabled in styles where they change nothing. "Copy picks" now copies the style, the colour set and, for each pick, its seed, family and colours, plus the glyph or outline path, view box and fill for the vector styles, so a pick can be redrawn outside the playground. Picks are still stored as seed and slot.
 
 ## Alternatives considered
 
