@@ -19,7 +19,11 @@ import {
   generatePuzzleIcon,
   gradientToLinear,
   linearToSrgbChannel,
+  recommendedSdfResolution,
   sampleSdf,
+  SDF_RESOLUTIONS,
+  SdfCache,
+  sdfResolutionFor,
   toLocal,
   type PuzzleIconOptions,
 } from "@jigsaw/core";
@@ -236,5 +240,40 @@ describe("PNG export", () => {
       expect(raw[y * 257]).toBe(0);
       expect(Buffer.from(raw.subarray(y * 257 + 1, (y + 1) * 257)).equals(Buffer.from(data.subarray(y * 256, (y + 1) * 256)))).toBe(true);
     }
+  });
+});
+
+describe("SDF resolution and cache", () => {
+  it("gives about one texel per pixel, from the fixed steps", () => {
+    expect(recommendedSdfResolution(32, 0.55)).toBe(128);
+    expect(recommendedSdfResolution(128, 0.55)).toBe(128);
+    expect(recommendedSdfResolution(256, 0.55)).toBe(256);
+    expect(recommendedSdfResolution(512, 0.55)).toBe(512);
+    expect(recommendedSdfResolution(4096, 0.55)).toBe(1024);
+    for (const size of [48, 96, 200, 300, 700]) {
+      const r = recommendedSdfResolution(size, 0.55);
+      expect(SDF_RESOLUTIONS).toContain(r);
+      expect(r).toBeGreaterThanOrEqual(size * 0.55 * 1.7);
+    }
+    const d = generatePuzzleIcon({ seed: "res", size: 256 });
+    expect(d.sdfResolution).toBe(sdfResolutionFor(d, 256));
+  });
+
+  it("evicts by total texels and keeps the field just built", () => {
+    const path = generatePuzzleIcon({ seed: "cache" }).pieces[0]!.path;
+    const cache = new SdfCache(3 * 128 * 128);
+    const a = cache.get("a", path, 128);
+    cache.get("b", path, 128);
+    expect(cache.get("a", path, 128)).toBe(a);
+    cache.get("c", path, 128);
+    expect(cache.size).toBeLessThanOrEqual(3);
+    cache.get("d", path, 128);
+    // "b" was the least recently used
+    expect(cache.get("a", path, 128)).toBe(a);
+    const big = cache.get("big", path, 512);
+    expect(cache.size).toBe(1);
+    expect(cache.get("big", path, 512)).toBe(big);
+    cache.clear();
+    expect(cache.size).toBe(0);
   });
 });

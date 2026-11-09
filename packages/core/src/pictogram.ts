@@ -12,7 +12,8 @@
  * Both are plain SVG path data and need no renderer.
  */
 import { generatePuzzleIcon } from "./generate";
-import { applyTransform } from "./geometry/layout";
+import { applyTransform, singlePieceKinds } from "./geometry/layout";
+import { resolveOptions } from "./options";
 import { hashString, type Seed } from "./prng";
 import type { EdgeKind, PuzzleIconOptions, Vec2 } from "./types";
 
@@ -55,8 +56,8 @@ export function pieceArrangement(seed: Seed): Arrangement {
   const key = String(seed);
   let k = arrangementCache.get(key);
   if (!k) {
-    const sides = generatePuzzleIcon({ seed, layout: "single" }).pieces[0]!.sides;
-    k = [sides.top.kind, sides.right.kind, sides.bottom.kind, sides.left.kind];
+    const sides = singlePieceKinds(resolveOptions({ seed, layout: "single" }));
+    k = [sides.top, sides.right, sides.bottom, sides.left];
     arrangementCache.set(key, k);
     if (arrangementCache.size > 4096) arrangementCache.delete(arrangementCache.keys().next().value!);
   }

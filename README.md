@@ -38,7 +38,7 @@ import { PuzzleIcon } from "@jigsaw/react";
 <PuzzleIcon seed="board" size={256} layout="grid" pieceCount={9} material={{ preset: "matteAcrylic" }} background="#FFFFFF" />
 ```
 
-All `<PuzzleIcon>`s share one generator (one GPU device). Rendered images are cached, and the canvas is rendered at `size × devicePixelRatio`.
+All `<PuzzleIcon>`s share one generator (one GPU device). Rendered images are cached, and the canvas is rendered at `size × devicePixelRatio`. Icons that mount together are built in short slices, so the page keeps painting and responding, and an icon that changes or unmounts while it is queued is skipped.
 
 ### Pictograms and outlines (SVG)
 
@@ -72,6 +72,12 @@ const description = gen.generate({ seed: "alpha", size: 128 });
 // Render (falls back WebGPU → WebGL2 → CPU if the adapter/device is unavailable)
 const { image, backend, ms } = await gen.render({ seed: "alpha", size: 128 });
 // image: { width, height, data: Uint8ClampedArray } (straight-alpha sRGB RGBA)
+// ms: time spent on this icon, not counting time queued behind others
+
+// Renders queue in call order. Abort one that is still queued and it is skipped (rejects with an AbortError).
+const abort = new AbortController();
+gen.render({ seed: "beta", size: 128 }, { signal: abort.signal }).catch(() => {});
+abort.abort();
 
 // Export — large sizes regenerate the SDF at higher resolution
 const png = await gen.toPNG({ seed: "alpha", size: 128 }, { size: 1024 });
@@ -100,7 +106,7 @@ const set = assembleSinglePieces({ seed: "team", size: 128, cols: 3, rows: 3, gr
 // with its icon's top-left at (cell − cellOrigin) × 128 px, cell = p.cell × p.cellSize × 128 px
 ```
 
-The playground's Assembly section does exactly this with real `<PuzzleIcon>`s, and can scatter and reassemble the pieces.
+The search reads only each seed's side kinds (`singlePieceKinds`) and generates just the chosen icons, so it takes a few milliseconds. The playground's Assembly section does exactly this with real `<PuzzleIcon>`s, and can scatter and reassemble the pieces.
 
 ### Options
 
@@ -146,7 +152,7 @@ interface PuzzleIconOptions {
 
 1. **Geometry.** Each side gets a `PuzzleEdge` (`flat` / `tab` / `socket` with center, width, depth, neck width, asymmetry, curvature and wave, all normalized to the side). Each connector is three cubic Béziers whose control points are closed-form in the edge parameters (see `tabProfile` in `packages/core/src/geometry/edge.ts`): corner → neck, around the head, neck → corner. The handles continue each other's tangents at the two neck points, so an edge is one continuous line from corner to corner, like a die-cut puzzle: the side bows in a gentle S, dips in before the neck, and the head is near-round (default head ≈ 0.30 of the side, narrowest neck ≈ 0.17, depth 0.27); heads lean with `asymmetry`; frame (flat) sides stay straight. A socket is the tab's point reflection (u → 1 − u, v → −v, walked backwards), so a neighbour sees it as exactly the tab even though the profile is not symmetric. The narrowest neck is widened to ≥ 3 output pixels at the final scale, so outlines never pinch or self-intersect. As on a real puzzle, a corner is rounded only where both of its sides are flat (a corner of the finished puzzle's frame), with a continuous-curvature curve that leaves each side 0.15 from the corner, handles at 0.72 (a circle is 0.55); every other corner is square, so pieces close to a point where they meet, with no hole or notch. Neighbors share one `SharedEdge` and walk it in opposite directions, so they fit exactly.
 2. **Layouts.** `single` pieces all use one connector derived from `tabSize`, `curvature` and `asymmetry` (no seed), and one scale per output size, so a tab on any single piece fits a socket on any other and every single icon draws its cell at the same size; each single piece is centred on its area centroid rather than its bounding box, so a knob on one side does not push the body off-centre; the seed picks which sides are tabs, sockets or flat. `single` also enforces ≥ 1 non-flat edge, ≤ 3 tabs, not all equal, aspect < 1.3. `grid` keeps pieces interlocked and forms the gap by eroding the SDF (uniform, never overlaps). `cluster` grows a compact patch, then spreads and rotates pieces, damping until no two pieces overlap.
-3. **SDF.** Flatten → scanline mask → exact Felzenszwalb EDT inside and out → signed field (positive inside), refined near the outline with exact point-to-segment distances so bevel normals are smooth. 256 / 512 / 1024 texels chosen from the output size, and cached.
+3. **SDF.** Flatten → scanline mask → exact Felzenszwalb EDT inside and out → signed field (positive inside), refined near the outline with exact point-to-segment distances so bevel normals are smooth. 128 to 1024 texels, about one per output pixel (`recommendedSdfResolution`), cached within a memory budget.
 4. **Shading** (identical in WGSL, GLSL and TS). `h = H·smoothstep(0, b, d)`, normal from central differences of the SDF in piece units (resolution independent, uniform control flow). Lambert + Blinn–Phong normalized so the flat top keeps its color, which makes top/left bevels brighter and bottom/right ones darker. Gradient = normalized Gaussian spots + base color in linear RGB; palettes are varied in OKLCH. Spots are ranked along a seeded light-flow direction (top-left to bottom-right) and paired with palette colors by lightness, so lighter colors sit toward the light; a few neighbouring ranks swap so a second hue crosses the flow. Optional soft shadow from the offset SDF (off by default). SDF-based AA, dithered sRGB output, premultiplied "over" compositing.
 5. **Stamp.** The letter is drawn with Canvas 2D, fitted to its ink box, thresholded and run through the same EDT, giving a second SDF centred on the piece. It adds a relief `h_s = ±height·smoothstep(0, w, d_s)` on top of the bevel, so the walls of the letter take the same light as the outline. The walls sit just inside the letter's edge, so the surface around it is untouched. Glyphs depend on the platform's fonts, so stamped pixels are not promised to match across machines. Without a canvas (Node) no stamp is drawn unless a rasterizer is set with `setGlyphRasterizer`.
 6. **Backends.** WebGPU (one device, r32float SDF textures in an LRU, dynamic-offset uniforms, readback so preview == export), WebGL2 (same shader math), CPU (reference). All three agree within 1/255.

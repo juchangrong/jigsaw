@@ -9,7 +9,7 @@
  */
 import { hexToSrgb, linearToSrgbChannel, type RGB } from "./color/oklch";
 import { gradientToLinear } from "./color/gradient";
-import { sampleSdf, sharedSdfCache, type SdfCache, type SdfField } from "./sdf/sdf";
+import { recommendedSdfResolution, sampleSdf, sharedSdfCache, type SdfCache, type SdfField } from "./sdf/sdf";
 import { envLight, texHeight, TEXTURE_KIND, TEXTURE_LOOKS } from "./material/texture";
 import { EMPTY_STAMP, stampCache, stampResolution } from "./stamp/glyph";
 import type { PuzzleIconDescription } from "./types";
@@ -104,9 +104,7 @@ export interface PlanOptions {
 }
 
 export function sdfResolutionFor(desc: PuzzleIconDescription, size: number): number {
-  const s = desc.pieces[0]?.transform.scale ?? 0.5;
-  const want = size * s * 1.7 * 1.5;
-  return want <= 256 ? 256 : want <= 512 ? 512 : 1024;
+  return recommendedSdfResolution(size, desc.pieces[0]?.transform.scale ?? 0.5);
 }
 
 export function buildRenderPlan(desc: PuzzleIconDescription, o: PlanOptions = {}): RenderPlan {

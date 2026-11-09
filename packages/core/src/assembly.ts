@@ -1,4 +1,6 @@
 import { generatePuzzleIcon } from "./generate";
+import { singlePieceKinds } from "./geometry/layout";
+import { resolveOptions } from "./options";
 import { deriveSeed } from "./prng";
 import type { EdgeKind, PuzzleIconDescription, PuzzleIconOptions, Side, Vec2 } from "./types";
 
@@ -20,11 +22,6 @@ export interface AssembledPiece {
 }
 
 const opposite = (k: EdgeKind): EdgeKind => (k === "tab" ? "socket" : k === "socket" ? "tab" : "flat");
-const kindsKey = (d: PuzzleIconDescription) => {
-  const s = d.pieces[0]!.sides;
-  return `${s.top.kind},${s.right.kind},${s.bottom.kind},${s.left.kind}`;
-};
-
 /**
  * Pick single-piece icons, from seeds derived from `options.seed`, that
  * assemble into a framed `cols × rows` puzzle: outer sides flat, every interior
@@ -38,31 +35,35 @@ export function assembleSinglePieces(options: AssemblyOptions): AssembledPiece[]
   // a single piece needs at least one connector, so a 1×1 frame cannot exist
   if (cols * rows < 2) return null;
 
-  const byKinds = new Map<string, PuzzleIconDescription[]>();
+  // The search needs only each candidate's side kinds, which are cheap; the
+  // icons themselves are generated for the chosen seeds alone.
+  const { geometry } = resolveOptions(rest);
+  const kinds: Record<Side, EdgeKind>[] = [];
+  const byKinds = new Map<string, number[]>();
   for (let i = 0; i < poolSize; i++) {
-    const d = generatePuzzleIcon({ ...rest, seed: deriveSeed(options.seed, i), layout: "single" });
-    const k = kindsKey(d);
-    if (!byKinds.has(k)) byKinds.set(k, []);
-    byKinds.get(k)!.push(d);
+    const k = singlePieceKinds({ seed: deriveSeed(options.seed, i), geometry });
+    kinds.push(k);
+    const key = `${k.top},${k.right},${k.bottom},${k.left}`;
+    if (!byKinds.has(key)) byKinds.set(key, []);
+    byKinds.get(key)!.push(i);
   }
 
   const n = cols * rows;
-  const grid: PuzzleIconDescription[] = [];
-  const used = new Set<PuzzleIconDescription>();
-  const kind = (d: PuzzleIconDescription, s: Side) => d.pieces[0]!.sides[s].kind;
+  const grid: number[] = [];
+  const used = new Set<number>();
   // kinds the cell must have on each side; "inner" means any connector
   const needs = (i: number): Record<Side, EdgeKind | "inner"> => {
     const x = i % cols;
     const y = Math.floor(i / cols);
     return {
-      top: y === 0 ? "flat" : opposite(kind(grid[i - cols]!, "bottom")),
-      left: x === 0 ? "flat" : opposite(kind(grid[i - 1]!, "right")),
+      top: y === 0 ? "flat" : opposite(kinds[grid[i - cols]!]!.bottom),
+      left: x === 0 ? "flat" : opposite(kinds[grid[i - 1]!]!.right),
       right: x === cols - 1 ? "flat" : "inner",
       bottom: y === rows - 1 ? "flat" : "inner",
     };
   };
   const candidates = (need: Record<Side, EdgeKind | "inner">) => {
-    const out: PuzzleIconDescription[] = [];
+    const out: number[] = [];
     const opts = (s: Side): EdgeKind[] => (need[s] === "inner" ? ["tab", "socket"] : [need[s] as EdgeKind]);
     for (const t of opts("top"))
       for (const r of opts("right"))
@@ -83,7 +84,8 @@ export function assembleSinglePieces(options: AssemblyOptions): AssembledPiece[]
   };
   if (!place(0)) return null;
 
-  return grid.map((d, i) => {
+  return grid.map((seedIndex, i) => {
+    const d = generatePuzzleIcon({ ...rest, seed: deriveSeed(options.seed, seedIndex), layout: "single" });
     const t = d.pieces[0]!.transform;
     return {
       description: d,

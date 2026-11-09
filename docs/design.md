@@ -88,7 +88,7 @@ Neighbors traverse the same geometry in opposite directions, so pieces fit exact
 - CPU flattens the Bézier path, rasterizes a coverage mask, runs an exact Euclidean distance transform (Felzenszwalb–Huttenlocher) for inside and outside, and combines them into a signed field. Distances near the outline are refined with exact point-to-segment distances so the bevel normals are smooth.
 - The field is uploaded as a texture (a compute shader would also be fine).
 - **Never** use a blurred mask in place of a real SDF.
-- Default resolution 256 or 512; regenerate at higher resolution for big exports. Enforce a minimum connection width per pixel size.
+- Resolution is about one texel per output pixel, in steps from 128 to 1024; regenerate at higher resolution for big exports. Enforce a minimum connection width per pixel size.
 
 ## 5. Material & lighting
 
@@ -197,6 +197,7 @@ tests/               geometry, deterministic, rendering tests
 
 - One shared GPU device/renderer, never one per icon.
 - Cache paths, SDFs, parameters and images.
+- Build icons in short slices and skip renders that were aborted while queued, so a page that mounts many icons never blocks.
 - Small-size tuning for 24–48 px (minimum bevel and AA width in pixels).
 - Production should prefer cached PNG/WebP.
 - Fallback chain WebGPU → WebGL2 → CPU, checking adapter/device acquisition.

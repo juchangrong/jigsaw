@@ -10,8 +10,13 @@ import {
   assembleSinglePieces,
   buildRenderPlan,
   flattenPath,
+  generatePuzzleIcon,
   rasterizeMask,
+  resolveOptions,
+  SIDES,
+  singlePieceKinds,
   type PuzzleIconDescription,
+  type PuzzleIconOptions,
   type Vec2,
 } from "@jigsaw/core";
 import { encodePNG, unpremultiply } from "@jigsaw/export";
@@ -117,5 +122,27 @@ describe("single pieces assemble without gaps", () => {
     const px = renderPlanCpu(buildRenderPlan(desc, { size: 768 }));
     mkdirSync("tests/__output__", { recursive: true });
     writeFileSync("tests/__output__/assembly-3x3.png", await encodePNG({ width: 768, height: 768, data: unpremultiply(px) }));
+  });
+});
+
+describe("singlePieceKinds", () => {
+  it("matches the generated piece for any seed and geometry, whatever the other options", () => {
+    const looks: Omit<PuzzleIconOptions, "seed">[] = [
+      {},
+      { geometry: { tabSize: 0, curvature: 1, asymmetry: 1 } },
+      { geometry: { tabSize: 1 }, size: 24, gradient: { palette: "slate" }, stamp: { text: "A" } },
+    ];
+    for (const look of looks)
+      for (let i = 0; i < 200; i++) {
+        const options: PuzzleIconOptions = { ...look, seed: `kinds-${i}`, layout: "single" };
+        const sides = generatePuzzleIcon(options).pieces[0]!.sides;
+        const kinds = singlePieceKinds(resolveOptions(options));
+        for (const s of SIDES) expect(kinds[s]).toBe(sides[s].kind);
+      }
+  });
+
+  it("keeps the assembly independent of everything but seed and geometry", () => {
+    const seeds = (o: Partial<PuzzleIconOptions>) => assembleSinglePieces({ seed: "indep", cols: 3, rows: 3, ...o })!.map((p) => p.description.metadata.seed);
+    expect(seeds({ size: 32, gradient: { palette: "sage" }, material: { preset: "matteAcrylic" } })).toEqual(seeds({}));
   });
 });

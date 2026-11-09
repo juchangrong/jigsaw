@@ -106,6 +106,45 @@ function aspectFor(kinds: Record<Side, EdgeKind>, depth: Record<Side, number>): 
   return Math.max(w / h, h / w);
 }
 
+/**
+ * Kinds for a piece's sides: the fixed ones as given, the rest drawn at random
+ * until the set is valid. `single` is the connector bias of a single piece,
+ * which must also stay close to square.
+ */
+function chooseKinds(geomRng: Rng, fixed: Partial<Record<Side, EdgeKind>>, single: EdgeBias | null): Record<Side, EdgeKind> {
+  for (let attempt = 0; attempt < 96; attempt++) {
+    const kinds = {} as Record<Side, EdgeKind>;
+    for (const s of SIDES) {
+      const f = fixed[s];
+      if (f) kinds[s] = f;
+      else {
+        const r = geomRng.next();
+        kinds[s] = r < 0.2 ? "flat" : r < 0.6 ? "tab" : "socket";
+      }
+    }
+    if (!validKinds(SIDES.map((s) => kinds[s]))) continue;
+    if (single) {
+      const depth = {} as Record<Side, number>;
+      for (const s of SIDES) depth[s] = standardEdge(s, kinds[s], single).depth;
+      if (aspectFor(kinds, depth) > 1.3) continue;
+    }
+    return kinds;
+  }
+  const kinds = {} as Record<Side, EdgeKind>;
+  const fallback: EdgeKind[] = ["tab", "socket", "socket", "tab"];
+  SIDES.forEach((s, i) => (kinds[s] = fixed[s] ?? fallback[i]!));
+  return kinds;
+}
+
+/**
+ * Side kinds of the single piece these options produce, without building its
+ * geometry. They depend only on the seed and the geometry options.
+ */
+export function singlePieceKinds(opts: Pick<ResolvedOptions, "seed" | "geometry">): Record<Side, EdgeKind> {
+  const { tabSize, curvature, asymmetry } = opts.geometry;
+  return chooseKinds(createRng(opts.seed, "geometry"), {}, { tabSize, curvature, asymmetry });
+}
+
 interface EdgeSlot {
   edge: PuzzleEdge;
   shared: boolean;
@@ -179,33 +218,14 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
     // single pieces share one connector so they fit each other
     const edgeFor = (s: Side, kind: EdgeKind) =>
       opts.layout === "single" ? standardEdge(`${pid}:${s}`, kind, bias) : randomEdge(geomRng.fork(`${pid}:${s}`), `${pid}:${s}`, kind, bias);
-    let chosen: Record<Side, EdgeKind> | null = null;
+    let chosen: Record<Side, EdgeKind>;
     if (opts.layout === "grid") {
       chosen = {} as Record<Side, EdgeKind>;
       for (const s of SIDES) chosen[s] = sides[s] ? fixedKind(s) : "flat";
     } else {
-      for (let attempt = 0; attempt < 96 && !chosen; attempt++) {
-        const kinds = {} as Record<Side, EdgeKind>;
-        for (const s of SIDES) {
-          if (sides[s]) kinds[s] = fixedKind(s);
-          else {
-            const r = geomRng.next();
-            kinds[s] = r < 0.2 ? "flat" : r < 0.6 ? "tab" : "socket";
-          }
-        }
-        if (!validKinds(SIDES.map((s) => kinds[s]))) continue;
-        if (opts.layout === "single") {
-          const depth = {} as Record<Side, number>;
-          for (const s of SIDES) depth[s] = edgeFor(s, kinds[s]).depth;
-          if (aspectFor(kinds, depth) > 1.3) continue;
-        }
-        chosen = kinds;
-      }
-      if (!chosen) {
-        chosen = {} as Record<Side, EdgeKind>;
-        const fallback: EdgeKind[] = ["tab", "socket", "socket", "tab"];
-        SIDES.forEach((s, i) => (chosen![s] = sides[s] ? fixedKind(s) : fallback[i]!));
-      }
+      const fixed: Partial<Record<Side, EdgeKind>> = {};
+      for (const s of SIDES) if (sides[s]) fixed[s] = fixedKind(s);
+      chosen = chooseKinds(geomRng, fixed, opts.layout === "single" ? bias : null);
     }
     for (const s of free) {
       const id = `${pid}:${s}`;
@@ -387,13 +407,18 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
 
 /** True if any vertex of one polygon lies inside another. */
 export function polygonsOverlap(polys: Vec2[][]): boolean {
+  const bounds = polys.map(polygonBounds);
   for (let i = 0; i < polys.length; i++) {
-    const bi = polygonBounds(polys[i]!);
+    const bi = bounds[i]!;
     for (let j = 0; j < polys.length; j++) {
       if (i === j) continue;
-      const bj = polygonBounds(polys[j]!);
+      const bj = bounds[j]!;
       if (bi.maxX < bj.minX || bj.maxX < bi.minX || bi.maxY < bj.minY || bj.maxY < bi.minY) continue;
-      for (const q of polys[i]!) if (pointInPolygon(q, polys[j]!)) return true;
+      // only vertices inside the other polygon's bounds can be inside it
+      for (const q of polys[i]!) {
+        if (q[0] < bj.minX || q[0] > bj.maxX || q[1] < bj.minY || q[1] > bj.maxY) continue;
+        if (pointInPolygon(q, polys[j]!)) return true;
+      }
     }
   }
   return false;

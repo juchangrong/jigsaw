@@ -21,6 +21,27 @@ export class CpuBackend implements RenderBackend {
   dispose() {}
 }
 
+/** how long plan building may run before the next build waits for a new task */
+const SLICE_MS = 8;
+
+/** Resolves in a new task, so the page can paint and handle input first. */
+function nextTask(): Promise<void> {
+  return new Promise((resolve) => {
+    // a message is not throttled in background tabs the way a timer is
+    if (typeof MessageChannel !== "function") return void setTimeout(resolve, 0);
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => {
+      channel.port1.close();
+      resolve();
+    };
+    channel.port2.postMessage(null);
+  });
+}
+
+function throwIfAborted(signal?: AbortSignal) {
+  if (signal?.aborted) throw new DOMException("The render was aborted", "AbortError");
+}
+
 const ORDER: BackendKind[] = ["webgpu", "webgl2", "cpu"];
 
 /** Create a backend, falling back WebGPU → WebGL2 → CPU. */
@@ -51,8 +72,17 @@ export interface RenderResult {
   premultiplied: Uint8ClampedArray;
   backend: BackendKind;
   description: PuzzleIconDescription;
+  /** time spent generating and rendering, not counting time queued behind other icons */
   ms: number;
   cached: boolean;
+}
+
+export interface RenderOptions {
+  /** output size in pixels (defaults to the description size) */
+  size?: number;
+  transparent?: boolean;
+  /** abort to skip a render that has not started; the promise rejects with an AbortError */
+  signal?: AbortSignal;
 }
 
 export interface ExportOptions {
@@ -71,6 +101,8 @@ export class PuzzleIconGenerator {
   private backendPromise: Promise<RenderBackend> | null = null;
   private descriptions = new LruMap<PuzzleIconDescription>(256);
   private images: LruMap<{ image: RgbaImage; premultiplied: Uint8ClampedArray }>;
+  private planQueue: Promise<unknown> = Promise.resolve();
+  private sliceMs = 0;
   readonly config: Required<GeneratorConfig>;
   /** messages from backends that failed to initialize */
   readonly fallbackErrors: string[] = [];
@@ -100,11 +132,37 @@ export class PuzzleIconGenerator {
     return this.backendPromise;
   }
 
-  async render(options: PuzzleIconOptions | PuzzleIconDescription, o: { size?: number; transparent?: boolean } = {}): Promise<RenderResult> {
-    const t0 = performance.now();
-    const description = "metadata" in options ? options : this.generate(options);
+  /**
+   * Run plan builds one at a time, yielding to the event loop once a slice of
+   * work has run. Building a distance field is synchronous, so a page that
+   * mounts many icons would otherwise build all of them in one long task.
+   */
+  private enqueue<T>(work: () => T, signal?: AbortSignal): Promise<T> {
+    const run = this.planQueue.then(async () => {
+      throwIfAborted(signal);
+      if (this.sliceMs >= SLICE_MS) {
+        await nextTask();
+        this.sliceMs = 0;
+        throwIfAborted(signal);
+      }
+      const t = performance.now();
+      try {
+        return work();
+      } finally {
+        this.sliceMs += performance.now() - t;
+      }
+    });
+    this.planQueue = run.catch(() => {});
+    return run;
+  }
+
+  async render(options: PuzzleIconOptions | PuzzleIconDescription, o: RenderOptions = {}): Promise<RenderResult> {
     const backend = await this.backend();
-    const plan = buildRenderPlan(description, { size: o.size, transparent: o.transparent, cache: sharedSdfCache });
+    const { description, plan, t0 } = await this.enqueue(() => {
+      const t0 = performance.now();
+      const description = "metadata" in options ? options : this.generate(options);
+      return { description, plan: buildRenderPlan(description, { size: o.size, transparent: o.transparent, cache: sharedSdfCache }), t0 };
+    }, o.signal);
     const key = `${backend.kind}|${plan.key}`;
     const hit = this.images.get(key);
     if (hit) return { ...hit, backend: backend.kind, description, ms: performance.now() - t0, cached: true };

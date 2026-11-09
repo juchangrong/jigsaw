@@ -183,10 +183,30 @@ export function sampleSdf(f: SdfField, x: number, y: number): number {
   return (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + e * fu) * fv;
 }
 
-/** Small LRU cache for SDFs keyed by geometry and resolution. */
+/** SDF sizes (longest side, texels) the renderer picks from. */
+export const SDF_RESOLUTIONS = [128, 192, 256, 384, 512, 768, 1024] as const;
+
+/**
+ * SDF resolution (longest side, texels) for an output size: the smallest step
+ * with about one texel per output pixel across the piece domain (about 1.7
+ * piece units). The field is read with bilinear filtering and holds exact
+ * distances near the outline, so more texels cost build time, which grows
+ * with the texel count, for no visible change.
+ */
+export function recommendedSdfResolution(size: number, pieceScale: number): number {
+  const want = size * pieceScale * 1.7;
+  return SDF_RESOLUTIONS.find((r) => r >= want) ?? 1024;
+}
+
+/**
+ * Least-recently-used cache of SDF fields. It is bounded by total texels (four
+ * bytes each) rather than by entry count, because a 1024 field is 64 times
+ * the size of a 128 one.
+ */
 export class SdfCache {
   private map = new Map<string, SdfField>();
-  constructor(private capacity = 64) {}
+  private texels = 0;
+  constructor(private maxTexels = 16 * 1024 * 1024) {}
 
   get(key: string, path: BezierSegment[], resolution: number): SdfField {
     const k = `${key}@${resolution}`;
@@ -198,12 +218,19 @@ export class SdfCache {
     }
     const f = buildSdf(path, resolution);
     this.map.set(k, f);
-    if (this.map.size > this.capacity) this.map.delete(this.map.keys().next().value!);
+    this.texels += f.data.length;
+    // the field just built stays even if it alone exceeds the budget
+    for (const [old, field] of this.map) {
+      if (this.texels <= this.maxTexels || old === k) break;
+      this.map.delete(old);
+      this.texels -= field.data.length;
+    }
     return f;
   }
 
   clear() {
     this.map.clear();
+    this.texels = 0;
   }
 
   get size() {

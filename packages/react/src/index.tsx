@@ -32,20 +32,20 @@ export function PuzzleIcon({ renderer, className, style, title, onRender, onErro
   callbacks.current = { onRender, onError };
 
   useEffect(() => {
-    let cancelled = false;
-    const gen = getSharedGenerator(renderer ? { renderer } : undefined);
-    gen
-      .render(gen.generate({ ...opts, size }), { size: px })
+    // aborting skips the work for an icon that changed or unmounted while queued
+    const abort = new AbortController();
+    getSharedGenerator(renderer ? { renderer } : undefined)
+      .render({ ...opts, size }, { size: px, signal: abort.signal })
       .then((r) => {
         const c = canvasRef.current;
-        if (cancelled || !c) return;
+        if (abort.signal.aborted || !c) return;
         c.getContext("2d")!.putImageData(new ImageData(r.image.data as Uint8ClampedArray<ArrayBuffer>, r.image.width, r.image.height), 0, 0);
         callbacks.current.onRender?.(r);
       })
-      .catch((e: Error) => callbacks.current.onError?.(e));
-    return () => {
-      cancelled = true;
-    };
+      .catch((e: Error) => {
+        if (!abort.signal.aborted) callbacks.current.onError?.(e);
+      });
+    return () => abort.abort();
   }, [opts, size, px, renderer]);
 
   return (

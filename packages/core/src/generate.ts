@@ -3,16 +3,8 @@ import { resolvePalette } from "./color/palettes";
 import { buildLayout } from "./geometry/layout";
 import { ALGORITHM_VERSION, PRESET_VERSION, resolveOptions } from "./options";
 import { createRng, type Rng } from "./prng";
+import { recommendedSdfResolution } from "./sdf/sdf";
 import type { PuzzleIconDescription, PuzzleIconOptions } from "./types";
-
-/** SDF resolution (longest side, texels) appropriate for an output size. */
-export function recommendedSdfResolution(size: number, pieceScale: number): number {
-  // ≈1.5 texels per output pixel across the piece domain (~1.7 piece units)
-  const want = size * pieceScale * 1.7 * 1.5;
-  if (want <= 256) return 256;
-  if (want <= 512) return 512;
-  return 1024;
-}
 
 function pieceTexture(rng: Rng) {
   return { textureSeed: rng.int(0, 65535), textureAngle: rng.signed(0.3) };
