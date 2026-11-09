@@ -23,7 +23,7 @@ pnpm build      # production build of the playground
 | `@jigsaw/core` | Seeded PRNG (Mulberry32, separate `geometry` / `palette` / `gradient` / `layout` / `texture` streams), cubic-Bézier edge profiles, shared-edge layouts (`single`, `cluster`, `grid`), mask rasterization + exact EDT signed distance field, OKLCH palettes, Gaussian-spot gradients, material presets, render plan + reference shading. No GPU needed. |
 | `@jigsaw/renderer` | WebGPU backend (`shaders/puzzle.wgsl`), WebGL2 fallback (`shaders/puzzle.frag.glsl`), CPU fallback, and the `PuzzleIconGenerator` API. One shared device, cached SDF textures. |
 | `@jigsaw/export` | Pure-TS PNG encoder (with sRGB chunk, straight alpha) and WebP via the browser canvas. |
-| `@jigsaw/react` | `<PuzzleIcon />` component and `useRendererBackend()`. |
+| `@jigsaw/react` | `<PuzzleIcon />` (rendered, on a canvas), `<PuzzlePictogram />` (inline SVG) and `useRendererBackend()`. |
 | `apps/playground` | Vite + React playground. |
 
 ## Usage
@@ -39,6 +39,25 @@ import { PuzzleIcon } from "@jigsaw/react";
 ```
 
 All `<PuzzleIcon>`s share one generator (one GPU device). Rendered images are cached, and the canvas is rendered at `size × devicePixelRatio`.
+
+### Pictograms and outlines (SVG)
+
+For lists, menus and other small or repeated uses, draw the piece as inline SVG instead: no canvas and no GPU.
+
+```tsx
+import { COLOR_SETS, pictogramColor, tileColor } from "@jigsaw/core";
+import { PuzzlePictogram } from "@jigsaw/react";
+
+const family = COLOR_SETS.find((s) => s.id === "studio")!.families[0]!;
+
+<PuzzlePictogram seed="alpha" size={24} color={pictogramColor(family)} />                        // flat pictogram
+<PuzzlePictogram seed="alpha" size={40} color="#fff" background={tileColor(family)} />           // white on a solid tile
+<PuzzlePictogram seed="alpha" size={24} variant="outline" color="#7A7A8C" title="Alpha" />       // the realistic piece as a line
+```
+
+The pictogram reduces the piece to a sign built on one grid: a unit square whose corners, knobs and notches are all arcs of one radius, in one flat colour. Seeds draw from the 30 side arrangements that still read as a puzzle piece at about 24 px. `variant="outline"` strokes the realistic piece's own Bézier outline. Without React, `vectorSvg(generatePictogram(seed), { size, color, background })` and `vectorSvg(pieceOutline({ seed }), { outline: true })` return standalone SVG strings.
+
+`COLOR_SETS` holds six sets of at most five colour families (Studio, Aluminum, Titanium, Desktop, Mono, System); a family's `colors` also work as a gradient palette for `<PuzzleIcon>`.
 
 ### Core API
 
@@ -137,6 +156,10 @@ interface PuzzleIconOptions {
 - `tests/geometry.test.ts`: closed paths, no self-intersection, area, tab/socket direction, neck limits, shared edges match in reverse, bounds, no overlaps.
 - `tests/deterministic.test.ts`: PRNG pinning, independent streams, no `Math.random`, same seed gives the same description and pixels, variety across seeds.
 - `tests/rendering.test.ts`: 32–512 px × white / dark / transparent × single / cluster / grid golden signatures (`tests/golden/signatures.json`; delete it to re-baseline), bevel lighting direction, albedo preservation, no banding, AA, shadow alpha on transparent, PNG round-trip. Images land in `tests/__output__/`.
+
+- `tests/stamp.test.ts`, `tests/texture.test.ts`, `tests/palette.test.ts`: letter stamps, surface textures and palettes.
+- `tests/interlock.test.ts`, `tests/assembly.test.ts`: single pieces from different seeds fit each other and assemble into a framed puzzle with no gaps.
+- `tests/pictogram.test.ts`: pictogram arrangements and geometry, the piece outline, standalone SVG, and colour families.
 
 ## Determinism
 

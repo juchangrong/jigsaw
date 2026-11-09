@@ -14,3 +14,5 @@ export * from "./material/texture";
 export * from "./shading";
 export * from "./stamp/glyph";
 export * from "./assembly";
+export * from "./pictogram";
+export * from "./color/families";

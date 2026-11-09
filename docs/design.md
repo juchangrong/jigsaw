@@ -11,7 +11,7 @@
 - No color banding, no drop shadow by default, legible from 32 px to 256 px.
 - Avoid: thick strokes, metal, strong specular, cartoon look.
 
-**Non-goals:** animation, physics, perspective, ray tracing, game interaction, AI image generation, glass refraction, SVG export.
+**Non-goals:** animation, physics, perspective, ray tracing, game interaction, AI image generation, glass refraction, SVG export of the rendered material. (Flat vector forms of a piece are provided; see §10.1.)
 
 ## 2. Architecture
 
@@ -166,6 +166,15 @@ gen.generate(opts);    // deterministic description, no GPU needed
 await gen.render(opts);
 await gen.export(opts, { format: "png" }); // also toPNG() / toWebP()
 ```
+
+### 10.1 Vector forms
+
+`packages/core/src/pictogram.ts` gives two renderer-free SVG forms of a single piece, and `<PuzzlePictogram>` draws them inline.
+
+- **Pictogram.** A sign built on one grid: a unit square whose corners, knobs and notches are arcs of one radius (0.18), with knob and notch circles centred 0.06 outside or inside the side. It is one closed path in one flat colour, viewed around its area centroid. Only the 30 arrangements with one or two knobs, one or two notches and at most one flat side are used; a seed keeps its own piece's arrangement when it qualifies and otherwise takes one by hash.
+- **Outline.** The realistic piece's Bézier path in icon units, meant to be stroked.
+
+`packages/core/src/color/families.ts` holds `COLOR_SETS` (at most five families of four shades each, generated from OKLCH) and the flat-colour choices `pictogramColor`, `tileColor` and `tintColor`.
 
 ## 11. Playground
 

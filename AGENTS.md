@@ -5,9 +5,9 @@ Procedural puzzle-piece icon generator: a seed becomes a top-down jigsaw piece w
 ## Repository layout
 
 ```text
-packages/core/      options, seeded PRNG, geometry, SDF, palettes, stamp glyphs, reference shading (no GPU)
+packages/core/      options, seeded PRNG, geometry, SDF, palettes, stamp glyphs, reference shading, SVG pictograms (no GPU)
 packages/renderer/  WebGPU, WebGL2 and CPU backends, WGSL/GLSL shaders, PuzzleIconGenerator
-packages/react/     <PuzzleIcon> component and shared generator
+packages/react/     <PuzzleIcon> and <PuzzlePictogram> components, shared generator
 packages/export/    PNG/WebP encoding
 apps/playground/    Vite + React playground
 tests/              Vitest suites and golden image signatures
