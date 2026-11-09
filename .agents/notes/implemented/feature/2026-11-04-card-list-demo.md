@@ -44,6 +44,10 @@ Candidate tiles stay plain, because there the tile is a selection control.
 
 Hovering a card icon turns the piece a quarter turn (90°) over 420 ms with an ease-out-quart curve, and it eases back when the pointer leaves. The tile, rim and gloss stay still. It is a CSS transition on the canvas that keeps its centring translate, and there is no rotation under `prefers-reduced-motion`. A first version spun the piece a full 360° on hover; the user asked for 90°. With a quarter turn a one-shot animation would snap back, so it is a transition held while hovering. The baked lighting turns with the piece.
 
+An Abstract icon style redraws the piece as a pictogram, because the user found the realistic shape too literal for an icon and asked for a designed, less generated look. It follows the modernist practice of building signs on a grid from basic shapes: a unit square with a 0.2 corner radius, and knobs and notches that are the same circle (radius 0.165), centred 0.06 outside or inside the side. The glyph is one SVG path of straight lines and circular arcs, filled with one flat colour, with no wave, lean, gradient, bevel or gloss. The seed only decides which sides carry a knob, a notch or nothing, taken from the same single piece the other styles draw.
+
+The colour is the lightest shade of the family at OKLCH lightness 0.68 or below, so it stands clear of a white tile. The view is centred on the glyph's area centroid, found by sampling, and the glyph fills about 60% of the tile. Candidates switch to the glyph too, and the hover quarter-turn applies.
+
 ## Alternatives considered
 
 **A section on the playground page.** That page is already long. A separate page shows the cards alone, closer to how the list appears in the product.
