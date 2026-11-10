@@ -24,15 +24,17 @@ const SECTIONS = [...new Set(ITEMS.map((item) => item.tag))];
 /** `index` is the position on screen (sections in order), so icons rotate the way they are read. */
 const INDEXED = SECTIONS.flatMap((tag) => ITEMS.filter((item) => item.tag === tag)).map((item, index) => ({ ...item, index }));
 
-type IconStyle = "glass" | "tile" | "outline" | "abstract" | "solid" | "mosaic" | "mosaicTile" | "bare";
-const STYLE_NAMES: Record<IconStyle, string> = { glass: "Glass", tile: "Plain tile", outline: "Outline", abstract: "Abstract", solid: "Solid", mosaic: "Mosaic", mosaicTile: "Mosaic tile", bare: "Bare piece" };
+type IconStyle = "glass" | "tile" | "outline" | "abstract" | "solid" | "mosaic" | "mosaicTile" | "mosaicJoined" | "bare";
+const STYLE_NAMES: Record<IconStyle, string> = { glass: "Glass", tile: "Plain tile", outline: "Outline", abstract: "Abstract", solid: "Solid", mosaic: "Mosaic", mosaicTile: "Mosaic tile", mosaicJoined: "Joined tile", bare: "Bare piece" };
 /** which switches change anything in each style */
-const STYLES: readonly IconStyle[] = ["glass", "tile", "outline", "abstract", "solid", "mosaic", "mosaicTile", "bare"];
+const STYLES: readonly IconStyle[] = ["glass", "tile", "outline", "abstract", "solid", "mosaic", "mosaicTile", "mosaicJoined", "bare"];
 const asBoolean = (v: unknown) => (typeof v === "boolean" ? v : undefined);
 // for a mosaic the switch chooses four tones (on) or one accent piece (off)
-const USES_GRADIENT: IconStyle[] = ["glass", "tile", "mosaic", "mosaicTile", "bare"];
-const USES_TINT: IconStyle[] = ["glass", "tile", "abstract", "mosaicTile"];
-const isMosaic = (s: IconStyle) => s === "mosaic" || s === "mosaicTile";
+const USES_GRADIENT: IconStyle[] = ["glass", "tile", "mosaic", "mosaicTile", "mosaicJoined", "bare"];
+const USES_TINT: IconStyle[] = ["glass", "tile", "abstract", "mosaicTile", "mosaicJoined"];
+/** the mosaic on a white tile: with cuts between the pieces, or with the pieces joined */
+const isFramedMosaic = (s: IconStyle) => s === "mosaicTile" || s === "mosaicJoined";
+const isMosaic = (s: IconStyle) => s === "mosaic" || isFramedMosaic(s);
 const isGlyph = (s: IconStyle) => s === "abstract" || s === "solid";
 
 /** The realistic piece as a line; its colour comes from CSS. */
@@ -41,9 +43,9 @@ const OutlineIcon = ({ seed, size }: { seed: string; size: number }) => <PuzzleP
 const AbstractIcon = ({ seed, size, color }: { seed: string; size: number; color: string }) => <PuzzlePictogram seed={seed} size={size} color={color} className="outline-icon" />;
 
 /** A tile cut into four pieces in the family's shades. */
-const MosaicIcon = ({ seed, size, family, solid, framed }: { seed: string; size: number; family: ColorFamily; solid: boolean; framed?: boolean }) => (
+const MosaicIcon = ({ seed, size, family, solid, framed, joined }: { seed: string; size: number; family: ColorFamily; solid: boolean; framed?: boolean; joined?: boolean }) => (
   // inside a white tile the tile is the frame, so the mosaic drops its own edge line
-  <PuzzleMosaic seed={seed} size={size} colors={family.colors} variant={solid ? "accent" : "tonal"} edge={!framed} className="mosaic-icon" />
+  <PuzzleMosaic seed={seed} size={size} colors={family.colors} variant={solid ? "accent" : "tonal"} edge={!framed} gap={joined ? 0 : undefined} className="mosaic-icon" />
 );
 /** mosaic size relative to its white tile, in the Mosaic tile style */
 const MOSAIC_INSET = 0.75;
@@ -69,10 +71,10 @@ function CardIcon({ seed, family: f, style, solid, tint }: { seed: string; famil
       </span>
     );
   }
-  if (style === "mosaicTile") {
+  if (isFramedMosaic(style)) {
     return (
       <span className="card-icon tile mosaic-tile" style={tint ? { background: tintColor(f) } : undefined} aria-hidden="true">
-        <MosaicIcon seed={seed} size={Math.round(ICON_PX * MOSAIC_INSET)} family={f} solid={solid} framed />
+        <MosaicIcon seed={seed} size={Math.round(ICON_PX * MOSAIC_INSET)} family={f} solid={solid} framed joined={style === "mosaicJoined"} />
       </span>
     );
   }
@@ -231,8 +233,8 @@ function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidat
             colors: fam.colors,
             ...(g ? { glyph: { path: g.path, viewBox: g.viewBox, fill: style === "solid" ? "#ffffff" : pictogramColor(fam), tile: style === "solid" ? tileColor(fam) : "#ffffff" } } : {}),
             // clip to outline, cut the seams (stroked at `gap`) and corners away, then paint ground and layers
-            ...(m ? { mosaic: { viewBox: m.viewBox, layers: m.layers, seams: m.seams, ...mosaicDrawing(m, fam.colors, { variant: solid ? "accent" : "tonal", edge: style !== "mosaicTile" }) } } : {}),
-            ...(style === "mosaicTile" ? { tile: { background: tint ? tintColor(fam) : "#ffffff", mosaicScale: MOSAIC_INSET } } : {}),
+            ...(m ? { mosaic: { viewBox: m.viewBox, layers: m.layers, seams: m.seams, ...mosaicDrawing(m, fam.colors, { variant: solid ? "accent" : "tonal", edge: !isFramedMosaic(style), gap: style === "mosaicJoined" ? 0 : undefined }) } } : {}),
+            ...(isFramedMosaic(style) ? { tile: { background: tint ? tintColor(fam) : "#ffffff", mosaicScale: MOSAIC_INSET } } : {}),
             ...(style === "outline" ? { outline: pieceOutline({ seed: p.seed }) } : {}),
           };
         }),
@@ -279,9 +281,9 @@ function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidat
                   <span className="picker-mosaic">
                     <MosaicIcon seed={c.seed} size={46} family={familyOf(set, c.slot)} solid={solid} />
                   </span>
-                ) : style === "mosaicTile" ? (
+                ) : isFramedMosaic(style) ? (
                   // the picker tile is already a white tile, so only the inset mosaic is drawn
-                  <MosaicIcon seed={c.seed} size={Math.round(60 * MOSAIC_INSET)} family={familyOf(set, c.slot)} solid={solid} framed />
+                  <MosaicIcon seed={c.seed} size={Math.round(60 * MOSAIC_INSET)} family={familyOf(set, c.slot)} solid={solid} framed joined={style === "mosaicJoined"} />
                 ) : (
                   <PuzzleIcon seed={c.seed} layout="single" gradient={gradientFor(familyOf(set, c.slot), solid)} size={46} />
                 )}
