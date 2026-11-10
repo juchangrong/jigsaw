@@ -1,6 +1,6 @@
 # PuzzleMosaic reference
 
-The installable component in `registry/jigsaw/puzzle-mosaic.tsx`. To add it to a project, see [Install PuzzleMosaic as source](registry.md).
+The installable component in `registry/jigsaw-ui/puzzle-mosaic.tsx`. To add it to a project, see [Install PuzzleMosaic as source](registry.md).
 
 It renders one inline `<svg>`. It uses no hook other than `useId`, so it works in a React Server Component.
 

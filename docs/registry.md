@@ -1,6 +1,6 @@
 # Install PuzzleMosaic as source
 
-`PuzzleMosaic` is published the way shadcn/ui components are: the shadcn CLI copies one source file into your project, and from then on the file is yours to edit. It needs React 18 or later and nothing else: no package from this repository, no Tailwind, no canvas.
+`PuzzleMosaic` is part of the `jigsaw-ui` registry, which works the way shadcn/ui does: the shadcn CLI copies one source file into your project, and from then on the file is yours to edit. Nothing is published to npm, and installing adds no package to your project. It needs React 18 or later and nothing else: no package from this repository, no Tailwind, no canvas.
 
 For its props and palettes, see the [PuzzleMosaic reference](puzzle-mosaic.md). To change the component or add another one to the registry, see [Maintain the registry](registry-maintenance.md).
 
@@ -38,13 +38,13 @@ To install by name, add the registry to your `components.json`:
 ```json
 {
   "registries": {
-    "@jigsaw": "https://<host>/r/{name}.json"
+    "@jigsaw-ui": "https://<host>/r/{name}.json"
   }
 }
 ```
 
 ```sh
-npx shadcn@latest add @jigsaw/puzzle-mosaic
+npx shadcn@latest add @jigsaw-ui/puzzle-mosaic
 ```
 
 ## Use it
