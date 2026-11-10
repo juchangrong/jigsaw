@@ -93,7 +93,7 @@ export async function encodePNG(img: RgbaImage): Promise<Uint8Array> {
 }
 
 export async function pngBlob(img: RgbaImage): Promise<Blob> {
-  return new Blob([(await encodePNG(img)) as BlobPart], { type: "image/png" });
+  return new Blob([(await encodePNG(img))], { type: "image/png" });
 }
 
 /** Encode through a canvas (browser only). Used for WebP. */

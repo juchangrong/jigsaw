@@ -211,7 +211,7 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
     const sides = pieceSides.get(pid)!;
     const free = SIDES.filter((s) => !sides[s]);
     const fixedKind = (s: Side): EdgeKind => {
-      const ref = sides[s]!;
+      const ref = sides[s];
       const k = slots.get(ref.slot)!.edge.kind;
       return ref.reversed ? flip(k) : k;
     };

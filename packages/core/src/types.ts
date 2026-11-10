@@ -194,7 +194,7 @@ export interface PuzzleIconDescription {
   metadata: GeneratorMetadata;
   size: number;
   layout: LayoutKind;
-  background: string | "transparent";
+  background: "transparent" | (string & {});
   palette: { name: string; colors: string[] };
   pieces: PieceDescription[];
   sharedEdges: SharedEdge[];
@@ -238,7 +238,7 @@ export interface PuzzleIconOptions {
   lighting?: Partial<LightingParams>;
   shadow?: Partial<ShadowParams>;
   stamp?: StampOptions;
-  background?: string | "transparent";
+  background?: "transparent" | (string & {});
 }
 
 export interface ResolvedOptions {
@@ -252,5 +252,5 @@ export interface ResolvedOptions {
   lighting: LightingParams;
   shadow: ShadowParams;
   stamp: ResolvedStamp;
-  background: string | "transparent";
+  background: "transparent" | (string & {});
 }

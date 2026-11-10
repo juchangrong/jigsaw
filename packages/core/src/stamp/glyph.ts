@@ -92,7 +92,7 @@ export const EMPTY_STAMP: SdfField = Object.freeze({
   originX: 0,
   originY: 0,
   texel: 1,
-}) as SdfField;
+});
 
 export interface StampFieldOptions {
   font: string;
@@ -150,7 +150,7 @@ class StampCache {
   private map = new Map<string, SdfField>();
   constructor(private capacity = 64) {}
   get(char: string, o: StampFieldOptions): SdfField {
-    const k = `${char}|${o.font}|${o.weight}|${o.size}|${o.resolution}|${o.center ?? ""}`;
+    const k = `${char}|${o.font}|${o.weight}|${o.size}|${o.resolution}|${o.center?.join() ?? ""}`;
     const hit = this.map.get(k);
     if (hit) {
       this.map.delete(k);

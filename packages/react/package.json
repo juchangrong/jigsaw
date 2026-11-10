@@ -1,6 +1,7 @@
 {
   "name": "@jigsaw/react",
   "version": "1.0.0",
+  "private": true,
   "type": "module",
   "main": "./src/index.tsx",
   "types": "./src/index.tsx",

@@ -90,7 +90,7 @@ export class WebGpuBackend implements RenderBackend {
     this.live++;
     this.device.queue.writeTexture(
       { texture: tex },
-      sdf.data as Float32Array<ArrayBuffer>,
+      sdf.data,
       { bytesPerRow: sdf.width * 4 },
       [sdf.width, sdf.height],
     );

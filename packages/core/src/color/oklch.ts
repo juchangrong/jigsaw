@@ -68,7 +68,8 @@ const inGamut = (c: RGB) => c.every((v) => v >= -1e-4 && v <= 1 + 1e-4);
 
 /** OKLCH → sRGB hex, reducing chroma until the color fits the sRGB gamut. */
 export function oklchToHex(lch: OKLCH): string {
-  let [L, C, h] = lch;
+  let [L, C] = lch;
+  const h = lch[2];
   L = Math.min(1, Math.max(0, L));
   let lin = oklabToLinear(oklchToOklab([L, C, h]));
   for (let i = 0; i < 24 && !inGamut(lin); i++) {

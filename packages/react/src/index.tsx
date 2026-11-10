@@ -29,7 +29,10 @@ export function PuzzleIcon({ renderer, className, style, title, onRender, onErro
   const key = JSON.stringify(options);
   const opts = useMemo(() => options, [key]); // eslint-disable-line react-hooks/exhaustive-deps
   const callbacks = useRef({ onRender, onError });
-  callbacks.current = { onRender, onError };
+  // declared before the render effect so a callback that changed with the options is the one called
+  useEffect(() => {
+    callbacks.current = { onRender, onError };
+  });
 
   useEffect(() => {
     // aborting skips the work for an icon that changed or unmounted while queued
@@ -39,7 +42,7 @@ export function PuzzleIcon({ renderer, className, style, title, onRender, onErro
       .then((r) => {
         const c = canvasRef.current;
         if (abort.signal.aborted || !c) return;
-        c.getContext("2d")!.putImageData(new ImageData(r.image.data as Uint8ClampedArray<ArrayBuffer>, r.image.width, r.image.height), 0, 0);
+        c.getContext("2d")!.putImageData(new ImageData(r.image.data, r.image.width, r.image.height), 0, 0);
         callbacks.current.onRender?.(r);
       })
       .catch((e: Error) => {
@@ -66,7 +69,7 @@ export function useRendererBackend(renderer?: RendererPreference): BackendKind |
   const [kind, setKind] = useState<BackendKind | null>(null);
   useEffect(() => {
     let live = true;
-    getSharedGenerator(renderer ? { renderer } : undefined)
+    void getSharedGenerator(renderer ? { renderer } : undefined)
       .backend()
       .then((b) => live && setKind(b.kind));
     return () => {

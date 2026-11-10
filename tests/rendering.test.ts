@@ -62,7 +62,7 @@ const lum = (px: Uint8ClampedArray, i: number) => 0.2126 * px[i]! + 0.7152 * px[
 beforeAll(() => mkdirSync(OUT, { recursive: true }));
 
 describe("visual matrix (32–512 px × white / dark / transparent)", () => {
-  const golden: Record<string, number[]> = existsSync(GOLDEN) ? JSON.parse(readFileSync(GOLDEN, "utf8")) : {};
+  const golden: Record<string, number[]> = existsSync(GOLDEN) ? (JSON.parse(readFileSync(GOLDEN, "utf8")) as Record<string, number[]>) : {};
   const fresh: Record<string, number[]> = {};
 
   for (const layout of ["single", "cluster", "grid"] as const) {
@@ -118,7 +118,7 @@ describe("material properties", () => {
     const { plan, px } = render(flat);
     const p = plan.pieces[0]!;
     const b = p.bevel;
-    const sums = { lit: [0, 0], dim: [0, 0], flat: [0, 0] };
+    const sums: Record<"lit" | "dim" | "flat", [number, number]> = { lit: [0, 0], dim: [0, 0], flat: [0, 0] };
     for (let y = 0; y < plan.height; y++)
       for (let x = 0; x < plan.width; x++) {
         const [lx, ly] = toLocal(p, x, y);

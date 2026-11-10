@@ -64,7 +64,7 @@ export function assembleSinglePieces(options: AssemblyOptions): AssembledPiece[]
   };
   const candidates = (need: Record<Side, EdgeKind | "inner">) => {
     const out: number[] = [];
-    const opts = (s: Side): EdgeKind[] => (need[s] === "inner" ? ["tab", "socket"] : [need[s] as EdgeKind]);
+    const opts = (s: Side): EdgeKind[] => (need[s] === "inner" ? ["tab", "socket"] : [need[s]]);
     for (const t of opts("top"))
       for (const r of opts("right"))
         for (const b of opts("bottom"))

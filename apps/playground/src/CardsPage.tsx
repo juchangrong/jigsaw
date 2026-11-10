@@ -187,8 +187,8 @@ function loadPicks(): Candidate[] {
       index ??= new Map(Array.from({ length: 5000 }, (_, i) => [deriveSeed("card-candidates", i), i] as const));
       return index.get(seed) ?? 0;
     };
-    return list
-      .filter((c): c is { seed: string; slot?: unknown } => typeof c?.seed === "string")
+    return (list as unknown[])
+      .filter((c): c is { seed: string; slot?: unknown } => typeof c === "object" && c !== null && typeof (c as { seed?: unknown }).seed === "string")
       .map((c) => ({ seed: c.seed, slot: typeof c.slot === "number" ? c.slot : slotOf(c.seed) }));
   } catch {
     return [];

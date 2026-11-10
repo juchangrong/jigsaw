@@ -77,7 +77,7 @@ export class Rng {
   }
 }
 
-export function createRng(seed: Seed, stream: RngStream | string): Rng {
+export function createRng(seed: Seed, stream: RngStream | (string & {})): Rng {
   return new Rng(hashString(`${String(seed)}:${stream}`));
 }
 

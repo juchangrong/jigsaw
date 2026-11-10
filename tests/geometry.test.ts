@@ -249,10 +249,10 @@ describe("corner rounding", () => {
     let soft = 0;
     let square = 0;
     for (let i = 0; i < 60; i++) {
-      const [{ p, flat }] = sampled({ seed: `corner-${i}` });
+      const { p, flat } = sampled({ seed: `corner-${i}` })[0]!;
       for (const c of corners) {
         const frame = c.sides.every((s) => p.sides[s].kind === "flat");
-        const d = nearest(flat!, c.at[0], c.at[1]);
+        const d = nearest(flat, c.at[0], c.at[1]);
         // a circular corner of radius r sits r(√2 − 1) from the sharp corner
         if (frame) {
           expect(d).toBeGreaterThan(0.045);

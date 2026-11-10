@@ -30,7 +30,7 @@ export function AssemblyDemo({ options, renderer, backdrop }: { options: PuzzleI
   const labelId = useId();
   const [grid, setGrid] = useState<GridId>("3x3");
   const [round, setRound] = useState(0);
-  const [assembled, setAssembled] = useState(true);
+  const [assembled, setAssembled] = useState(false);
   const { cols, rows } = GRIDS.find((g) => g.id === grid)!;
 
   const { layout: _layout, pieceCount: _count, size: _size, ...look } = options;
@@ -45,8 +45,12 @@ export function AssemblyDemo({ options, renderer, backdrop }: { options: PuzzleI
   }, [lookKey, options.seed, round, cols, rows]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // a new set arrives scattered, then snaps together on the next frame
-  useEffect(() => {
+  const [shown, setShown] = useState(pieces);
+  if (shown !== pieces) {
+    setShown(pieces);
     setAssembled(false);
+  }
+  useEffect(() => {
     const id = requestAnimationFrame(() => requestAnimationFrame(() => setAssembled(true)));
     return () => cancelAnimationFrame(id);
   }, [pieces]);

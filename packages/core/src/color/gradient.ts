@@ -37,7 +37,7 @@ export function generateGradient(rng: Rng, spec: GradientSpec): PieceGradient {
   for (let r = 0; r + 1 < byFlow.length; r++) {
     if (rng.next() < 0.3) [byFlow[r], byFlow[r + 1]] = [byFlow[r + 1]!, byFlow[r]!];
   }
-  const spots: GradientSpot[] = new Array(count);
+  const spots = new Array<GradientSpot>(count);
   byFlow.forEach((pi, rank) => {
     const ci = count === 1 ? 0 : Math.round((rank * (byLight.length - 1)) / (count - 1));
     const [L, C, h] = hexToOklch(byLight[ci]!);

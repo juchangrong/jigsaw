@@ -87,7 +87,7 @@ describe("single pieces assemble without gaps", () => {
       const m = rasterizeMask(poly, n, n, o, o, tex);
       for (let j = 0; j < n * n; j++) {
         if (m[j] && cover[j]) overlap++;
-        cover[j] |= m[j]!;
+        cover[j]! |= m[j]!;
       }
     });
     expect(overlap).toBe(0);

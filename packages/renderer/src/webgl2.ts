@@ -64,7 +64,7 @@ export class WebGl2Backend implements RenderBackend {
       if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(`GLSL: ${gl.getShaderInfoLog(s)}`);
       return s;
     };
-    const program = gl.createProgram()!;
+    const program = gl.createProgram();
     gl.attachShader(program, compile(gl.VERTEX_SHADER, VERTEX));
     gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragmentSource));
     gl.linkProgram(program);
@@ -82,7 +82,7 @@ export class WebGl2Backend implements RenderBackend {
     const hit = this.textures.get(id);
     if (hit) return hit;
     const gl = this.gl;
-    const t = gl.createTexture()!;
+    const t = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, t);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F, sdf.width, sdf.height, 0, gl.RED, gl.FLOAT, sdf.data);
