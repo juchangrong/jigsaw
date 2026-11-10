@@ -1,6 +1,7 @@
 import { COLOR_SETS, deriveSeed, generatePictogram, pictogramColor, pieceArrangement, pieceOutline, tileColor, tintColor, type ColorFamily } from "@jigsaw/core";
 import { PuzzleIcon, PuzzlePictogram } from "@jigsaw/react";
 import { useEffect, useId, useMemo, useState, type CSSProperties } from "react";
+import { useStoredState } from "./storage";
 
 /** Mock items, in the copy style of the product list this page imitates. */
 const ITEMS = [
@@ -26,6 +27,8 @@ const INDEXED = SECTIONS.flatMap((tag) => ITEMS.filter((item) => item.tag === ta
 type IconStyle = "glass" | "tile" | "outline" | "abstract" | "solid" | "bare";
 const STYLE_NAMES: Record<IconStyle, string> = { glass: "Glass", tile: "Plain tile", outline: "Outline", abstract: "Abstract", solid: "Solid", bare: "Bare piece" };
 /** which switches change anything in each style */
+const STYLES: readonly IconStyle[] = ["glass", "tile", "outline", "abstract", "solid", "bare"];
+const asBoolean = (v: unknown) => (typeof v === "boolean" ? v : undefined);
 const USES_GRADIENT: IconStyle[] = ["glass", "tile", "bare"];
 const USES_TINT: IconStyle[] = ["glass", "tile", "abstract"];
 const isGlyph = (s: IconStyle) => s === "abstract" || s === "solid";
@@ -102,7 +105,6 @@ const BATCH = 24;
 /** how many candidates to look through for distinct ones */
 const SCAN_LIMIT = 400;
 const STORAGE_KEY = "jigsaw.cardCandidates";
-const SET_KEY = "jigsaw.cardColorSet";
 const keyOf = (c: Candidate) => c.seed;
 const candidateAt = (i: number): Candidate => ({ seed: deriveSeed("card-candidates", i), slot: i });
 const familyOf = (set: ColorFamily[], slot: number) => set[((slot % set.length) + set.length) % set.length]!;
@@ -255,28 +257,14 @@ function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidat
  */
 export function CardsPage() {
   const groupId = useId();
-  const [style, setStyle] = useState<IconStyle>("glass");
+  const [style, setStyle] = useStoredState<IconStyle>("cardStyle", "glass", (v) => STYLES.find((s) => s === v));
   const [salt, setSalt] = useState(0);
   const [picks, setPicks] = useState<Candidate[]>(loadPicks);
-  const [gradientOn, setGradientOn] = useState(true);
-  const [tintOn, setTintOn] = useState(false);
-  const [setId, setSetId] = useState<string>(() => {
-    try {
-      return window.localStorage.getItem(SET_KEY) ?? "studio";
-    } catch {
-      return "studio";
-    }
-  });
+  const [gradientOn, setGradientOn] = useStoredState("cardGradient", true, asBoolean);
+  const [tintOn, setTintOn] = useStoredState("cardTint", false, asBoolean);
+  const [setId, setSetId] = useStoredState("cardColorSet", "studio", (v) => COLOR_SETS.find((c) => c.id === v)?.id);
   const colorSet = COLOR_SETS.find((c) => c.id === setId) ?? COLOR_SETS[0]!;
   useEffect(() => savePicks(picks), [picks]);
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(SET_KEY, colorSet.id);
-    } catch {
-      // storage blocked: the set lasts for this visit only
-    }
-  }, [colorSet.id]);
-  const styles: IconStyle[] = ["glass", "tile", "outline", "abstract", "solid", "bare"];
   const setsLabelId = useId();
   /** icon for the card at list position `index` */
   const iconFor = (name: string, index: number): { seed: string; family: ColorFamily } => {
@@ -310,12 +298,12 @@ export function CardsPage() {
               const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
               if (!step) return;
               e.preventDefault();
-              const i = (styles.indexOf(style) + step + styles.length) % styles.length;
-              setStyle(styles[i]!);
+              const i = (STYLES.indexOf(style) + step + STYLES.length) % STYLES.length;
+              setStyle(STYLES[i]!);
               (e.currentTarget.children[i] as HTMLElement | undefined)?.focus();
             }}
           >
-            {styles.map((s) => (
+            {STYLES.map((s) => (
               <button key={s} type="button" role="radio" aria-checked={s === style} tabIndex={s === style ? 0 : -1} className={s === style ? "on" : ""} onClick={() => setStyle(s)}>
                 {STYLE_NAMES[s]}
               </button>

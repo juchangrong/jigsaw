@@ -2,6 +2,7 @@ import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { CardsPage } from "./CardsPage";
+import { ErrorBoundary } from "./ErrorBoundary";
 import "./styles.css";
 
 /** Two pages, switched by the URL hash: `#/` (playground) and `#/cards`. */
@@ -15,7 +16,9 @@ function Root() {
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
-  return hash === "#/cards" ? <CardsPage /> : <App />;
+  const cards = hash === "#/cards";
+  // keyed by page, so going to the other page leaves a failed one behind
+  return <ErrorBoundary key={cards ? "cards" : "playground"}>{cards ? <CardsPage /> : <App />}</ErrorBoundary>;
 }
 
 createRoot(document.getElementById("root")!).render(

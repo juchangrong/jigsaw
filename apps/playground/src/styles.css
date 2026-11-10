@@ -821,3 +821,30 @@ input[type="range"] {
     position: static;
   }
 }
+
+/* --- render error fallback --- */
+.error-page {
+  max-width: 560px;
+  margin: 12vh auto 0;
+  padding: 0 24px;
+  display: grid;
+  gap: 12px;
+}
+.error-page h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+.error-page p {
+  margin: 0;
+}
+.error-page pre {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
