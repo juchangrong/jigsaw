@@ -67,8 +67,7 @@ export function assembleSinglePieces(options: AssemblyOptions): AssembledPiece[]
     const opts = (s: Side): EdgeKind[] => (need[s] === "inner" ? ["tab", "socket"] : [need[s]]);
     for (const t of opts("top"))
       for (const r of opts("right"))
-        for (const b of opts("bottom"))
-          for (const l of opts("left")) for (const d of byKinds.get(`${t},${r},${b},${l}`) ?? []) out.push(d);
+        for (const b of opts("bottom")) for (const l of opts("left")) for (const d of byKinds.get(`${t},${r},${b},${l}`) ?? []) out.push(d);
     return out;
   };
   const place = (i: number): boolean => {

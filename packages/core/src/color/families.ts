@@ -133,7 +133,13 @@ export const COLOR_SETS: readonly ColorSet[] = [
   {
     id: "ink",
     label: "Ink",
-    families: [inked("coral", 22, 0.18, 0.7, 0.93), inked("orange", 64, 0.16, 0.78, 0.94), inked("blue", 252, 0.16, 0.66, 0.92), inked("green", 140, 0.16, 0.74, 0.93), inked("purple", 296, 0.17, 0.67, 0.92)],
+    families: [
+      inked("coral", 22, 0.18, 0.7, 0.93),
+      inked("orange", 64, 0.16, 0.78, 0.94),
+      inked("blue", 252, 0.16, 0.66, 0.92),
+      inked("green", 140, 0.16, 0.74, 0.93),
+      inked("purple", 296, 0.17, 0.67, 0.92),
+    ],
   },
 ];
 

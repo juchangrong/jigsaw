@@ -132,9 +132,7 @@ function toOptions(s: State, size: number): PuzzleIconOptions {
       ambient: s.ambient,
       specular: s.specular,
     },
-    stamp: s.stampText
-      ? { text: s.stampText, style: s.stampStyle, size: s.stampSize, depth: s.stampDepth, ink: s.stampInk, weight: s.stampWeight }
-      : undefined,
+    stamp: s.stampText ? { text: s.stampText, style: s.stampStyle, size: s.stampSize, depth: s.stampDepth, ink: s.stampInk, weight: s.stampWeight } : undefined,
     background: "transparent",
   };
 }
@@ -148,7 +146,15 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function Slider(props: { label: string; value: number; min: number; max: number; step: number; onChange: (v: number) => void; format?: (v: number) => string }) {
+function Slider(props: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (v: number) => void;
+  format?: (v: number) => string;
+}) {
   const { label, value, min, max, step, onChange, format } = props;
   return (
     <label className="row">
@@ -224,7 +230,14 @@ function Segmented<T extends string | number>(props: {
 }
 
 /** A labeled segmented control laid out like a slider row. */
-function Choice<T extends string | number>(props: { label: string; value: T; options: readonly T[]; onChange: (v: T) => void; render?: (v: T) => string; wrap?: boolean }) {
+function Choice<T extends string | number>(props: {
+  label: string;
+  value: T;
+  options: readonly T[];
+  onChange: (v: T) => void;
+  render?: (v: T) => string;
+  wrap?: boolean;
+}) {
   const id = useId();
   return (
     <div className={props.wrap ? "row choice wrap" : "row choice"}>
@@ -364,9 +377,17 @@ export function App() {
         <aside className="panel">
           <Section title="Layout">
             <Choice label="Arrangement" value={s.layout} options={["single", "cluster", "grid"] as const} onChange={(v) => set("layout", v)} />
-            {s.layout === "cluster" && <Slider label="Pieces" value={s.pieceCount} min={2} max={5} step={1} onChange={(v) => set("pieceCount", v)} format={(v) => String(v)} />}
+            {s.layout === "cluster" && (
+              <Slider label="Pieces" value={s.pieceCount} min={2} max={5} step={1} onChange={(v) => set("pieceCount", v)} format={(v) => String(v)} />
+            )}
             {s.layout === "grid" && (
-              <Choice label="Grid size" value={s.pieceCount >= 9 ? 9 : 4} options={[4, 9] as const} onChange={(v) => set("pieceCount", v)} render={(v) => (v === 4 ? "2×2" : "3×3")} />
+              <Choice
+                label="Grid size"
+                value={s.pieceCount >= 9 ? 9 : 4}
+                options={[4, 9] as const}
+                onChange={(v) => set("pieceCount", v)}
+                render={(v) => (v === 4 ? "2×2" : "3×3")}
+              />
             )}
           </Section>
 
@@ -375,7 +396,9 @@ export function App() {
             <Slider label="Curvature" value={s.curvature} min={0} max={1} step={0.01} onChange={(v) => set("curvature", v)} />
             <Slider label="Asymmetry" value={s.asymmetry} min={0} max={1} step={0.01} onChange={(v) => set("asymmetry", v)} />
             {s.layout !== "single" && <Slider label="Separation" value={s.separation} min={0} max={0.3} step={0.005} onChange={(v) => set("separation", v)} />}
-            {s.layout === "cluster" && <Slider label="Rotation" value={s.rotation} min={0} max={20} step={0.5} onChange={(v) => set("rotation", v)} format={(v) => `${v}°`} />}
+            {s.layout === "cluster" && (
+              <Slider label="Rotation" value={s.rotation} min={0} max={20} step={0.5} onChange={(v) => set("rotation", v)} format={(v) => `${v}°`} />
+            )}
           </Section>
 
           <Section title="Gradient">
@@ -384,18 +407,37 @@ export function App() {
                 From seed
               </button>
               {PALETTE_NAMES.map((name) => (
-                <button key={name} type="button" className={s.palette === name ? "on" : ""} aria-pressed={s.palette === name} onClick={() => set("palette", name)}>
+                <button
+                  key={name}
+                  type="button"
+                  className={s.palette === name ? "on" : ""}
+                  aria-pressed={s.palette === name}
+                  onClick={() => set("palette", name)}
+                >
                   <span className="swatch" style={{ background: `linear-gradient(135deg, ${PALETTES[name].join(",")})` }} />
                   {name}
                 </button>
               ))}
             </div>
-            <Slider label="Spots" value={s.spots} min={0} max={5} step={1} onChange={(v) => set("spots", v < 3 ? 0 : v)} format={(v) => (v < 3 ? "seed" : String(v))} />
+            <Slider
+              label="Spots"
+              value={s.spots}
+              min={0}
+              max={5}
+              step={1}
+              onChange={(v) => set("spots", v < 3 ? 0 : v)}
+              format={(v) => (v < 3 ? "seed" : String(v))}
+            />
             <Slider label="Softness" value={s.softness} min={0} max={1} step={0.01} onChange={(v) => set("softness", v)} />
           </Section>
 
           <Section title="Material">
-            <Choice label="Preset" value={s.preset} options={Object.keys(MATERIAL_PRESETS) as MaterialPreset[]} onChange={(v) => setS((p) => ({ ...p, preset: v, ...MATERIAL_PRESETS[v] }))} />
+            <Choice
+              label="Preset"
+              value={s.preset}
+              options={Object.keys(MATERIAL_PRESETS) as MaterialPreset[]}
+              onChange={(v) => setS((p) => ({ ...p, preset: v, ...MATERIAL_PRESETS[v] }))}
+            />
             <Slider label="Bevel width" value={s.bevelWidth} min={0.01} max={0.15} step={0.001} onChange={(v) => set("bevelWidth", v)} />
             <Slider label="Bevel strength" value={s.bevelStrength} min={0} max={1.5} step={0.01} onChange={(v) => set("bevelStrength", v)} />
             <Slider label="Thickness" value={s.thickness} min={0} max={0.06} step={0.001} onChange={(v) => set("thickness", v)} />
@@ -406,7 +448,15 @@ export function App() {
             {s.texture !== "none" && (
               <>
                 <Slider label="Strength" value={s.textureStrength} min={0} max={1} step={0.01} onChange={(v) => set("textureStrength", v)} />
-                <Slider label="Grain" value={s.textureScale} min={0.25} max={4} step={0.05} onChange={(v) => set("textureScale", v)} format={(v) => `${v.toFixed(2)}×`} />
+                <Slider
+                  label="Grain"
+                  value={s.textureScale}
+                  min={0.25}
+                  max={4}
+                  step={0.05}
+                  onChange={(v) => set("textureScale", v)}
+                  format={(v) => `${v.toFixed(2)}×`}
+                />
               </>
             )}
           </Section>
@@ -435,14 +485,28 @@ export function App() {
 
           <Section title="Lighting">
             <Slider label="Angle" value={s.lightAngle} min={0} max={360} step={1} onChange={(v) => set("lightAngle", v)} format={(v) => `${v.toFixed(0)}°`} />
-            <Slider label="Elevation" value={s.lightElevation} min={15} max={85} step={1} onChange={(v) => set("lightElevation", v)} format={(v) => `${v.toFixed(0)}°`} />
+            <Slider
+              label="Elevation"
+              value={s.lightElevation}
+              min={15}
+              max={85}
+              step={1}
+              onChange={(v) => set("lightElevation", v)}
+              format={(v) => `${v.toFixed(0)}°`}
+            />
             <Slider label="Intensity" value={s.intensity} min={0} max={1.5} step={0.01} onChange={(v) => set("intensity", v)} />
             <Slider label="Ambient" value={s.ambient} min={0} max={1.5} step={0.01} onChange={(v) => set("ambient", v)} />
             <Slider label="Specular" value={s.specular} min={0} max={1} step={0.01} onChange={(v) => set("specular", v)} />
           </Section>
 
           <Section title="Export">
-            <Choice label="Format" value={exportFormat} options={["png", "webp"] as const} onChange={setExportFormat} render={(v) => (v === "png" ? "PNG" : "WebP")} />
+            <Choice
+              label="Format"
+              value={exportFormat}
+              options={["png", "webp"] as const}
+              onChange={setExportFormat}
+              render={(v) => (v === "png" ? "PNG" : "WebP")}
+            />
             <Choice label="Resolution" value={exportSize} options={[256, 512, 1024] as const} onChange={setExportSize} render={(v) => `${v} px`} />
             <label className="row check">
               <input type="checkbox" checked={transparent} onChange={(e) => setTransparent(e.target.checked)} />

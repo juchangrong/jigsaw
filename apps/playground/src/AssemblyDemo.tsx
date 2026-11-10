@@ -81,7 +81,15 @@ export function AssemblyDemo({ options, renderer, backdrop }: { options: PuzzleI
           }}
         >
           {GRIDS.map((g) => (
-            <button key={g.id} type="button" role="radio" aria-checked={g.id === grid} tabIndex={g.id === grid ? 0 : -1} className={g.id === grid ? "on" : ""} onClick={() => setGrid(g.id)}>
+            <button
+              key={g.id}
+              type="button"
+              role="radio"
+              aria-checked={g.id === grid}
+              tabIndex={g.id === grid ? 0 : -1}
+              className={g.id === grid ? "on" : ""}
+              onClick={() => setGrid(g.id)}
+            >
               {g.cols}×{g.rows}
             </button>
           ))}
@@ -95,7 +103,12 @@ export function AssemblyDemo({ options, renderer, backdrop }: { options: PuzzleI
       </div>
       <div className={`assembly-stage ${backdrop}`}>
         {pieces ? (
-          <div className="assembly-board" style={{ width, height }} role="img" aria-label={`${cols} by ${rows} puzzle assembled from ${pieces.length} single-piece icons`}>
+          <div
+            className="assembly-board"
+            style={{ width, height }}
+            role="img"
+            aria-label={`${cols} by ${rows} puzzle assembled from ${pieces.length} single-piece icons`}
+          >
             {pieces.map((p, i) => {
               const s = scatter(i, round);
               const x = pad + p.cell[0] * cell - p.cellOrigin[0] * ICON_PX;

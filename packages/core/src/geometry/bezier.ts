@@ -19,10 +19,7 @@ export function evalCubic(s: BezierSegment, t: number): Vec2 {
   const b = 3 * mt * mt * t;
   const c = 3 * mt * t * t;
   const d = t * t * t;
-  return [
-    a * s.p0[0] + b * s.p1[0] + c * s.p2[0] + d * s.p3[0],
-    a * s.p0[1] + b * s.p1[1] + c * s.p2[1] + d * s.p3[1],
-  ];
+  return [a * s.p0[0] + b * s.p1[0] + c * s.p2[0] + d * s.p3[0], a * s.p0[1] + b * s.p1[1] + c * s.p2[1] + d * s.p3[1]];
 }
 
 export function reverseSegment(s: BezierSegment): BezierSegment {

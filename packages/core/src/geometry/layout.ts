@@ -1,20 +1,19 @@
 import { createRng, hashString, type Rng } from "../prng";
-import type {
-  BezierSegment,
-  Bounds,
-  EdgeKind,
-  LayoutKind,
-  PieceSide,
-  PieceTransform,
-  PuzzleEdge,
-  ResolvedOptions,
-  SharedEdge,
-  Side,
-  Vec2,
-} from "../types";
+import type { BezierSegment, Bounds, EdgeKind, LayoutKind, PieceSide, PieceTransform, PuzzleEdge, ResolvedOptions, SharedEdge, Side, Vec2 } from "../types";
 import { SIDES } from "../types";
 import { flattenPath, mapSegment, pathBounds, pointInPolygon, polygonBounds, polygonCentroid, reversePath } from "./bezier";
-import { cornerArc, placeEdge, randomEdge, sanitizeEdge, SOFT_CORNER, SQUARE_CORNER, standardEdge, trimEdgeEnds, type CornerShape, type EdgeBias } from "./edge";
+import {
+  cornerArc,
+  placeEdge,
+  randomEdge,
+  sanitizeEdge,
+  SOFT_CORNER,
+  SQUARE_CORNER,
+  standardEdge,
+  trimEdgeEnds,
+  type CornerShape,
+  type EdgeBias,
+} from "./edge";
 
 /** Minimum neck width in output pixels. */
 export const MIN_NECK_PX = 3;
@@ -85,9 +84,7 @@ function chooseCells(layout: LayoutKind, count: number, rng: Rng): [number, numb
   const cells = [...chosen.values()];
   const minI = Math.min(...cells.map((c) => c[0]));
   const minJ = Math.min(...cells.map((c) => c[1]));
-  return cells
-    .map((c) => [c[0] - minI, c[1] - minJ] as [number, number])
-    .sort((p, q) => p[1] - q[1] || p[0] - q[0]);
+  return cells.map((c) => [c[0] - minI, c[1] - minJ] as [number, number]).sort((p, q) => p[1] - q[1] || p[0] - q[0]);
 }
 
 /** Per-piece validity rules for the edge kinds (top, right, bottom, left). */
@@ -300,10 +297,7 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
   const sep = opts.layout === "single" ? 0 : opts.geometry.separation;
   const inset = opts.layout === "grid" ? sep / 2 : isCluster ? Math.min(0.012, sep / 2) : 0;
   const maxRot = isCluster ? (opts.geometry.rotation * Math.PI) / 180 : 0;
-  const centroid: Vec2 = [
-    cells.reduce((a, c) => a + c[0] + 0.5, 0) / cells.length,
-    cells.reduce((a, c) => a + c[1] + 0.5, 0) / cells.length,
-  ];
+  const centroid: Vec2 = [cells.reduce((a, c) => a + c[0] + 0.5, 0) / cells.length, cells.reduce((a, c) => a + c[1] + 0.5, 0) / cells.length];
   const jitter = cells.map(() => ({
     jx: isCluster ? layoutRng.signed(0.25) : 0,
     jy: isCluster ? layoutRng.signed(0.25) : 0,
@@ -313,10 +307,7 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
     cells.map((c, i) => {
       const j = jitter[i]!;
       return {
-        center: [
-          c[0] + 0.5 + (c[0] + 0.5 - centroid[0]) * spread + j.jx * sep,
-          c[1] + 0.5 + (c[1] + 0.5 - centroid[1]) * spread + j.jy * sep,
-        ] as Vec2,
+        center: [c[0] + 0.5 + (c[0] + 0.5 - centroid[0]) * spread + j.jx * sep, c[1] + 0.5 + (c[1] + 0.5 - centroid[1]) * spread + j.jy * sep] as Vec2,
         rot: j.rot * maxRot * rotScale,
       };
     });

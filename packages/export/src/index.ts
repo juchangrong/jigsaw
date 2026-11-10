@@ -93,7 +93,7 @@ export async function encodePNG(img: RgbaImage): Promise<Uint8Array> {
 }
 
 export async function pngBlob(img: RgbaImage): Promise<Blob> {
-  return new Blob([(await encodePNG(img))], { type: "image/png" });
+  return new Blob([await encodePNG(img)], { type: "image/png" });
 }
 
 /** Encode through a canvas (browser only). Used for WebP. */
@@ -112,9 +112,7 @@ export async function canvasBlob(img: RgbaImage, format: ExportFormat, quality =
   c.width = img.width;
   c.height = img.height;
   c.getContext("2d")!.putImageData(imageData, 0, 0);
-  return new Promise((resolve, reject) =>
-    c.toBlob((b) => (b ? resolve(b) : reject(new Error("encode failed"))), type, quality),
-  );
+  return new Promise((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new Error("encode failed"))), type, quality));
 }
 
 export async function encodeImage(img: RgbaImage, format: ExportFormat, quality?: number): Promise<Blob> {

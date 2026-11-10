@@ -22,8 +22,7 @@ import { renderPlanCpu } from "../packages/renderer/src/cpu";
 const bar: GlyphRasterizer = ({ size: n }) => {
   const alpha = new Float32Array(n * n);
   const cov = (v: number, lo: number, hi: number) => Math.min(1, Math.max(0, Math.min(v - lo, hi - v) + 0.5));
-  for (let j = 0; j < n; j++)
-    for (let i = 0; i < n; i++) alpha[j * n + i] = cov(i + 0.5, 0.4 * n, 0.6 * n) * cov(j + 0.5, 0.19 * n, 0.81 * n);
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) alpha[j * n + i] = cov(i + 0.5, 0.4 * n, 0.6 * n) * cov(j + 0.5, 0.19 * n, 0.81 * n);
   return { alpha, size: n };
 };
 

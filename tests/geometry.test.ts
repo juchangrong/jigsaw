@@ -22,8 +22,7 @@ import {
 
 const seeds = (n: number, prefix = "s") => Array.from({ length: n }, (_, i) => `${prefix}${i}`);
 const close = (a: Vec2, b: Vec2, eps = 1e-9) => Math.abs(a[0] - b[0]) < eps && Math.abs(a[1] - b[1]) < eps;
-const segClose = (a: BezierSegment, b: BezierSegment) =>
-  close(a.p0, b.p0) && close(a.p1, b.p1) && close(a.p2, b.p2) && close(a.p3, b.p3);
+const segClose = (a: BezierSegment, b: BezierSegment) => close(a.p0, b.p0) && close(a.p1, b.p1) && close(a.p2, b.p2) && close(a.p3, b.p3);
 const toWorld = (p: PieceDescription) =>
   p.path.map((s) => {
     const f = (q: Vec2): Vec2 => [q[0] + p.cell[0], q[1] + p.cell[1]];
@@ -103,8 +102,7 @@ describe("single piece", () => {
         else if (side.kind === "socket") {
           const tab = flattenPath(edgeProfile({ ...side.edge, kind: "tab" }), 0.002);
           expect(reach[s]).toBeLessThan(-Math.min(...tab.map((q) => q[1])) + 1e-3);
-        }
-        else expect(reach[s]).toBeLessThan(1e-6);
+        } else expect(reach[s]).toBeLessThan(1e-6);
         if (side.kind === "socket") {
           // the point a little inside the side's centre must be outside the piece
           const c = side.edge.center;

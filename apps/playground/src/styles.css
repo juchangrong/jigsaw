@@ -15,7 +15,13 @@
   --on-dark-muted: #a6a6bb;
   --radius: 10px;
   --ease-out: cubic-bezier(0.25, 1, 0.5, 1);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   font-size: 14px;
   color: var(--text);
   background: var(--bg);
@@ -205,10 +211,15 @@ input[type="checkbox"] {
 
 .checker {
   background-color: #fff;
-  background-image: linear-gradient(45deg, #ececf1 25%, transparent 25%), linear-gradient(-45deg, #ececf1 25%, transparent 25%),
+  background-image:
+    linear-gradient(45deg, #ececf1 25%, transparent 25%), linear-gradient(-45deg, #ececf1 25%, transparent 25%),
     linear-gradient(45deg, transparent 75%, #ececf1 75%), linear-gradient(-45deg, transparent 75%, #ececf1 75%);
   background-size: 16px 16px;
-  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-position:
+    0 0,
+    0 8px,
+    8px -8px,
+    -8px 0;
 }
 .white {
   background: #ffffff;
@@ -513,9 +524,7 @@ input[type="checkbox"] {
   border-radius: 11px;
   overflow: visible;
   isolation: isolate;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.55) 55%, rgba(255, 255, 255, 0.35) 100%),
-    var(--glass-tint);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.55) 55%, rgba(255, 255, 255, 0.35) 100%), var(--glass-tint);
   -webkit-backdrop-filter: blur(8px) saturate(1.6);
   backdrop-filter: blur(8px) saturate(1.6);
   box-shadow:

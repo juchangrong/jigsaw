@@ -59,7 +59,15 @@ export function AppIconPreview({ options, renderer, backdrop }: { options: Puzzl
           }}
         >
           {TILES.map((t) => (
-            <button key={t} type="button" role="radio" aria-checked={t === tile} tabIndex={t === tile ? 0 : -1} className={t === tile ? "on" : ""} onClick={() => setTile(t)}>
+            <button
+              key={t}
+              type="button"
+              role="radio"
+              aria-checked={t === tile}
+              tabIndex={t === tile ? 0 : -1}
+              className={t === tile ? "on" : ""}
+              onClick={() => setTile(t)}
+            >
               {TILE_NAMES[t]}
             </button>
           ))}

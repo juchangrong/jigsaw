@@ -367,4 +367,3 @@ export function shadeSurface(plan: RenderPlan, p: PiecePlan, px: number, py: num
   const out = (c: number) => clamp01(linearToSrgbChannel(lit(c)) + n) * coverage;
   return [out(r), out(g), out(b), coverage];
 }
-

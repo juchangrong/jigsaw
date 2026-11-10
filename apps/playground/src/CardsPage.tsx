@@ -1,4 +1,16 @@
-import { COLOR_SETS, deriveSeed, generateMosaic, generatePictogram, mosaicDrawing, pictogramColor, pieceArrangement, pieceOutline, tileColor, tintColor, type ColorFamily } from "@jigsaw/core";
+import {
+  COLOR_SETS,
+  deriveSeed,
+  generateMosaic,
+  generatePictogram,
+  mosaicDrawing,
+  pictogramColor,
+  pieceArrangement,
+  pieceOutline,
+  tileColor,
+  tintColor,
+  type ColorFamily,
+} from "@jigsaw/core";
 import { PuzzleIcon, PuzzleMosaic, PuzzlePictogram } from "@jigsaw/react";
 import { useEffect, useId, useMemo, useState, type CSSProperties } from "react";
 import { STORAGE_PREFIX, useStoredState } from "./storage";
@@ -25,7 +37,15 @@ const SECTIONS = [...new Set(ITEMS.map((item) => item.tag))];
 const INDEXED = SECTIONS.flatMap((tag) => ITEMS.filter((item) => item.tag === tag)).map((item, index) => ({ ...item, index }));
 
 type IconStyle = "glass" | "tile" | "outline" | "abstract" | "solid" | "mosaic" | "bare";
-const STYLE_NAMES: Record<IconStyle, string> = { glass: "Glass", tile: "Plain tile", outline: "Outline", abstract: "Abstract", solid: "Solid", mosaic: "Mosaic", bare: "Bare piece" };
+const STYLE_NAMES: Record<IconStyle, string> = {
+  glass: "Glass",
+  tile: "Plain tile",
+  outline: "Outline",
+  abstract: "Abstract",
+  solid: "Solid",
+  mosaic: "Mosaic",
+  bare: "Bare piece",
+};
 const STYLES: readonly IconStyle[] = ["glass", "tile", "outline", "abstract", "solid", "mosaic", "bare"];
 const asBoolean = (v: unknown) => (typeof v === "boolean" ? v : undefined);
 /** which switches change anything in each style */
@@ -58,12 +78,22 @@ const isGlyph = (s: IconStyle) => s === "abstract" || s === "solid";
 /** The realistic piece as a line; its colour comes from CSS. */
 const OutlineIcon = ({ seed, size }: { seed: string; size: number }) => <PuzzlePictogram seed={seed} size={size} variant="outline" className="outline-icon" />;
 /** The geometric pictogram in one flat colour. */
-const AbstractIcon = ({ seed, size, color }: { seed: string; size: number; color: string }) => <PuzzlePictogram seed={seed} size={size} color={color} className="outline-icon" />;
+const AbstractIcon = ({ seed, size, color }: { seed: string; size: number; color: string }) => (
+  <PuzzlePictogram seed={seed} size={size} color={color} className="outline-icon" />
+);
 
 /** A tile cut into four pieces in the family's shades. */
 const MosaicIcon = ({ seed, size, family, solid, look }: { seed: string; size: number; family: ColorFamily; solid: boolean; look: MosaicLook }) => (
   // inside a white tile the tile is the frame, so the mosaic drops its own edge line
-  <PuzzleMosaic seed={seed} size={size} colors={family.colors} variant={solid ? "accent" : "tonal"} edge={!look.padded} gap={look.gaps ? undefined : 0} className="mosaic-icon" />
+  <PuzzleMosaic
+    seed={seed}
+    size={size}
+    colors={family.colors}
+    variant={solid ? "accent" : "tonal"}
+    edge={!look.padded}
+    gap={look.gaps ? undefined : 0}
+    className="mosaic-icon"
+  />
 );
 /** mosaic size relative to its white tile, with Padding on */
 const MOSAIC_INSET = 0.75;
@@ -80,7 +110,21 @@ function gradientFor(f: ColorFamily, solid: boolean) {
   return { palette: [tone, tone] };
 }
 
-function CardIcon({ seed, family: f, style, solid, tint, mosaic }: { seed: string; family: ColorFamily; style: IconStyle; solid: boolean; tint: boolean; mosaic: MosaicLook }) {
+function CardIcon({
+  seed,
+  family: f,
+  style,
+  solid,
+  tint,
+  mosaic,
+}: {
+  seed: string;
+  family: ColorFamily;
+  style: IconStyle;
+  solid: boolean;
+  tint: boolean;
+  mosaic: MosaicLook;
+}) {
   const gradient = gradientFor(f, solid);
   if (style === "solid") {
     return (
@@ -169,7 +213,17 @@ interface CardPreset {
 }
 const PRESETS: readonly CardPreset[] = [
   // the look the maintainer settled on: one deep piece per tile, four bright hues
-  { id: "bright-mosaic", label: "Bright mosaic", style: "mosaic", colorSet: "bright", gradient: false, tint: false, padding: false, gaps: true, picks: [37, 25, 29, 8].map(candidateAt) },
+  {
+    id: "bright-mosaic",
+    label: "Bright mosaic",
+    style: "mosaic",
+    colorSet: "bright",
+    gradient: false,
+    tint: false,
+    padding: false,
+    gaps: true,
+    picks: [37, 25, 29, 8].map(candidateAt),
+  },
 ];
 /** what a first visit shows */
 const DEFAULT_PRESET = PRESETS[0]!;
@@ -203,7 +257,16 @@ function savePicks(picks: Candidate[]) {
 }
 
 /** A grid of candidate icons; clicking one picks or unpicks it. */
-function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidate[]) => void; solid: boolean; tint: boolean; set: ColorFamily[]; setId: string; style: IconStyle; mosaic: MosaicLook }) {
+function CandidatePicker(props: {
+  picks: Candidate[];
+  onChange: (picks: Candidate[]) => void;
+  solid: boolean;
+  tint: boolean;
+  set: ColorFamily[];
+  setId: string;
+  style: IconStyle;
+  mosaic: MosaicLook;
+}) {
   const { picks, onChange, solid, tint, set, setId, style, mosaic } = props;
   const padded = style === "mosaic" && mosaic.padded;
   const headingId = useId();
@@ -253,9 +316,27 @@ function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidat
             seed: p.seed,
             family: fam.id,
             colors: fam.colors,
-            ...(g ? { glyph: { path: g.path, viewBox: g.viewBox, fill: style === "solid" ? "#ffffff" : pictogramColor(fam), tile: style === "solid" ? tileColor(fam) : "#ffffff" } } : {}),
+            ...(g
+              ? {
+                  glyph: {
+                    path: g.path,
+                    viewBox: g.viewBox,
+                    fill: style === "solid" ? "#ffffff" : pictogramColor(fam),
+                    tile: style === "solid" ? tileColor(fam) : "#ffffff",
+                  },
+                }
+              : {}),
             // clip to outline, cut the seams (stroked at `gap`) and corners away, then paint ground and layers
-            ...(m ? { mosaic: { viewBox: m.viewBox, layers: m.layers, seams: m.seams, ...mosaicDrawing(m, fam.colors, { variant: solid ? "accent" : "tonal", edge: !mosaic.padded, gap: mosaic.gaps ? undefined : 0 }) } } : {}),
+            ...(m
+              ? {
+                  mosaic: {
+                    viewBox: m.viewBox,
+                    layers: m.layers,
+                    seams: m.seams,
+                    ...mosaicDrawing(m, fam.colors, { variant: solid ? "accent" : "tonal", edge: !mosaic.padded, gap: mosaic.gaps ? undefined : 0 }),
+                  },
+                }
+              : {}),
             ...(padded ? { tile: { background: tint ? tintColor(fam) : "#ffffff", mosaicScale: MOSAIC_INSET } } : {}),
             ...(style === "outline" ? { outline: pieceOutline({ seed: p.seed }) } : {}),
           };
@@ -320,7 +401,12 @@ function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidat
         })}
       </ul>
       <div className="toolbar">
-        <button type="button" onClick={() => setCount((n) => n + BATCH)} disabled={exhausted} title={exhausted ? "This style has no more distinct shapes" : undefined}>
+        <button
+          type="button"
+          onClick={() => setCount((n) => n + BATCH)}
+          disabled={exhausted}
+          title={exhausted ? "This style has no more distinct shapes" : undefined}
+        >
           Show more candidates
         </button>
         <button type="button" onClick={() => onChange([])} disabled={!picks.length}>
@@ -342,7 +428,9 @@ function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidat
 export function CardsPage() {
   const groupId = useId();
   const [legacy] = useState(legacyMosaic);
-  const [style, setStyle] = useStoredState<IconStyle>("cardStyle", DEFAULT_PRESET.style, (v) => (typeof v === "string" && v in LEGACY_MOSAIC ? "mosaic" : STYLES.find((s) => s === v)));
+  const [style, setStyle] = useStoredState<IconStyle>("cardStyle", DEFAULT_PRESET.style, (v) =>
+    typeof v === "string" && v in LEGACY_MOSAIC ? "mosaic" : STYLES.find((s) => s === v),
+  );
   const [paddingOn, setPaddingOn] = useStoredState("cardPadding", legacy?.padded ?? DEFAULT_PRESET.padding, asBoolean);
   const [gapsOn, setGapsOn] = useStoredState("cardGaps", legacy?.gaps ?? DEFAULT_PRESET.gaps, asBoolean);
   // save a carried-over style under its new names, so it no longer depends on the old one
@@ -367,7 +455,13 @@ export function CardsPage() {
   // the same picks in another order are the same look: Shuffle already moves icons between cards
   const pickSet = (list: Candidate[]) => list.map(keyOf).sort().join();
   const matches = (p: CardPreset) =>
-    p.style === look.style && p.colorSet === look.colorSet && p.gradient === look.gradient && p.tint === look.tint && p.padding === look.padding && p.gaps === look.gaps && pickSet(p.picks) === pickSet(look.picks);
+    p.style === look.style &&
+    p.colorSet === look.colorSet &&
+    p.gradient === look.gradient &&
+    p.tint === look.tint &&
+    p.padding === look.padding &&
+    p.gaps === look.gaps &&
+    pickSet(p.picks) === pickSet(look.picks);
   // applying a preset replaces the picks, so the look it replaced is kept for one undo
   const [replaced, setReplaced] = useState<Omit<CardPreset, "id" | "label"> | null>(null);
   const show = (p: Omit<CardPreset, "id" | "label">) => {
@@ -452,7 +546,15 @@ export function CardsPage() {
             }}
           >
             {STYLES.map((s) => (
-              <button key={s} type="button" role="radio" aria-checked={s === style} tabIndex={s === style ? 0 : -1} className={s === style ? "on" : ""} onClick={() => setStyle(s)}>
+              <button
+                key={s}
+                type="button"
+                role="radio"
+                aria-checked={s === style}
+                tabIndex={s === style ? 0 : -1}
+                className={s === style ? "on" : ""}
+                onClick={() => setStyle(s)}
+              >
                 {STYLE_NAMES[s]}
               </button>
             ))}
@@ -461,7 +563,13 @@ export function CardsPage() {
             Shuffle icons
           </button>
           <label className="row check">
-            <input type="checkbox" role="switch" checked={gradientOn} disabled={!USES_GRADIENT.includes(style)} onChange={(e) => setGradientOn(e.target.checked)} />
+            <input
+              type="checkbox"
+              role="switch"
+              checked={gradientOn}
+              disabled={!USES_GRADIENT.includes(style)}
+              onChange={(e) => setGradientOn(e.target.checked)}
+            />
             <span>Gradient</span>
           </label>
           <label className="row check">
@@ -495,7 +603,15 @@ export function CardsPage() {
             }}
           >
             {COLOR_SETS.map((c) => (
-              <button key={c.id} type="button" role="radio" aria-checked={c === colorSet} tabIndex={c === colorSet ? 0 : -1} className={c === colorSet ? "on" : ""} onClick={() => setSetId(c.id)}>
+              <button
+                key={c.id}
+                type="button"
+                role="radio"
+                aria-checked={c === colorSet}
+                tabIndex={c === colorSet ? 0 : -1}
+                className={c === colorSet ? "on" : ""}
+                onClick={() => setSetId(c.id)}
+              >
                 {c.label}
               </button>
             ))}
@@ -506,7 +622,16 @@ export function CardsPage() {
             ))}
           </span>
         </div>
-        <CandidatePicker picks={picks} onChange={setPicks} solid={!gradientOn} tint={tintOn} set={colorSet.families} setId={colorSet.id} style={style} mosaic={mosaic} />
+        <CandidatePicker
+          picks={picks}
+          onChange={setPicks}
+          solid={!gradientOn}
+          tint={tintOn}
+          set={colorSet.families}
+          setId={colorSet.id}
+          style={style}
+          mosaic={mosaic}
+        />
         {SECTIONS.map((section) => (
           <section key={section} className="cards-section" aria-labelledby={`${groupId}-${section}`}>
             <h2 id={`${groupId}-${section}`} className="cards-heading">

@@ -3,15 +3,7 @@
  * WebGPU / WebGL2 parity is checked in the playground).
  */
 import { describe, expect, it } from "vitest";
-import {
-  buildRenderPlan,
-  generatePuzzleIcon,
-  SURFACE_TEXTURES,
-  texHash,
-  valueNoise,
-  type PuzzleIconOptions,
-  type SurfaceTexture,
-} from "@jigsaw/core";
+import { buildRenderPlan, generatePuzzleIcon, SURFACE_TEXTURES, texHash, valueNoise, type PuzzleIconOptions, type SurfaceTexture } from "@jigsaw/core";
 import { renderPlanCpu } from "../packages/renderer/src/cpu";
 
 const base: PuzzleIconOptions = {

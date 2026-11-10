@@ -5,10 +5,14 @@
   "type": "module",
   "main": "./src/index.tsx",
   "types": "./src/index.tsx",
-  "exports": { ".": "./src/index.tsx" },
+  "exports": {
+    ".": "./src/index.tsx"
+  },
   "dependencies": {
     "@jigsaw/core": "workspace:*",
     "@jigsaw/renderer": "workspace:*"
   },
-  "peerDependencies": { "react": ">=18" }
+  "peerDependencies": {
+    "react": ">=18"
+  }
 }

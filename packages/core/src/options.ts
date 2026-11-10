@@ -1,15 +1,7 @@
 import { DEFAULT_LIGHTING, DEFAULT_SHADOW, MATERIAL_PRESETS } from "./material/presets";
 import type { LayoutKind, PuzzleIconOptions, ResolvedOptions, SurfaceTexture } from "./types";
 
-export const SURFACE_TEXTURES: readonly SurfaceTexture[] = [
-  "none",
-  "paper",
-  "linen",
-  "frosted",
-  "wood",
-  "brushedMetal",
-  "polishedMetal",
-];
+export const SURFACE_TEXTURES: readonly SurfaceTexture[] = ["none", "paper", "linen", "frosted", "wood", "brushedMetal", "polishedMetal"];
 
 export const ALGORITHM_VERSION = "1.9.0";
 export const PRESET_VERSION = "1.2.0";
@@ -17,8 +9,7 @@ export const PRESET_VERSION = "1.2.0";
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const num = (v: unknown, d: number) => (typeof v === "number" && Number.isFinite(v) ? v : d);
 
-export const DEFAULT_STAMP_FONT =
-  'ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+export const DEFAULT_STAMP_FONT = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif';
 
 export function defaultPieceCount(layout: LayoutKind): number {
   return layout === "single" ? 1 : layout === "grid" ? 4 : 3;
@@ -83,7 +74,9 @@ export function resolveOptions(o: PuzzleIconOptions): ResolvedOptions {
     },
     stamp: {
       // one character per piece, whitespace dropped
-      text: Array.from((st.text ?? "").replace(/\s+/g, "")).slice(0, pieceCount).join(""),
+      text: Array.from((st.text ?? "").replace(/\s+/g, ""))
+        .slice(0, pieceCount)
+        .join(""),
       style: st.style === "emboss" ? "emboss" : "deboss",
       size: clamp(num(st.size, 0.3), 0.15, 0.7),
       depth: clamp(num(st.depth, 0.5), 0, 1),

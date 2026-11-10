@@ -8,7 +8,15 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { COLOR_SETS, generateMosaic as libraryMosaic, MOSAIC_GAP, mosaicDrawing, mosaicFills as libraryFills } from "@jigsaw/core";
-import { DEFAULT_MOSAIC_PALETTES, generateMosaic, MOSAIC_PALETTES, mosaicFills, mosaicPaletteFor, PuzzleMosaic, type PuzzleMosaicProps } from "../registry/jigsaw/puzzle-mosaic";
+import {
+  DEFAULT_MOSAIC_PALETTES,
+  generateMosaic,
+  MOSAIC_PALETTES,
+  mosaicFills,
+  mosaicPaletteFor,
+  PuzzleMosaic,
+  type PuzzleMosaicProps,
+} from "../registry/jigsaw/puzzle-mosaic";
 
 const SEEDS = [...Array.from({ length: 300 }, (_, i) => `registry-${i}`), 7, "alpha", ""];
 const render = (props: PuzzleMosaicProps) => renderToStaticMarkup(createElement(PuzzleMosaic, props));
@@ -34,7 +42,9 @@ describe("installable PuzzleMosaic: parity with the library", () => {
   });
 
   it("carries the library's Bright, Candy and Mono families as its palettes", () => {
-    const expected = Object.fromEntries([...["bright", "candy", "mono"].flatMap((id) => COLOR_SETS.find((s) => s.id === id)!.families)].map((f) => [f.id, f.colors]));
+    const expected = Object.fromEntries(
+      [...["bright", "candy", "mono"].flatMap((id) => COLOR_SETS.find((s) => s.id === id)!.families)].map((f) => [f.id, f.colors]),
+    );
     expect(MOSAIC_PALETTES).toEqual(expected);
     expect([...DEFAULT_MOSAIC_PALETTES]).toEqual(COLOR_SETS.find((s) => s.id === "bright")!.families.map((f) => f.id));
   });
@@ -88,7 +98,9 @@ describe("installable PuzzleMosaic: rendering", () => {
     const svg = render({ seed: "alpha", padding: true, size: 40, tile: "var(--card)" });
     expect(svg.match(/<svg/g)).toHaveLength(2);
     // a one-pixel line around the tile, then the icon at three quarters of its side, centred
-    expect(svg).toContain('<rect x="0.0125" y="0.0125" width="0.975" height="0.975" rx="0.25" fill="var(--card)" stroke="rgba(20,20,40,0.1)" stroke-width="0.025">');
+    expect(svg).toContain(
+      '<rect x="0.0125" y="0.0125" width="0.975" height="0.975" rx="0.25" fill="var(--card)" stroke="rgba(20,20,40,0.1)" stroke-width="0.025">',
+    );
     expect(svg).toContain('<svg x="0.125" y="0.125" width="0.75" height="0.75" viewBox="0 0 1 1">');
     // the tile is the frame, so the icon's own edge line is gone
     expect(svg).not.toContain("rgba(20,20,40,0.14)");
@@ -104,7 +116,10 @@ describe("registry build", () => {
   const source = readFileSync("registry/jigsaw/puzzle-mosaic.tsx", "utf8");
 
   it("lists the component in registry.json", () => {
-    const registry = JSON.parse(readFileSync("registry.json", "utf8")) as { name: string; items: { name: string; type: string; files: { path: string; type: string }[] }[] };
+    const registry = JSON.parse(readFileSync("registry.json", "utf8")) as {
+      name: string;
+      items: { name: string; type: string; files: { path: string; type: string }[] }[];
+    };
     expect(registry.name).toBe("jigsaw");
     const item = registry.items.find((i) => i.name === "puzzle-mosaic")!;
     expect(item.type).toBe("registry:component");
@@ -112,7 +127,11 @@ describe("registry build", () => {
   });
 
   it("has a built file that matches the source (run `pnpm registry:build` after editing it)", () => {
-    const built = JSON.parse(readFileSync("public/r/puzzle-mosaic.json", "utf8")) as { name: string; files: { path: string; content: string; type: string }[]; dependencies?: string[] };
+    const built = JSON.parse(readFileSync("public/r/puzzle-mosaic.json", "utf8")) as {
+      name: string;
+      files: { path: string; content: string; type: string }[];
+      dependencies?: string[];
+    };
     expect(built.name).toBe("puzzle-mosaic");
     expect(built.files).toHaveLength(1);
     expect(built.files[0]!.content).toBe(source);

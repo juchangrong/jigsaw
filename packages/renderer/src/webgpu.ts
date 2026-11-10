@@ -88,12 +88,7 @@ export class WebGpuBackend implements RenderBackend {
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
     });
     this.live++;
-    this.device.queue.writeTexture(
-      { texture: tex },
-      sdf.data,
-      { bytesPerRow: sdf.width * 4 },
-      [sdf.width, sdf.height],
-    );
+    this.device.queue.writeTexture({ texture: tex }, sdf.data, { bytesPerRow: sdf.width * 4 }, [sdf.width, sdf.height]);
     this.textures.set(id, tex);
     return tex;
   }

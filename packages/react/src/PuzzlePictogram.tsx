@@ -29,7 +29,19 @@ export interface PuzzlePictogramProps {
  * A puzzle piece as inline SVG: no canvas and no GPU, so it is cheap in long
  * lists and stays sharp at any size.
  */
-export function PuzzlePictogram({ seed, size = 24, variant = "filled", color = "currentColor", strokeWidth = 1.1, background, radius, scale, className, style, title }: PuzzlePictogramProps) {
+export function PuzzlePictogram({
+  seed,
+  size = 24,
+  variant = "filled",
+  color = "currentColor",
+  strokeWidth = 1.1,
+  background,
+  radius,
+  scale,
+  className,
+  style,
+  title,
+}: PuzzlePictogramProps) {
   const shape = useMemo(() => (variant === "outline" ? pieceOutline({ seed }) : generatePictogram(seed)), [seed, variant]);
   const a11y = title ? ({ role: "img", "aria-label": title } as const) : ({ "aria-hidden": true } as const);
   const mark =
