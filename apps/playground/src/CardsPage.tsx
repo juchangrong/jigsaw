@@ -313,8 +313,10 @@ export function CardsPage() {
 
   const presetLabelId = useId();
   const look = { style, colorSet: colorSet.id, gradient: gradientOn, tint: tintOn, picks };
+  // the same picks in another order are the same look: Shuffle already moves icons between cards
+  const pickSet = (list: Candidate[]) => list.map(keyOf).sort().join();
   const matches = (p: CardPreset) =>
-    p.style === look.style && p.colorSet === look.colorSet && p.gradient === look.gradient && p.tint === look.tint && p.picks.map(keyOf).join() === look.picks.map(keyOf).join();
+    p.style === look.style && p.colorSet === look.colorSet && p.gradient === look.gradient && p.tint === look.tint && pickSet(p.picks) === pickSet(look.picks);
   // applying a preset replaces the picks, so the look it replaced is kept for one undo
   const [replaced, setReplaced] = useState<Omit<CardPreset, "id" | "label"> | null>(null);
   const show = (p: Omit<CardPreset, "id" | "label">) => {
