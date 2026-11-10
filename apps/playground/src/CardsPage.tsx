@@ -46,7 +46,7 @@ const MosaicIcon = ({ seed, size, family, solid, framed }: { seed: string; size:
   <PuzzleMosaic seed={seed} size={size} colors={family.colors} variant={solid ? "accent" : "tonal"} edge={!framed} className="mosaic-icon" />
 );
 /** mosaic size relative to its white tile, in the Mosaic tile style */
-const MOSAIC_INSET = 0.64;
+const MOSAIC_INSET = 0.75;
 
 const ICON_PX = 40;
 /**
