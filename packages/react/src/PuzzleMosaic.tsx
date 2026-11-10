@@ -1,4 +1,4 @@
-import { generateMosaic, mixOklab, mosaicFills, type MosaicVariant, type Seed } from "@jigsaw/core";
+import { generateMosaic, mosaicDrawing, type MosaicShape, type MosaicVariant, type Seed } from "@jigsaw/core";
 import { useId, useMemo, type CSSProperties } from "react";
 
 export interface PuzzleMosaicProps {
@@ -9,8 +9,14 @@ export interface PuzzleMosaicProps {
   size?: number;
   /** `tonal`: one shade per piece. `accent`: one deep piece on light ones. */
   variant?: MosaicVariant;
-  /** tile corner radius as a fraction of its side (default 0.25) */
+  /** the tile's outline (default squircle) */
+  shape?: MosaicShape;
+  /** corner radius of a `round` tile, as a fraction of its side (default 0.25) */
   radius?: number;
+  /** width of the cuts between pieces, as a fraction of the tile; 0 joins them */
+  gap?: number;
+  /** a hairline around the pieces, so light ones hold on a light page (default true) */
+  edge?: boolean;
   className?: string;
   style?: CSSProperties;
   /** accessible name; without one the image is hidden from assistive technology */
@@ -21,26 +27,37 @@ export interface PuzzleMosaicProps {
  * `<PuzzleMosaic seed="alpha" size={40} colors={family.colors} />`
  *
  * A tile cut into four puzzle pieces in the shades of one colour, as inline
- * SVG: no canvas and no GPU.
+ * SVG: no canvas and no GPU. The cuts are transparent, so it sits on any
+ * background.
  */
-export function PuzzleMosaic({ seed, colors, size = 24, variant = "tonal", radius = 0.25, className, style, title }: PuzzleMosaicProps) {
-  const clipId = `mosaic${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+export function PuzzleMosaic({ seed, colors, size = 24, variant, shape, radius, gap, edge, className, style, title }: PuzzleMosaicProps) {
+  const id = `mosaic${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   const mosaic = useMemo(() => generateMosaic(seed), [seed]);
   const colorKey = colors.join();
-  const fills = useMemo(() => mosaicFills(mosaic, colors, variant), [mosaic, colorKey, variant]); // eslint-disable-line react-hooks/exhaustive-deps
-  const back = useMemo(() => mixOklab(fills), [fills]);
+  const d = useMemo(() => mosaicDrawing(mosaic, colors, { variant, shape, radius, gap, edge }), [mosaic, colorKey, variant, shape, radius, gap, edge]); // eslint-disable-line react-hooks/exhaustive-deps
   const a11y = title ? ({ role: "img", "aria-label": title } as const) : ({ "aria-hidden": true } as const);
   return (
     <svg className={className} style={style} width={size} height={size} viewBox={mosaic.viewBox} {...a11y}>
-      <clipPath id={clipId}>
-        <rect width={1} height={1} rx={radius} />
+      <clipPath id={id}>
+        <path d={d.outline} />
       </clipPath>
-      <g clipPath={`url(#${clipId})`}>
-        {/* a mid tone underneath, so antialiasing along the seams never shows the page through */}
-        <rect width={1} height={1} fill={back} />
-        {mosaic.layers.map((l, i) => (
-          <path key={i} d={l.path} fill={fills[l.cell]} />
-        ))}
+      {d.gap > 0 && (
+        <mask id={`${id}cuts`}>
+          <rect width={1} height={1} fill="#fff" />
+          {mosaic.seams.map((s, i) => (
+            <path key={i} d={s} fill="none" stroke="#000" strokeWidth={d.gap} />
+          ))}
+          <path d={d.corners} fill="#000" />
+        </mask>
+      )}
+      <g clipPath={`url(#${id})`}>
+        <g mask={d.gap > 0 ? `url(#${id}cuts)` : undefined}>
+          <rect width={1} height={1} fill={d.ground} />
+          {mosaic.layers.map((l, i) => (
+            <path key={i} d={l.path} fill={d.fills[l.cell]} />
+          ))}
+          {d.edge && <path d={d.outline} fill="none" stroke={d.edge} strokeWidth={d.edgeWidth} />}
+        </g>
       </g>
     </svg>
   );

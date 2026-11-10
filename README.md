@@ -59,7 +59,7 @@ const family = COLOR_SETS.find((s) => s.id === "studio")!.families[0]!;
 
 The pictogram reduces the piece to a sign built on one grid: a unit square whose corners, knobs and notches are all arcs of one radius, with a smaller arc easing each knob and notch into its side, in one flat colour. Seeds draw from the 30 side arrangements that still read as a puzzle piece at about 24 px. `variant="outline"` strokes the realistic piece's own Bézier outline. Without React, `vectorSvg(generatePictogram(seed), { size, color, background })` and `vectorSvg(pieceOutline({ seed }), { outline: true })` return standalone SVG strings.
 
-A mosaic makes the tile itself the puzzle: four pieces, each a shade of one colour family, with the two deep shades on one diagonal so every seam has contrast. A seed picks one of 8 tone layouts and 16 knob layouts. `mosaicSvg(generateMosaic(seed), family.colors, { size, variant })` returns it as a standalone SVG string.
+A mosaic makes the tile itself the puzzle: four pieces, each a shade of one colour family, with the two deep shades on one diagonal so every seam has contrast. A seed picks one of 8 tone layouts and 16 knob layouts. The pieces are separated by thin transparent cuts with rounded corners, inside a squircle outline, so a mosaic sits on any background; `gap={0}`, `shape="round"` and `edge={false}` turn each of those off. `mosaicSvg(generateMosaic(seed), family.colors, { size, variant })` returns it as a standalone SVG string, and `mosaicDrawing` returns the parts for drawing it yourself.
 
 `COLOR_SETS` holds six sets of at most five colour families (Studio, Aluminum, Titanium, Desktop, Mono, System); a family's `colors` also work as a gradient palette for `<PuzzleIcon>`.
 

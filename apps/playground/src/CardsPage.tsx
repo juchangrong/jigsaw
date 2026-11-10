@@ -1,4 +1,4 @@
-import { COLOR_SETS, deriveSeed, generateMosaic, generatePictogram, mosaicFills, pictogramColor, pieceArrangement, pieceOutline, tileColor, tintColor, type ColorFamily } from "@jigsaw/core";
+import { COLOR_SETS, deriveSeed, generateMosaic, generatePictogram, mosaicDrawing, pictogramColor, pieceArrangement, pieceOutline, tileColor, tintColor, type ColorFamily } from "@jigsaw/core";
 import { PuzzleIcon, PuzzleMosaic, PuzzlePictogram } from "@jigsaw/react";
 import { useEffect, useId, useMemo, useState, type CSSProperties } from "react";
 import { useStoredState } from "./storage";
@@ -200,7 +200,8 @@ function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidat
             family: fam.id,
             colors: fam.colors,
             ...(g ? { glyph: { path: g.path, viewBox: g.viewBox, fill: style === "solid" ? "#ffffff" : pictogramColor(fam), tile: style === "solid" ? tileColor(fam) : "#ffffff" } } : {}),
-            ...(m ? { mosaic: { layers: m.layers, viewBox: m.viewBox, fills: mosaicFills(m, fam.colors, solid ? "accent" : "tonal") } } : {}),
+            // clip to outline, cut the seams (stroked at `gap`) and corners away, then paint ground and layers
+            ...(m ? { mosaic: { viewBox: m.viewBox, layers: m.layers, seams: m.seams, ...mosaicDrawing(m, fam.colors, { variant: solid ? "accent" : "tonal" }) } } : {}),
             ...(style === "outline" ? { outline: pieceOutline({ seed: p.seed }) } : {}),
           };
         }),

@@ -11,8 +11,12 @@ import {
   generatePuzzleIcon,
   hexToOklch,
   isIconicArrangement,
+  MOSAIC_CORNER,
+  MOSAIC_GAP,
+  mosaicDrawing,
   mosaicFills,
   mosaicOf,
+  mosaicOutline,
   mosaicSvg,
   PICTOGRAM_ARRANGEMENTS,
   PICTOGRAM_FILLET,
@@ -310,14 +314,76 @@ describe("mosaic", () => {
     expect(mosaicFills(generateMosaic("alpha"), ["#112233"])).toEqual(["#112233", "#112233", "#112233", "#112233"]);
   });
 
-  it("writes a clipped standalone SVG", () => {
+  it("gives the four cuts as open paths from the tile's edge to its centre", () => {
+    const ends = [
+      [0.5, 0, 0.5, 0.5],
+      [0.5, 0.5, 0.5, 1],
+      [0, 0.5, 0.5, 0.5],
+      [0.5, 0.5, 1, 0.5],
+    ];
+    for (const seed of SEEDS.slice(0, 20)) {
+      const m = generateMosaic(seed);
+      expect(m.seams).toHaveLength(4);
+      m.seams.forEach((seam, i) => {
+        expect(seam.endsWith("Z")).toBe(false);
+        const pts = numbers(seam);
+        expect([...pts[0]!, ...pts[pts.length - 1]!]).toEqual(ends[i]);
+        // one knob with a join on both sides
+        expect(seam.match(/A /g)).toHaveLength(3);
+      });
+    }
+  });
+
+  it("outlines the tile as a squircle through the edge midpoints, or as a rounded rectangle", () => {
+    const squircle = mosaicOutline();
+    expect(squircle.match(/C /g)).toHaveLength(4);
+    expect(squircle).not.toMatch(/[AL]/);
+    for (const mid of ["1 0.5", "0.5 1", "0 0.5", "0.5 0"]) expect(squircle).toContain(mid);
+    const round = mosaicOutline("round", 0.3);
+    expect(round.match(/A 0\.3 0\.3 0 0 1/g)).toHaveLength(4);
+    expect(round).not.toContain("C ");
+  });
+
+  it("plans the drawing: cuts with rounded corners and a hairline by default", () => {
     const m = generateMosaic("alpha");
-    const svg = mosaicSvg(m, colors, { size: 40, radius: 0.3, title: 'Team "A"' });
+    const d = mosaicDrawing(m, colors);
+    expect(d.outline).toBe(mosaicOutline());
+    expect(d.fills).toEqual(mosaicFills(m, colors));
+    expect(d.gap).toBe(MOSAIC_GAP);
+    expect(d.edge).not.toBeNull();
+    // the opening where the cuts cross and a notch on each edge, every corner an arc of MOSAIC_CORNER
+    expect(d.corners.match(/M /g)).toHaveLength(5);
+    expect(d.corners.match(/A /g)).toHaveLength(4 + 4 * 2);
+    for (const a of d.corners.matchAll(/A (\S+) (\S+) /g)) expect([Number(a[1]), Number(a[2])]).toEqual([MOSAIC_CORNER, MOSAIC_CORNER]);
+    // the ground is a mid tone between the lightest and deepest fills
+    const L = (hex: string) => hexToOklch(hex)[0];
+    expect(L(d.ground)).toBeGreaterThan(L(colors[0]!));
+    expect(L(d.ground)).toBeLessThan(L(colors[3]!));
+
+    const joined = mosaicDrawing(m, colors, { gap: 0, edge: false, shape: "round", variant: "accent" });
+    expect(joined.gap).toBe(0);
+    expect(joined.corners).toBe("");
+    expect(joined.edge).toBeNull();
+    expect(joined.outline).toBe(mosaicOutline("round"));
+    expect(joined.fills).toEqual(mosaicFills(m, colors, "accent"));
+  });
+
+  it("writes a standalone SVG clipped to the outline, with the cuts masked out", () => {
+    const m = generateMosaic("alpha");
+    const svg = mosaicSvg(m, colors, { size: 40, title: 'Team "A"' });
     expect(svg).toMatch(/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" width="40" height="40" viewBox="0 0 1 1" role="img" aria-label="Team &quot;A&quot;">/);
-    expect(svg).toContain('<rect width="1" height="1" rx="0.3"/>');
-    expect(svg.match(/<path /g)).toHaveLength(8);
-    expect(svg).toMatch(/<clipPath id="(mosaic-[0-9-]+)">.*clip-path="url\(#\1\)"/);
+    expect(svg).toMatch(/<clipPath id="(mosaic-[0-9-]+)"><path d="M 1 0\.5 C .*clip-path="url\(#\1\)"/);
+    expect(svg).toMatch(/<mask id="(mosaic-[0-9-]+-cuts)">.*mask="url\(#\1\)"/);
+    expect(svg.match(new RegExp(`stroke="#000" stroke-width="${MOSAIC_GAP}"`, "g"))).toHaveLength(4);
+    // the clip, four seams, the corners, eight layers and the edge
+    expect(svg.match(/<path /g)).toHaveLength(1 + 4 + 1 + 8 + 1);
     for (const fill of mosaicFills(m, colors)) expect(svg).toContain(`fill="${fill}"`);
-    expect(mosaicSvg(m, colors)).toContain('aria-hidden="true"');
+    expect(svg.endsWith("</g></g></svg>")).toBe(true);
+
+    const plain = mosaicSvg(m, colors, { gap: 0, edge: false, shape: "round", radius: 0.3 });
+    expect(plain).toContain('aria-hidden="true"');
+    expect(plain).not.toContain("<mask");
+    expect(plain).toContain("A 0.3 0.3 0 0 1");
+    expect(plain.match(/<path /g)).toHaveLength(1 + 8);
   });
 });

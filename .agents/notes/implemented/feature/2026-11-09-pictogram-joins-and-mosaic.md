@@ -16,11 +16,19 @@ Sixteen treatments were drawn side by side at 40 px and 96 px in the Mono and St
 
 **Joins.** An arc of radius `PICTOGRAM_FILLET` (0.09) now eases every knob and notch into its side. It touches the side and the knob circle, so the outline has no cusp. The knob keeps its radius, offset and reach, so pictograms keep their size and view box. The system is still lines and circular arcs on one grid. `pictogramContains` describes the same shape, and the centroid follows it.
 
-**Mosaic.** A new vector form makes the tile itself the puzzle: four pieces separated by seams through the centre, each seam half carrying one knob, built from the pictogram's knob at half scale. Each piece takes one of a family's four shades. The two deep shades share a diagonal and the two light ones the other, so every seam separates a deep piece from a light one. A seed chooses one of 8 tone layouts and 16 knob layouts from its own `mosaic` random stream. `mosaicFills` gives the four colours in two variants: `tonal` (one shade per piece) and `accent` (one deep piece, the rest light). The library has `generateMosaic`, `mosaicOf`, `mosaicFills`, `mosaicSvg` and `<PuzzleMosaic>`.
+**Mosaic.** A new vector form makes the tile itself the puzzle: four pieces separated by seams through the centre, each seam half carrying one knob, built from the pictogram's knob at half scale. Each piece takes one of a family's four shades. The two deep shades share a diagonal and the two light ones the other, so every seam separates a deep piece from a light one. A seed chooses one of 8 tone layouts and 16 knob layouts from its own `mosaic` random stream. `mosaicFills` gives the four colours in two variants: `tonal` (one shade per piece) and `accent` (one deep piece, the rest light). The library has `generateMosaic`, `mosaicOf`, `mosaicFills`, `mosaicDrawing`, `mosaicSvg` and `<PuzzleMosaic>`.
 
-A mosaic is painted as four squares and then four knobs over the neighbouring square, on top of a mid-tone rectangle. The rectangle is there because adjacent fills antialias separately, and the page would otherwise show through the seams as a light hairline.
+A mosaic is painted as four squares and then four knobs over the neighbouring square, on top of a mid-tone rectangle. The rectangle is there because adjacent fills antialias separately, and with the cuts turned off the page would otherwise show through the seams as a light hairline.
 
-In the card list, Mosaic is a seventh icon style. Its Gradient switch chooses tonal or accent, and the tile turns a quarter turn on hover like the other styles. The Solid tile gains a soft top-left sheen and a bright top edge.
+**Cuts, corners and outline.** After the user chose to refine the mosaic, a second sheet compared eleven finishes, and two more compared eight gap, corner and outline variants each. Three were kept, all on by default:
+
+- The pieces are separated by cuts 0.022 of the tile wide (`MOSAIC_GAP`). They are masked out and not painted white, so the page shows through and a mosaic works on any background. The cuts also separate pieces whose shades are close, which was the weak point in dark families.
+- Where the cuts cross, and where each reaches the tile's edge, the pieces' corners are rounded with radius 0.03 (`MOSAIC_CORNER`), so each piece reads as its own object.
+- The tile's outline is a superellipse of exponent 4, drawn as one cubic per quadrant (within 0.5% of the true curve). Its curvature changes smoothly, without the kink where a rounded rectangle's side meets its corner arc. A hairline along the outline is drawn inside the SVG, because a CSS border cannot follow the curve.
+
+`Mosaic.seams` holds the four cuts as open paths, and `mosaicDrawing` returns the outline, fills, ground, cut width, corner shapes and edge, so the SVG string and the React component draw from one plan. A mosaic's tones and layers are unchanged, so the version stays at 1.9.0.
+
+In the card list, Mosaic is a seventh icon style. Its Gradient switch chooses tonal or accent, and the pieces turn a quarter turn on hover like the other styles while the drop shadow stays underneath. The Solid tile gains a soft top-left sheen and a bright top edge.
 
 `ALGORITHM_VERSION` is 1.9.0 because pictogram paths changed. Rendered icons are untouched, so the golden signatures stay.
 
@@ -36,6 +44,12 @@ In the card list, Mosaic is a seventh icon style. Its Gradient switch chooses to
 
 **Smaller joins, or smaller knobs with larger corners.** A join of 0.05 was invisible at list size. Knobs of 0.16 with corners of 0.24 turned the piece into a blob.
 
+**White lines for the cuts.** Stroking the seams in white is simpler than a mask and looks the same on a white page. On any other background the lines would show as white, so the cuts are transparent.
+
+**A groove, a sheen, wider tone steps.** A dark line with a light one beside it, as if the seam were pressed in, turned to noise at 40 px. A top-left sheen looked richer at 100 px and changed nothing at list size; it would also turn with the pieces on hover and light them from the wrong side. Stretching the four shades apart was meant for low-contrast families, but every family already steps evenly across 0.26 to 0.38 of lightness, and the cuts solved the separation.
+
+**A superellipse of exponent 5, or the rounded rectangle.** Exponent 5 is close to a phone's icon shape, but at this size it read as a square with small corners. The rounded rectangle shows the kink the squircle removes.
+
 **Exact outlines for the four mosaic pieces.** Each piece as its own closed path would let a product address one piece. The layered form is far simpler, and no use for single pieces exists yet.
 
 ## Consequences
@@ -47,12 +61,14 @@ Abstract and Solid icons have a continuous outline. The card list has an icon th
 - arc counts and directions including the joins, and that no arc is a large arc;
 - that every vertex of the path lies on the edge of `pictogramContains`;
 - that the area beside a knob's root is filled and the same area beside a notch is cut;
-- mosaic determinism and variety, the diagonal rule, layer order and which cell owns each knob, both fill variants, a short palette, and the standalone SVG.
+- mosaic determinism and variety, the diagonal rule, layer order and which cell owns each knob, both fill variants and a short palette;
+- the seams' end points, both outlines, the drawing plan with and without cuts, and the standalone SVG with its clip and mask.
 
-All 159 tests pass. Checked in the browser at 2.6× zoom: mosaics in Studio, Titanium and Mono, tonal and accent, show clean seams with no hairline; Abstract and Solid show the smoothed joins.
+All 162 tests pass. Checked in the browser at 2.6× zoom and at list size: mosaics in Studio and Mono, tonal and accent, show even cuts, rounded corners and a continuous outline; Abstract and Solid show the smoothed joins.
 
 Gaps:
 
-- A mosaic's four shades come from one family, so families whose shades are close (Titanium's dark family) give a low-contrast mosaic.
-- The comparison sheet was a scratch page and is not kept.
+- The comparison sheets were scratch pages and are not kept.
+- The cuts use an SVG mask, which a few SVG rasterizers outside browsers do not support; `gap: 0` avoids it.
+- At 40 px a cut is under one pixel wide, so it shows as a soft line; it is crisp from about 48 px.
 - `<PuzzleMosaic>` has no test of its own; the repository has no DOM test environment.

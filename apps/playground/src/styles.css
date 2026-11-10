@@ -577,9 +577,7 @@ input[type="checkbox"] {
   background-image: linear-gradient(155deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0) 48%, rgba(0, 0, 0, 0.08));
 }
 .card-icon.solid::after,
-.card-icon.mosaic::after,
-.picker-solid::after,
-.picker-mosaic::after {
+.picker-solid::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -589,8 +587,7 @@ input[type="checkbox"] {
     inset 0 0 0 1px rgba(20, 20, 40, 0.07);
   pointer-events: none;
 }
-.picker-solid,
-.picker-mosaic {
+.picker-solid {
   position: relative;
   width: 46px;
   height: 46px;
@@ -598,14 +595,22 @@ input[type="checkbox"] {
   display: grid;
   place-items: center;
 }
-/* mosaic: the tile is the puzzle, so it has no white ground or outer edge */
+/* mosaic: the tile is the puzzle. It draws its own outline and edge, so the
+   holder has no ground, no clipping and no rim; the shadow sits on the holder
+   so it stays underneath while the pieces turn. */
 .card-icon.mosaic {
   padding: 0;
   background: none;
-  box-shadow: 0 1px 2px rgba(20, 20, 40, 0.08);
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+}
+.card-icon.mosaic,
+.picker-mosaic {
+  filter: drop-shadow(0 1px 1.5px rgba(20, 20, 40, 0.12));
 }
 .picker-mosaic {
-  overflow: hidden;
+  display: block;
 }
 .mosaic-icon {
   display: block;
