@@ -6,11 +6,16 @@ import { describe, expect, it } from "vitest";
 import {
   COLOR_SETS,
   colorFamily,
+  generateMosaic,
   generatePictogram,
   generatePuzzleIcon,
   hexToOklch,
   isIconicArrangement,
+  mosaicFills,
+  mosaicOf,
+  mosaicSvg,
   PICTOGRAM_ARRANGEMENTS,
+  PICTOGRAM_FILLET,
   PICTOGRAM_KNOB_OFFSET,
   PICTOGRAM_RADIUS,
   pictogramColor,
@@ -60,21 +65,54 @@ describe("pictogram arrangements", () => {
 });
 
 describe("pictogram geometry", () => {
-  it("is one closed path of lines and equal-radius arcs", () => {
+  it("is one closed path of lines and arcs: one radius for corners, knobs and notches, a smaller one for the joins", () => {
     for (const kinds of PICTOGRAM_ARRANGEMENTS) {
       const { path } = pictogramOf(kinds);
       expect(path.startsWith("M ")).toBe(true);
       expect(path.endsWith(" Z")).toBe(true);
       expect(path).not.toMatch(/[CQSTHV]/);
-      const arcs = [...path.matchAll(/A (\S+) (\S+) 0 ([01]) ([01])/g)];
-      // four corners plus one arc per knob or notch
-      expect(arcs).toHaveLength(4 + kinds.filter((k) => k !== "flat").length);
-      for (const a of arcs) expect([Number(a[1]), Number(a[2])]).toEqual([PICTOGRAM_RADIUS, PICTOGRAM_RADIUS]);
-      // knobs turn clockwise (sweep 1), notches the other way; both take the larger arc
-      const large = arcs.filter((a) => a[3] === "1");
-      expect(large.filter((a) => a[4] === "1")).toHaveLength(kinds.filter((k) => k === "tab").length);
-      expect(large.filter((a) => a[4] === "0")).toHaveLength(kinds.filter((k) => k === "socket").length);
+      const arcs = [...path.matchAll(/A (\S+) (\S+) 0 ([01]) ([01])/g)].map((a) => ({ r: Number(a[1]), ry: Number(a[2]), large: a[3], sweep: a[4] }));
+      for (const a of arcs) {
+        expect(a.r).toBe(a.ry);
+        expect(a.large).toBe("0");
+      }
+      const tabs = kinds.filter((k) => k === "tab").length;
+      const sockets = kinds.filter((k) => k === "socket").length;
+      const big = arcs.filter((a) => a.r === PICTOGRAM_RADIUS);
+      const joins = arcs.filter((a) => a.r === PICTOGRAM_FILLET);
+      expect(big.length + joins.length).toBe(arcs.length);
+      // corners and knobs turn clockwise with the outline, notches the other way
+      expect(big.filter((a) => a.sweep === "1")).toHaveLength(4 + tabs);
+      expect(big.filter((a) => a.sweep === "0")).toHaveLength(sockets);
+      // each knob or notch has a join on both sides, turning against it
+      expect(joins.filter((a) => a.sweep === "0")).toHaveLength(2 * tabs);
+      expect(joins.filter((a) => a.sweep === "1")).toHaveLength(2 * sockets);
     }
+  });
+
+  it("draws the outline that pictogramContains describes", () => {
+    const e = 0.004;
+    for (const kinds of PICTOGRAM_ARRANGEMENTS) {
+      const points = [...pictogramOf(kinds).path.matchAll(/(-?\d+\.\d+) (-?\d+\.\d+)(?= [LAZ]|$)/g)].map((m) => [Number(m[1]), Number(m[2])] as const);
+      expect(points.length).toBeGreaterThanOrEqual(8);
+      for (const [x, y] of points) {
+        // every vertex of the path sits on the edge: inside and outside are both within reach
+        const near = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => pictogramContains(kinds, x + e * Math.cos((i * Math.PI) / 4), y + e * Math.sin((i * Math.PI) / 4)));
+        expect(near).toContain(true);
+        expect(near).toContain(false);
+      }
+    }
+  });
+
+  it("eases knobs and notches into the side instead of meeting it at a cusp", () => {
+    const tab: Arrangement = ["tab", "socket", "flat", "socket"];
+    const notch: Arrangement = ["socket", "tab", "flat", "tab"];
+    // beside the root of the top knob or notch, where a bare circle would leave a sharp corner
+    expect(pictogramContains(tab, 0.3, -0.01)).toBe(true);
+    expect(pictogramContains(notch, 0.3, 0.01)).toBe(false);
+    // further out the join has already returned to the side
+    expect(pictogramContains(tab, 0.24, -0.03)).toBe(false);
+    expect(pictogramContains(notch, 0.24, 0.03)).toBe(true);
   });
 
   it("puts knobs outside the cell and notches inside it", () => {
@@ -198,5 +236,88 @@ describe("colour families", () => {
         expect(tile).toBeLessThanOrEqual(pic + 1e-9);
         expect(hexToOklch(tintColor(f))[0]).toBeGreaterThan(0.93);
       }
+  });
+});
+
+describe("mosaic", () => {
+  const colors = colorFamily("test", 250, 0.1, 0.35, 0.9).colors;
+  // the points of a path, without the radii of its arcs
+  const numbers = (path: string) =>
+    [...path.replace(/A \S+ \S+ 0 [01] [01]/g, "A").matchAll(/(-?\d+\.\d+) (-?\d+\.\d+)/g)].map((m) => [Number(m[1]), Number(m[2])] as const);
+
+  it("is deterministic and varied", () => {
+    expect(generateMosaic("alpha")).toBe(generateMosaic("alpha"));
+    expect(new Set(SEEDS.map((s) => generateMosaic(s).key)).size).toBeGreaterThan(80);
+  });
+
+  it("puts the two deep tones on one diagonal and the two light ones on the other", () => {
+    for (const seed of SEEDS) {
+      const [tl, tr, bl, br] = generateMosaic(seed).tones;
+      expect([tl, tr, bl, br].slice().sort()).toEqual([0, 1, 2, 3]);
+      expect([tl + br, tr + bl].sort()).toEqual([1, 5]);
+    }
+  });
+
+  it("paints four cells, then one knob per half-seam over the neighbouring cell", () => {
+    const seams = [
+      { axis: 0, at: 0.5, cells: [0, 1] },
+      { axis: 0, at: 0.5, cells: [2, 3] },
+      { axis: 1, at: 0.5, cells: [0, 2] },
+      { axis: 1, at: 0.5, cells: [1, 3] },
+    ] as const;
+    for (const knobs of [
+      [true, true, true, true],
+      [false, false, false, false],
+      [true, false, false, true],
+    ] as const) {
+      const m = mosaicOf([0, 2, 3, 1], knobs);
+      expect(m.viewBox).toBe("0 0 1 1");
+      expect(m.layers).toHaveLength(8);
+      expect(m.layers.slice(0, 4).map((l) => l.cell)).toEqual([0, 1, 2, 3]);
+      m.layers.slice(4).forEach((layer, i) => {
+        const seam = seams[i]!;
+        const across = numbers(layer.path).map((p) => p[seam.axis] - seam.at);
+        const reach = PICTOGRAM_RADIUS / 2 + PICTOGRAM_KNOB_OFFSET / 2;
+        // the knob belongs to the cell behind it and reaches into the cell in front (the path's points stop where the knob's arc starts)
+        expect(layer.cell).toBe(seam.cells[knobs[i] ? 0 : 1]);
+        if (knobs[i]) {
+          expect(Math.max(...across)).toBeGreaterThan(0.03);
+          expect(Math.max(...across)).toBeLessThanOrEqual(reach);
+          expect(Math.min(...across)).toBeGreaterThan(-0.02);
+        } else {
+          expect(Math.min(...across)).toBeLessThan(-0.03);
+          expect(Math.min(...across)).toBeGreaterThanOrEqual(-reach);
+          expect(Math.max(...across)).toBeLessThan(0.02);
+        }
+      });
+    }
+  });
+
+  it("fills cells with their own shade, or keeps one deep piece as an accent", () => {
+    for (const seed of SEEDS.slice(0, 40)) {
+      const m = generateMosaic(seed);
+      expect(mosaicFills(m, colors)).toEqual(m.tones.map((t) => colors[t]));
+      const accent = mosaicFills(m, colors, "accent");
+      expect(accent[m.tones.indexOf(0)]).toBe(colors[0]);
+      expect(accent[m.tones.indexOf(1)]).toBe(colors[3]);
+      const soft = accent[m.tones.indexOf(2)]!;
+      expect(accent[m.tones.indexOf(3)]).toBe(soft);
+      const L = hexToOklch(soft)[0];
+      expect(L).toBeGreaterThan(hexToOklch(colors[2]!)[0]);
+      expect(L).toBeLessThan(hexToOklch(colors[3]!)[0]);
+    }
+    // a short palette still gives every cell a colour
+    expect(mosaicFills(generateMosaic("alpha"), ["#112233"])).toEqual(["#112233", "#112233", "#112233", "#112233"]);
+  });
+
+  it("writes a clipped standalone SVG", () => {
+    const m = generateMosaic("alpha");
+    const svg = mosaicSvg(m, colors, { size: 40, radius: 0.3, title: 'Team "A"' });
+    expect(svg).toMatch(/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" width="40" height="40" viewBox="0 0 1 1" role="img" aria-label="Team &quot;A&quot;">/);
+    expect(svg).toContain('<rect width="1" height="1" rx="0.3"/>');
+    expect(svg.match(/<path /g)).toHaveLength(8);
+    expect(svg).toMatch(/<clipPath id="(mosaic-[0-9-]+)">.*clip-path="url\(#\1\)"/);
+    for (const fill of mosaicFills(m, colors)) expect(svg).toContain(`fill="${fill}"`);
+    expect(mosaicSvg(m, colors)).toContain('aria-hidden="true"');
   });
 });

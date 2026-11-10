@@ -570,12 +570,45 @@ input[type="checkbox"] {
 .card-icon.solid {
   box-shadow: none;
 }
+/* light from the top-left: a soft sheen over the family colour and a bright
+   top edge, so the tile reads as an object and not a flat swatch */
+.card-icon.solid,
 .picker-solid {
+  background-image: linear-gradient(155deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0) 48%, rgba(0, 0, 0, 0.08));
+}
+.card-icon.solid::after,
+.card-icon.mosaic::after,
+.picker-solid::after,
+.picker-mosaic::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 0 0 1px rgba(20, 20, 40, 0.07);
+  pointer-events: none;
+}
+.picker-solid,
+.picker-mosaic {
+  position: relative;
   width: 46px;
   height: 46px;
   border-radius: 12px;
   display: grid;
   place-items: center;
+}
+/* mosaic: the tile is the puzzle, so it has no white ground or outer edge */
+.card-icon.mosaic {
+  padding: 0;
+  background: none;
+  box-shadow: 0 1px 2px rgba(20, 20, 40, 0.08);
+}
+.picker-mosaic {
+  overflow: hidden;
+}
+.mosaic-icon {
+  display: block;
 }
 .row.check:has(input:disabled) {
   opacity: 0.45;
@@ -595,21 +628,30 @@ input[type="checkbox"] {
 /* hovering an icon turns the piece a quarter turn and back on leave; the
    tile, rim and gloss stay put */
 .card-icon > canvas,
-.card-icon > .outline-icon {
+.card-icon > .outline-icon,
+.card-icon > .mosaic-icon {
   transition: transform 420ms cubic-bezier(0.25, 1, 0.5, 1);
 }
 .card-icon:hover > canvas,
 .card-icon:hover > .outline-icon {
   transform: translate(-50%, -50%) rotate(90deg);
 }
+/* a square tile turns onto itself, so the pieces change places inside it */
+.card-icon:hover > .mosaic-icon {
+  transform: rotate(90deg);
+}
 @media (prefers-reduced-motion: reduce) {
   .card-icon > canvas,
-  .card-icon > .outline-icon {
+  .card-icon > .outline-icon,
+  .card-icon > .mosaic-icon {
     transition: none;
   }
   .card-icon:hover > canvas,
   .card-icon:hover > .outline-icon {
     transform: translate(-50%, -50%);
+  }
+  .card-icon:hover > .mosaic-icon {
+    transform: none;
   }
 }
 .card-icon > canvas {

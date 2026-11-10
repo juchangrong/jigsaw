@@ -32,7 +32,7 @@ Products can draw the same pictograms, outlines and colours as the card list, as
 
 - the 30 arrangements and the rules that exclude the rest;
 - that every seed gets an iconic arrangement and keeps its own when it qualifies;
-- the path: lines and equal-radius arcs only, with the right arc count and sweep for knobs and notches;
+- the path: lines and arcs only, with the right arc count and sweep for knobs and notches (the arcs gained joins later: [Smoother pictograms and a mosaic icon](2026-11-09-pictogram-joins-and-mosaic.md));
 - containment at knobs, notches, flat sides and corners;
 - that each view is centred on the area centroid (checked on an independent grid) and nothing touches its edge;
 - the outline path, the SVG string with and without a tile, and title escaping;

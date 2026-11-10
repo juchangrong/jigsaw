@@ -169,9 +169,10 @@ await gen.export(opts, { format: "png" }); // also toPNG() / toWebP()
 
 ### 10.1 Vector forms
 
-`packages/core/src/pictogram.ts` gives two renderer-free SVG forms of a single piece, and `<PuzzlePictogram>` draws them inline.
+`packages/core/src/pictogram.ts` gives renderer-free SVG forms, drawn inline by `<PuzzlePictogram>` and `<PuzzleMosaic>`.
 
-- **Pictogram.** A sign built on one grid: a unit square whose corners, knobs and notches are arcs of one radius (0.18), with knob and notch circles centred 0.06 outside or inside the side. It is one closed path in one flat colour, viewed around its area centroid. Only the 30 arrangements with one or two knobs, one or two notches and at most one flat side are used; a seed keeps its own piece's arrangement when it qualifies and otherwise takes one by hash.
+- **Pictogram.** A sign built on one grid: a unit square whose corners, knobs and notches are arcs of one radius (0.18), with knob and notch circles centred 0.06 outside or inside the side and an arc of radius 0.09 easing each into the side, so the silhouette has no cusp. It is one closed path in one flat colour, viewed around its area centroid. Only the 30 arrangements with one or two knobs, one or two notches and at most one flat side are used; a seed keeps its own piece's arrangement when it qualifies and otherwise takes one by hash.
+- **Mosaic.** A tile cut into four pieces by seams through its centre, each seam half carrying one knob at half the pictogram's scale. Each piece takes one of a family's four shades; the two deep shades share a diagonal, so every seam separates a deep piece from a light one. The accent variant keeps one deep piece and leaves the rest light.
 - **Outline.** The realistic piece's Bézier path in icon units, meant to be stroked.
 
 `packages/core/src/color/families.ts` holds `COLOR_SETS` (at most five families of four shades each, generated from OKLCH) and the flat-colour choices `pictogramColor`, `tileColor` and `tintColor`.

@@ -78,3 +78,4 @@ export function useRendererBackend(renderer?: RendererPreference): BackendKind |
 
 export { getSharedGenerator, PuzzleIconGenerator } from "@jigsaw/renderer";
 export * from "./PuzzlePictogram";
+export * from "./PuzzleMosaic";
