@@ -883,10 +883,3 @@ input[type="range"] {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-
-/* a preset that matches the current look reads as selected */
-button.preset.on {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: color-mix(in oklab, var(--accent) 7%, var(--surface));
-}

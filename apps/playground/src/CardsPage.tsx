@@ -13,7 +13,8 @@ import {
 } from "@jigsaw/core";
 import { PuzzleIcon, PuzzleMosaic, PuzzlePictogram } from "@jigsaw/react";
 import { useEffect, useId, useMemo, useState, type CSSProperties } from "react";
-import { STORAGE_PREFIX, useStoredState } from "./storage";
+import { Segmented } from "./Segmented";
+import { useStoredState } from "./storage";
 
 /** Mock items, in the copy style of the product list this page imitates. */
 const ITEMS = [
@@ -60,18 +61,6 @@ const USES_TINT: IconStyle[] = ["glass", "tile", "abstract"];
 interface MosaicLook {
   padded: boolean;
   gaps: boolean;
-}
-/**
- * Mosaic tile and Joined tile were styles of their own before Padding and
- * Gaps became switches. A style saved under either name maps to the switches.
- */
-const LEGACY_MOSAIC: Record<string, MosaicLook> = { mosaicTile: { padded: true, gaps: true }, mosaicJoined: { padded: true, gaps: false } };
-function legacyMosaic(): MosaicLook | null {
-  try {
-    return LEGACY_MOSAIC[JSON.parse(window.localStorage.getItem(`${STORAGE_PREFIX}cardStyle`) ?? "null") as string] ?? null;
-  } catch {
-    return null;
-  }
 }
 const isGlyph = (s: IconStyle) => s === "abstract" || s === "solid";
 
@@ -198,52 +187,32 @@ const keyOf = (c: Candidate) => c.seed;
 const candidateAt = (i: number): Candidate => ({ seed: deriveSeed("card-candidates", i), slot: i });
 const familyOf = (set: ColorFamily[], slot: number) => set[((slot % set.length) + set.length) % set.length]!;
 
-/** A whole look for the list: icon style, colours, switches and the icons to use. */
-interface CardPreset {
-  id: string;
-  label: string;
-  style: IconStyle;
-  colorSet: string;
-  gradient: boolean;
-  tint: boolean;
-  /** the two mosaic switches */
-  padding: boolean;
-  gaps: boolean;
-  picks: Candidate[];
-}
-const PRESETS: readonly CardPreset[] = [
-  // the look the maintainer settled on: one deep piece per tile, four bright hues
-  {
-    id: "bright-mosaic",
-    label: "Bright mosaic",
-    style: "mosaic",
-    colorSet: "bright",
-    gradient: false,
-    tint: false,
-    padding: false,
-    gaps: true,
-    picks: [37, 25, 29, 8].map(candidateAt),
-  },
-];
-/** what a first visit shows */
-const DEFAULT_PRESET = PRESETS[0]!;
+/**
+ * What a first visit and Reset show, the look the maintainer settled on:
+ * mosaics in the Bright set with one deep piece per tile, on four picks.
+ */
+const DEFAULT_LOOK = {
+  style: "mosaic" as IconStyle,
+  colorSet: "bright",
+  gradient: false,
+  tint: false,
+  padding: false,
+  gaps: true,
+  picks: [37, 25, 29, 8].map(candidateAt),
+};
 
-/** Saved picks: a per-viewer convenience. A first visit starts from the default preset; a storage failure starts empty. */
+/** Saved picks: a per-viewer convenience. A first visit starts from the default look; a storage failure starts empty. */
 function loadPicks(): Candidate[] {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw === null) return DEFAULT_PRESET.picks;
+    if (raw === null) return DEFAULT_LOOK.picks;
     const list = JSON.parse(raw) as unknown;
     if (!Array.isArray(list)) return [];
-    // picks saved before slots existed only have a seed: find its candidate slot
-    let index: Map<string, number> | null = null;
-    const slotOf = (seed: string) => {
-      index ??= new Map(Array.from({ length: 5000 }, (_, i) => [deriveSeed("card-candidates", i), i] as const));
-      return index.get(seed) ?? 0;
-    };
     return (list as unknown[])
-      .filter((c): c is { seed: string; slot?: unknown } => typeof c === "object" && c !== null && typeof (c as { seed?: unknown }).seed === "string")
-      .map((c) => ({ seed: c.seed, slot: typeof c.slot === "number" ? c.slot : slotOf(c.seed) }));
+      .filter(
+        (c): c is Candidate => typeof c === "object" && c !== null && typeof (c as Candidate).seed === "string" && typeof (c as Candidate).slot === "number",
+      )
+      .map(({ seed, slot }) => ({ seed, slot }));
   } catch {
     return [];
   }
@@ -427,51 +396,27 @@ function CandidatePicker(props: {
  */
 export function CardsPage() {
   const groupId = useId();
-  const [legacy] = useState(legacyMosaic);
-  const [style, setStyle] = useStoredState<IconStyle>("cardStyle", DEFAULT_PRESET.style, (v) =>
-    typeof v === "string" && v in LEGACY_MOSAIC ? "mosaic" : STYLES.find((s) => s === v),
-  );
-  const [paddingOn, setPaddingOn] = useStoredState("cardPadding", legacy?.padded ?? DEFAULT_PRESET.padding, asBoolean);
-  const [gapsOn, setGapsOn] = useStoredState("cardGaps", legacy?.gaps ?? DEFAULT_PRESET.gaps, asBoolean);
-  // save a carried-over style under its new names, so it no longer depends on the old one
-  useEffect(() => {
-    if (!legacy) return;
-    setStyle("mosaic");
-    setPaddingOn(legacy.padded);
-    setGapsOn(legacy.gaps);
-  }, [legacy, setStyle, setPaddingOn, setGapsOn]);
+  const [style, setStyle] = useStoredState<IconStyle>("cardStyle", DEFAULT_LOOK.style, (v) => STYLES.find((s) => s === v));
+  const [paddingOn, setPaddingOn] = useStoredState("cardPadding", DEFAULT_LOOK.padding, asBoolean);
+  const [gapsOn, setGapsOn] = useStoredState("cardGaps", DEFAULT_LOOK.gaps, asBoolean);
   const mosaic: MosaicLook = { padded: paddingOn, gaps: gapsOn };
   const usesTint = USES_TINT.includes(style) || (style === "mosaic" && paddingOn);
   const [salt, setSalt] = useState(0);
   const [picks, setPicks] = useState<Candidate[]>(loadPicks);
-  const [gradientOn, setGradientOn] = useStoredState("cardGradient", DEFAULT_PRESET.gradient, asBoolean);
-  const [tintOn, setTintOn] = useStoredState("cardTint", DEFAULT_PRESET.tint, asBoolean);
-  const [setId, setSetId] = useStoredState("cardColorSet", DEFAULT_PRESET.colorSet, (v) => COLOR_SETS.find((c) => c.id === v)?.id);
+  const [gradientOn, setGradientOn] = useStoredState("cardGradient", DEFAULT_LOOK.gradient, asBoolean);
+  const [tintOn, setTintOn] = useStoredState("cardTint", DEFAULT_LOOK.tint, asBoolean);
+  const [setId, setSetId] = useStoredState("cardColorSet", DEFAULT_LOOK.colorSet, (v) => COLOR_SETS.find((c) => c.id === v)?.id);
   const colorSet = COLOR_SETS.find((c) => c.id === setId) ?? COLOR_SETS[0]!;
   useEffect(() => savePicks(picks), [picks]);
 
-  const presetLabelId = useId();
-  const look = { style, colorSet: colorSet.id, gradient: gradientOn, tint: tintOn, padding: paddingOn, gaps: gapsOn, picks };
-  // the same picks in another order are the same look: Shuffle already moves icons between cards
-  const pickSet = (list: Candidate[]) => list.map(keyOf).sort().join();
-  const matches = (p: CardPreset) =>
-    p.style === look.style &&
-    p.colorSet === look.colorSet &&
-    p.gradient === look.gradient &&
-    p.tint === look.tint &&
-    p.padding === look.padding &&
-    p.gaps === look.gaps &&
-    pickSet(p.picks) === pickSet(look.picks);
-  // applying a preset replaces the picks, so the look it replaced is kept for one undo
-  const [replaced, setReplaced] = useState<Omit<CardPreset, "id" | "label"> | null>(null);
-  const show = (p: Omit<CardPreset, "id" | "label">) => {
-    setStyle(p.style);
-    setSetId(p.colorSet);
-    setGradientOn(p.gradient);
-    setTintOn(p.tint);
-    setPaddingOn(p.padding);
-    setGapsOn(p.gaps);
-    setPicks(p.picks);
+  const reset = () => {
+    setStyle(DEFAULT_LOOK.style);
+    setSetId(DEFAULT_LOOK.colorSet);
+    setGradientOn(DEFAULT_LOOK.gradient);
+    setTintOn(DEFAULT_LOOK.tint);
+    setPaddingOn(DEFAULT_LOOK.padding);
+    setGapsOn(DEFAULT_LOOK.gaps);
+    setPicks(DEFAULT_LOOK.picks);
     setSalt(0);
   };
   const setsLabelId = useId();
@@ -495,70 +440,11 @@ export function CardsPage() {
         </div>
       </header>
       <main className="cards-main">
-        <div className="toolbar" role="group" aria-labelledby={presetLabelId}>
-          <span className="label" id={presetLabelId}>
-            Preset
-          </span>
-          {PRESETS.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className={matches(p) ? "preset on" : "preset"}
-              aria-pressed={matches(p)}
-              title="Sets the icon style, colours, switches and picks"
-              onClick={() => {
-                if (matches(p)) return;
-                setReplaced(look);
-                show(p);
-              }}
-            >
-              {p.label}
-            </button>
-          ))}
-          {/* offered right after applying; once the look changes again there is nothing clean to go back to */}
-          {replaced && PRESETS.some(matches) && (
-            <button
-              type="button"
-              onClick={() => {
-                show(replaced);
-                setReplaced(null);
-              }}
-            >
-              Undo
-            </button>
-          )}
-        </div>
         <div className="toolbar">
           <span className="label" id={groupId}>
             Icon
           </span>
-          <div
-            className="segmented"
-            role="radiogroup"
-            aria-labelledby={groupId}
-            onKeyDown={(e) => {
-              const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
-              if (!step) return;
-              e.preventDefault();
-              const i = (STYLES.indexOf(style) + step + STYLES.length) % STYLES.length;
-              setStyle(STYLES[i]!);
-              (e.currentTarget.children[i] as HTMLElement | undefined)?.focus();
-            }}
-          >
-            {STYLES.map((s) => (
-              <button
-                key={s}
-                type="button"
-                role="radio"
-                aria-checked={s === style}
-                tabIndex={s === style ? 0 : -1}
-                className={s === style ? "on" : ""}
-                onClick={() => setStyle(s)}
-              >
-                {STYLE_NAMES[s]}
-              </button>
-            ))}
-          </div>
+          <Segmented labelledBy={groupId} value={style} options={STYLES} onChange={setStyle} render={(v) => STYLE_NAMES[v]} />
           <button type="button" onClick={() => setSalt((n) => n + 1)}>
             Shuffle icons
           </button>
@@ -584,38 +470,21 @@ export function CardsPage() {
             <input type="checkbox" role="switch" checked={gapsOn} disabled={style !== "mosaic"} onChange={(e) => setGapsOn(e.target.checked)} />
             <span>Gaps</span>
           </label>
+          <button type="button" onClick={reset} title="Back to the default look: bright mosaic icons on the four default picks">
+            Reset
+          </button>
         </div>
         <div className="toolbar">
           <span className="label" id={setsLabelId}>
             Colors
           </span>
-          <div
-            className="segmented"
-            role="radiogroup"
-            aria-labelledby={setsLabelId}
-            onKeyDown={(e) => {
-              const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
-              if (!step) return;
-              e.preventDefault();
-              const i = (COLOR_SETS.indexOf(colorSet) + step + COLOR_SETS.length) % COLOR_SETS.length;
-              setSetId(COLOR_SETS[i]!.id);
-              (e.currentTarget.children[i] as HTMLElement | undefined)?.focus();
-            }}
-          >
-            {COLOR_SETS.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                role="radio"
-                aria-checked={c === colorSet}
-                tabIndex={c === colorSet ? 0 : -1}
-                className={c === colorSet ? "on" : ""}
-                onClick={() => setSetId(c.id)}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            labelledBy={setsLabelId}
+            value={colorSet.id}
+            options={COLOR_SETS.map((c) => c.id)}
+            onChange={setSetId}
+            render={(id) => COLOR_SETS.find((c) => c.id === id)?.label ?? id}
+          />
           <span className="set-swatches" aria-label={`${colorSet.label}: ${colorSet.families.map((f) => f.id).join(", ")}`}>
             {colorSet.families.map((f) => (
               <span key={f.id} className="set-swatch" title={f.id} style={{ background: `linear-gradient(135deg, ${f.colors.join(", ")})` }} />
