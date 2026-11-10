@@ -63,6 +63,22 @@ A mosaic makes the tile itself the puzzle: four pieces, each a shade of one colo
 
 `COLOR_SETS` holds nine sets of at most five colour families: six restrained ones (Studio, Aluminum, Titanium, Desktop, Mono, System) and three bright ones made for mosaics (Bright, Candy, and Ink, where every family's deepest shade is one navy); a family's `colors` also work as a gradient palette for `<PuzzleIcon>`.
 
+### Install as source (shadcn registry)
+
+`PuzzleMosaic` can also be copied into a project as one self-contained source file with the shadcn CLI, with no dependency on these packages:
+
+```sh
+npx shadcn@latest add /path/to/jigsaw/public/r/puzzle-mosaic.json
+```
+
+```tsx
+import { PuzzleMosaic } from "@/components/puzzle-mosaic";
+
+<PuzzleMosaic seed={app.id} title={app.name} />
+```
+
+See [Install PuzzleMosaic as source](docs/registry.md) and the [PuzzleMosaic reference](docs/puzzle-mosaic.md).
+
 ### Core API
 
 ```ts
@@ -169,6 +185,7 @@ interface PuzzleIconOptions {
 
 - `tests/stamp.test.ts`, `tests/texture.test.ts`, `tests/palette.test.ts`: letter stamps, surface textures and palettes.
 - `tests/interlock.test.ts`, `tests/assembly.test.ts`: single pieces from different seeds fit each other and assemble into a framed puzzle with no gaps.
+- `tests/registry.test.ts`: the installable `PuzzleMosaic` against the library (designs, fills, palettes), its rendered markup, and the built registry file.
 - `tests/pictogram.test.ts`: pictogram arrangements and geometry, mosaics, the piece outline, standalone SVG, and colour families.
 
 ## Determinism

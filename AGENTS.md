@@ -10,6 +10,8 @@ packages/renderer/  WebGPU, WebGL2 and CPU backends, WGSL/GLSL shaders, PuzzleIc
 packages/react/     <PuzzleIcon> and <PuzzlePictogram> components, shared generator
 packages/export/    PNG/WebP encoding
 apps/playground/    Vite + React playground
+registry/           shadcn-format components, self-contained source (registry.json lists them)
+public/r/           built registry files that consumers install; generated, committed
 tests/              Vitest suites and golden image signatures
 docs/               project documentation
 .agents/            skills, decision records and convention gates
@@ -22,6 +24,7 @@ pnpm install
 pnpm dev                    # playground on http://localhost:5173
 pnpm typecheck
 pnpm test                   # Vitest, CPU renderer
+pnpm registry:build         # rebuild public/r/ after editing registry/
 node .agents/scripts/verify-covenant.mjs
 git diff --cached --check
 node .agents/skills/covenant/scripts/check-commit-message.mjs <message-file>
@@ -51,6 +54,7 @@ The main checkout holds `main`; pull there after merging so new worktrees start 
 - **Checks:** mechanically checkable requirements follow [the gate workflow](.agents/skills/covenant/references/gates.md#adding-a-gate); select evidence using [the change workflow](.agents/skills/covenant/references/change-workflow.md#choosing-evidence-before-pushing).
 - **Shader parity:** `packages/core/src/shading.ts` is the reference for `puzzle.wgsl` and `puzzle.frag.glsl`; change all three together and keep `packPieceUniforms` in step with both uniform layouts.
 - **Determinism:** generation draws randomness only from `createRng` streams in `packages/core/src/prng.ts`, never `Math.random`; a change to generated output bumps `ALGORITHM_VERSION` or `PRESET_VERSION` in `options.ts`.
+- **Registry copies:** `registry/jigsaw/*.tsx` are self-contained copies of library code that consumers install as source; change the library and the copy together and rebuild `public/r/` ([maintenance](docs/registry-maintenance.md)).
 - **Golden signatures:** an intended image change re-baselines `tests/golden/signatures.json` (delete it and re-run `pnpm test`) in the same change, and the note says why.
 
 ## Editing this file

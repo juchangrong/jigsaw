@@ -22,5 +22,5 @@
       "@jigsaw/export": ["packages/export/src/index.ts"]
     }
   },
-  "include": ["packages/*/src", "apps/playground/src", "tests", "vitest.config.ts"]
+  "include": ["packages/*/src", "apps/playground/src", "registry", "tests", "vitest.config.ts"]
 }
