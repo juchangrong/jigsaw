@@ -13,6 +13,8 @@ pnpm install
 pnpm dev        # playground at http://localhost:5173
 pnpm test       # unit + determinism + rendering / visual regression tests
 pnpm typecheck
+pnpm lint       # ESLint
+pnpm check      # lint, format check, typecheck, tests and convention gate, as CI runs them
 pnpm build      # production build of the playground
 ```
 

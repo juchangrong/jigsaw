@@ -15,6 +15,7 @@ public/r/           built registry files that consumers install; generated, comm
 tests/              Vitest suites and golden image signatures
 docs/               project documentation
 .agents/            skills, decision records and convention gates
+.github/            CI workflow
 ```
 
 ## Commands
@@ -22,6 +23,9 @@ docs/               project documentation
 ```sh
 pnpm install
 pnpm dev                    # playground on http://localhost:5173
+pnpm check                  # everything CI runs except the build: lint, format:check, typecheck, test, verify-covenant
+pnpm lint                   # ESLint, type-checked rules
+pnpm format                 # Prettier; format:check only reports
 pnpm typecheck
 pnpm test                   # Vitest, CPU renderer
 pnpm registry:build         # rebuild public/r/ after editing registry/
@@ -40,7 +44,7 @@ gh pr merge <number> --merge
 git -C /Users/bytedance/Workspace/jigsaw pull --ff-only origin main
 ```
 
-The main checkout holds `main`; pull there after merging so new worktrees start from the merged state. The repository has no CI yet, so run the commands above before pushing. See [the change workflow](.agents/skills/covenant/references/change-workflow.md#pushing-and-prs) and [the dev-branch note](.agents/notes/implemented/process/2026-11-04-dev-branch-workflow.md).
+The main checkout holds `main`; pull there after merging so new worktrees start from the merged state. CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `pnpm check` and `pnpm build` on every push to `dev` and `main`; run `pnpm check` before pushing. See [the change workflow](.agents/skills/covenant/references/change-workflow.md#pushing-and-prs) and [the dev-branch note](.agents/notes/implemented/process/2026-11-04-dev-branch-workflow.md).
 
 ## Conventions
 
