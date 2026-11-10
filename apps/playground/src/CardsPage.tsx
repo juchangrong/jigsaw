@@ -13,7 +13,7 @@ import {
 } from "@jigsaw/core";
 import { PuzzleIcon, PuzzleMosaic, PuzzlePictogram } from "@jigsaw/react";
 import { useEffect, useId, useMemo, useState, type CSSProperties } from "react";
-import { Segmented } from "./Segmented";
+import { Segmented } from "./controls";
 import { useStoredState } from "./storage";
 
 /** Mock items, in the copy style of the product list this page imitates. */
@@ -85,7 +85,7 @@ const MosaicIcon = ({ seed, size, family, solid, look }: { seed: string; size: n
   />
 );
 /** mosaic size relative to its white tile, with Padding on */
-const MOSAIC_INSET = 0.75;
+export const MOSAIC_INSET = 0.75;
 
 const ICON_PX = 40;
 /**

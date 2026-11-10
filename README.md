@@ -26,7 +26,7 @@ bun run build      # production build of the playground
 | `@jigsaw/core` | Seeded PRNG (Mulberry32, separate `geometry` / `palette` / `gradient` / `layout` / `texture` streams), cubic-Bézier edge profiles, shared-edge layouts (`single`, `cluster`, `grid`), mask rasterization + exact EDT signed distance field, OKLCH palettes, Gaussian-spot gradients, material presets, render plan + reference shading. No GPU needed. |
 | `@jigsaw/renderer` | WebGPU backend (`shaders/puzzle.wgsl`), WebGL2 fallback (`shaders/puzzle.frag.glsl`), CPU fallback, and the `PuzzleIconGenerator` API. One shared device, cached SDF textures. Also the pure-TS PNG encoder (with sRGB chunk, straight alpha) and WebP via the browser canvas. |
 | `@jigsaw/react` | `<PuzzleIcon />` (rendered, on a canvas), `<PuzzlePictogram />` and `<PuzzleMosaic />` (inline SVG) and `useRendererBackend()`. |
-| `apps/playground` | React playground, bundled and served by Bun. |
+| `apps/playground` | React playground, bundled and served by Bun: Mosaic mode (the default), the rendered Piece mode at `#/piece`, and a card list at `#/cards`. |
 
 ## Usage
 
@@ -130,7 +130,7 @@ const set = assembleSinglePieces({ seed: "team", size: 128, cols: 3, rows: 3, gr
 // with its icon's top-left at (cell − cellOrigin) × 128 px, cell = p.cell × p.cellSize × 128 px
 ```
 
-The search reads only each seed's side kinds (`singlePieceKinds`) and generates just the chosen icons, so it takes a few milliseconds. The playground's Assembly section does exactly this with real `<PuzzleIcon>`s, and can scatter and reassemble the pieces.
+The search reads only each seed's side kinds (`singlePieceKinds`) and generates just the chosen icons, so it takes a few milliseconds.
 
 ### Options
 

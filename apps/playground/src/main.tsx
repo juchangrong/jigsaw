@@ -1,11 +1,12 @@
 import { StrictMode, useEffect, useState } from "react";
-import { createRoot } from "react-dom/client";
+import { createRoot, type Root as ReactRoot } from "react-dom/client";
 import { App } from "./App";
 import { CardsPage } from "./CardsPage";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { MosaicPage } from "./MosaicPage";
 import "./styles.css";
 
-/** Two pages, switched by the URL hash: `#/` (playground) and `#/cards`. */
+/** Three pages, switched by the URL hash: `#/` (mosaic, the default), `#/piece` (the rendered piece) and `#/cards`. */
 function Root() {
   const [hash, setHash] = useState(() => window.location.hash);
   useEffect(() => {
@@ -16,12 +17,14 @@ function Root() {
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
-  const cards = hash === "#/cards";
-  // keyed by page, so going to the other page leaves a failed one behind
-  return <ErrorBoundary key={cards ? "cards" : "playground"}>{cards ? <CardsPage /> : <App />}</ErrorBoundary>;
+  const page = hash === "#/cards" ? "cards" : hash === "#/piece" ? "piece" : "mosaic";
+  // keyed by page, so going to another page leaves a failed one behind
+  return <ErrorBoundary key={page}>{page === "cards" ? <CardsPage /> : page === "piece" ? <App /> : <MosaicPage />}</ErrorBoundary>;
 }
 
-createRoot(document.getElementById("root")!).render(
+// Bun's hot reload runs this module again when it changes; reuse the root it already made
+const root = ((import.meta.hot.data as { root?: ReactRoot }).root ??= createRoot(document.getElementById("root")!));
+root.render(
   <StrictMode>
     <Root />
   </StrictMode>,

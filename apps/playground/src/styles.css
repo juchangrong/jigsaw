@@ -278,39 +278,15 @@ input[type="checkbox"] {
   border-color: var(--accent);
 }
 
-.assembly {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding-top: 8px;
-}
-.assembly-head h2 {
+.demo-head h2 {
   font-size: 15px;
   font-weight: 650;
   margin: 0 0 2px;
 }
-.assembly-head p {
+.demo-head p {
   margin: 0;
   max-width: 65ch;
 }
-.assembly-stage {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  display: grid;
-  place-items: center;
-  padding: 12px;
-  overflow: hidden;
-}
-.assembly-board {
-  position: relative;
-}
-.assembly-piece {
-  position: absolute;
-  line-height: 0;
-  transition: transform 620ms var(--ease-out);
-  will-change: transform;
-}
-
 .appicons {
   display: flex;
   flex-direction: column;
@@ -632,6 +608,13 @@ input[type="checkbox"] {
 .mosaic-icon {
   display: block;
 }
+/* the playground's padded mosaic at any size: a tile with the mosaic inset in it */
+.mosaic-tile {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 25%;
+  box-shadow: inset 0 0 0 1px rgba(20, 20, 40, 0.1);
+}
 .row.check:has(input:disabled) {
   opacity: 0.45;
 }
@@ -690,12 +673,6 @@ input[type="checkbox"] {
 }
 .card-more:hover {
   background: var(--surface-2);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .assembly-piece {
-    transition: none;
-  }
 }
 
 .panel {

@@ -40,7 +40,7 @@ export function AppIconPreview({ options, renderer, backdrop }: { options: Puzzl
 
   return (
     <section className="appicons" aria-labelledby={labelId}>
-      <div className="assembly-head">
+      <div className="demo-head">
         <h2 id={labelId}>App icon</h2>
         <p className="muted">The icon on an opaque tile, as a rounded square and as a circle, at home-screen and list sizes.</p>
       </div>

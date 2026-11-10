@@ -13,10 +13,9 @@ import {
 import { downloadBlob } from "@jigsaw/renderer";
 import { PuzzleIcon, getSharedGenerator, useRendererBackend } from "@jigsaw/react";
 import { AppIconPreview } from "./AppIconPreview";
-import { AssemblyDemo } from "./AssemblyDemo";
-import { Segmented } from "./Segmented";
+import { Choice, ModeSwitch, Section, Segmented, Slider, nameOf } from "./controls";
 import type { RendererPreference, RenderResult } from "@jigsaw/renderer";
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Backdrop = "checker" | "white" | "dark";
 const SIZES = [32, 64, 128, 256] as const;
@@ -138,74 +137,6 @@ function toOptions(s: State, size: number): PuzzleIconOptions {
   };
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="section">
-      <h2>{title}</h2>
-      {children}
-    </section>
-  );
-}
-
-function Slider(props: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (v: number) => void;
-  format?: (v: number) => string;
-}) {
-  const { label, value, min, max, step, onChange, format } = props;
-  return (
-    <label className="row">
-      <span className="label">{label}</span>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(+e.target.value)} />
-      <span className="value">{format ? format(value) : value.toFixed(step < 0.01 ? 3 : 2)}</span>
-    </label>
-  );
-}
-
-/** Display names for option values that are identifiers in the API. */
-const NAMES: Record<string, string> = {
-  checker: "Checker",
-  white: "White",
-  dark: "Dark",
-  single: "Single",
-  cluster: "Cluster",
-  grid: "Grid",
-  softResin: "Soft resin",
-  matteAcrylic: "Matte acrylic",
-  satinResin: "Satin resin",
-  deboss: "Deboss",
-  emboss: "Emboss",
-  auto: "Auto",
-  webgpu: "WebGPU",
-  webgl2: "WebGL2",
-  cpu: "CPU",
-};
-const nameOf = (v: string | number) => NAMES[String(v)] ?? String(v);
-
-/** A labeled segmented control laid out like a slider row. */
-function Choice<T extends string | number>(props: {
-  label: string;
-  value: T;
-  options: readonly T[];
-  onChange: (v: T) => void;
-  render?: (v: T) => string;
-  wrap?: boolean;
-}) {
-  const id = useId();
-  return (
-    <div className={props.wrap ? "row choice wrap" : "row choice"}>
-      <span className="label" id={id}>
-        {props.label}
-      </span>
-      <Segmented {...props} render={props.render ?? nameOf} labelledBy={id} />
-    </div>
-  );
-}
-
 export function App() {
   const [s, setS] = useState<State>(initial);
   const [size, setSize] = useState<(typeof SIZES)[number]>(256);
@@ -275,6 +206,7 @@ export function App() {
             <PuzzleIcon seed="brand" size={28} gradient={{ palette: "aurora" }} renderer={renderer} />
           </span>
           <h1>Puzzle Icon Playground</h1>
+          <ModeSwitch mode="piece" />
           <a className="nav-link" href="#/cards">
             Card list demo
           </a>
@@ -327,8 +259,6 @@ export function App() {
           </div>
 
           <AppIconPreview options={options} renderer={renderer} backdrop={backdrop} />
-
-          <AssemblyDemo options={options} renderer={renderer} backdrop={backdrop} />
         </div>
 
         <aside className="panel">
