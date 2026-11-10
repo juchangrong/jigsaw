@@ -28,7 +28,7 @@ A mosaic is painted as four squares and then four knobs over the neighbouring sq
 
 `Mosaic.seams` holds the four cuts as open paths, and `mosaicDrawing` returns the outline, fills, ground, cut width, corner shapes and edge, so the SVG string and the React component draw from one plan. A mosaic's tones and layers are unchanged, so the version stays at 1.9.0.
 
-In the card list, Mosaic is a seventh icon style. Its Gradient switch chooses tonal or accent, and the pieces turn a quarter turn on hover like the other styles while the drop shadow stays underneath. The Solid tile gains a soft top-left sheen and a bright top edge.
+In the card list, Mosaic is a seventh icon style. Its Gradient switch chooses tonal or accent. The Solid tile gains a soft top-left sheen and a bright top edge.
 
 `ALGORITHM_VERSION` is 1.9.0 because pictogram paths changed. Rendered icons are untouched, so the golden signatures stay.
 
@@ -46,7 +46,7 @@ In the card list, Mosaic is a seventh icon style. Its Gradient switch chooses to
 
 **White lines for the cuts.** Stroking the seams in white is simpler than a mask and looks the same on a white page. On any other background the lines would show as white, so the cuts are transparent.
 
-**A groove, a sheen, wider tone steps.** A dark line with a light one beside it, as if the seam were pressed in, turned to noise at 40 px. A top-left sheen looked richer at 100 px and changed nothing at list size; it would also turn with the pieces on hover and light them from the wrong side. Stretching the four shades apart was meant for low-contrast families, but every family already steps evenly across 0.26 to 0.38 of lightness, and the cuts solved the separation.
+**A groove, a sheen, wider tone steps.** A dark line with a light one beside it, as if the seam were pressed in, turned to noise at 40 px. A top-left sheen looked richer at 100 px and changed nothing at list size. Stretching the four shades apart was meant for low-contrast families, but every family already steps evenly across 0.26 to 0.38 of lightness, and the cuts solved the separation.
 
 **A superellipse of exponent 5, or the rounded rectangle.** Exponent 5 is close to a phone's icon shape, but at this size it read as a square with small corners. The rounded rectangle shows the kink the squircle removes.
 

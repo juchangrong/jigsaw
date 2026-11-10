@@ -596,8 +596,7 @@ input[type="checkbox"] {
   place-items: center;
 }
 /* mosaic: the tile is the puzzle. It draws its own outline and edge, so the
-   holder has no ground, no clipping and no rim; the shadow sits on the holder
-   so it stays underneath while the pieces turn. */
+   holder has no ground, no clipping and no rim, only a shadow. */
 .card-icon.mosaic {
   padding: 0;
   background: none;
@@ -630,35 +629,6 @@ input[type="checkbox"] {
   display: block;
 }
 
-/* hovering an icon turns the piece a quarter turn and back on leave; the
-   tile, rim and gloss stay put */
-.card-icon > canvas,
-.card-icon > .outline-icon,
-.card-icon > .mosaic-icon {
-  transition: transform 420ms cubic-bezier(0.25, 1, 0.5, 1);
-}
-.card-icon:hover > canvas,
-.card-icon:hover > .outline-icon {
-  transform: translate(-50%, -50%) rotate(90deg);
-}
-/* a square tile turns onto itself, so the pieces change places inside it */
-.card-icon:hover > .mosaic-icon {
-  transform: rotate(90deg);
-}
-@media (prefers-reduced-motion: reduce) {
-  .card-icon > canvas,
-  .card-icon > .outline-icon,
-  .card-icon > .mosaic-icon {
-    transition: none;
-  }
-  .card-icon:hover > canvas,
-  .card-icon:hover > .outline-icon {
-    transform: translate(-50%, -50%);
-  }
-  .card-icon:hover > .mosaic-icon {
-    transform: none;
-  }
-}
 .card-icon > canvas {
   position: absolute;
   left: 50%;
