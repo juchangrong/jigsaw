@@ -190,7 +190,7 @@ packages/core        PRNG, geometry, SDF, color, material presets, generate()
 packages/renderer    WebGPU (shaders/*.wgsl), WebGL2 and CPU backends, PuzzleIconGenerator
 packages/react       <PuzzleIcon/>
 packages/export      PNG / WebP encoding
-apps/playground      Vite + React playground
+apps/playground      React playground, bundled and served by Bun
 tests/               geometry, deterministic, rendering tests
 ```
 

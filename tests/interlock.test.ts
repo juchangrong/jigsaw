@@ -2,7 +2,7 @@
  * Single pieces generated from different seeds fit each other: a tab on one
  * piece closes exactly into a socket on another placed next to it.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { flattenPath, generatePuzzleIcon, SIDES, type PuzzleIconDescription, type Side, type Vec2 } from "@jigsaw/core";
 
 const SEEDS = Array.from({ length: 120 }, (_, i) => `interlock-${i}`);
@@ -53,7 +53,7 @@ describe("single pieces interlock across seeds", () => {
         .map(({ center, width, depth, neckWidth, asymmetry, curvature, wave }) => ({ center, width, depth, neckWidth, asymmetry, curvature, wave })),
     );
     expect(params.length).toBeGreaterThan(200);
-    for (const p of params) expect(p).toEqual(params[0]);
+    for (const p of params) expect(p).toEqual(params[0]!);
     // the shared connector leans and waves like a real puzzle piece
     expect(params[0]!.asymmetry).not.toBe(0);
     expect(params[0]!.wave).toBeGreaterThan(0);

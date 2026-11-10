@@ -1,5 +1,5 @@
 import { packPieceUniforms, type RenderPlan, type SdfField } from "@jigsaw/core";
-import fragmentSource from "../shaders/puzzle.frag.glsl?raw";
+import fragmentSource from "../shaders/puzzle.frag.glsl" with { type: "text" };
 import { LruMap, SerialQueue, type RenderBackend } from "./backend";
 
 const VERTEX = `#version 300 es

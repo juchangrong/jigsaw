@@ -1,5 +1,5 @@
 import { packPieceUniforms, UNIFORM_VEC4S, type RenderPlan, type SdfField } from "@jigsaw/core";
-import shaderSource from "../shaders/puzzle.wgsl?raw";
+import shaderSource from "../shaders/puzzle.wgsl" with { type: "text" };
 import { LruMap, SerialQueue, type RenderBackend } from "./backend";
 
 const UNIFORM_STRIDE = 512; // ≥ UNIFORM_VEC4S·16 and a multiple of 256

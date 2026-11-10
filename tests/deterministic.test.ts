@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { ALGORITHM_VERSION, buildRenderPlan, createRng, generatePuzzleIcon, hashString, PRESET_VERSION, Rng, SIDES, type LayoutKind } from "@jigsaw/core";
 import { renderPlanCpu } from "../packages/renderer/src/cpu";
 

@@ -36,7 +36,7 @@ export function AppIconPreview({ options, renderer, backdrop }: { options: Puzzl
       deep: oklchToHex([0.24, Math.min(C, 0.2) * 0.35, h]),
       white: "#ffffff",
     };
-  }, [lookKey, renderer]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lookKey, renderer]);
 
   return (
     <section className="appicons" aria-labelledby={labelId}>

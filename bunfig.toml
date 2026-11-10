@@ -1,0 +1,10 @@
+[install]
+# a lockfile written against a private mirror records its URLs, which CI cannot reach
+registry = "https://registry.npmjs.org"
+
+[run]
+# run tsc, prettier and the shadcn CLI on Bun, so nothing here needs Node
+bun = true
+
+[test]
+root = "./tests"

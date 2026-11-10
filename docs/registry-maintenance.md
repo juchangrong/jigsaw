@@ -1,6 +1,6 @@
 # Maintain the registry
 
-The registry is named `jigsaw` and follows the shadcn format: `registry.json` lists the items, `registry/jigsaw/` holds their source, and `pnpm registry:build` writes the files the CLI installs to `public/r/`. Commit `public/r/`; it is what consumers fetch.
+The registry is named `jigsaw` and follows the shadcn format: `registry.json` lists the items, `registry/jigsaw/` holds their source, and `bun run registry:build` writes the files the CLI installs to `public/r/`. Commit `public/r/`; it is what consumers fetch.
 
 ## Change PuzzleMosaic
 
@@ -10,13 +10,13 @@ The registry is named `jigsaw` and follows the shadcn format: `registry.json` li
 2. Rebuild the installable file:
 
    ```sh
-   pnpm registry:build
+   bun run registry:build
    ```
 
 3. Run the tests. They fail if the copy and the library draw different icons, if a palette differs from the library's colour families, or if `public/r/puzzle-mosaic.json` is older than the source.
 
    ```sh
-   pnpm test
+   bun run test
    ```
 
 Keep the file's only import `react`. A file comment above the imports is dropped by the CLI on install, so put notes for consumers on the component itself.
@@ -25,7 +25,7 @@ Keep the file's only import `react`. A file comment above the imports is dropped
 
 1. Write the component as one file under `registry/jigsaw/`, importing nothing from this repository's packages.
 2. Add an item to `registry.json` with `"type": "registry:component"` and the file's path.
-3. Run `pnpm registry:build`, then add tests beside the existing ones in `tests/registry.test.ts`.
+3. Run `bun run registry:build`, then add tests beside the existing ones in `tests/registry.test.ts`.
 4. Install it into a scratch project to confirm it compiles there:
 
    ```sh

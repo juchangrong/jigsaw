@@ -5,7 +5,7 @@
  * tests/__output__/assembly-3x3.png for inspection.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import {
   assembleSinglePieces,
   buildRenderPlan,

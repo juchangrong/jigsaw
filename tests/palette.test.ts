@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { generatePuzzleIcon, hexToOklch, MUTED_PALETTES, PALETTES, PASTEL_PALETTES, SEED_PALETTE_NAMES, VIVID_PALETTES } from "@jigsaw/core";
 
 const SEEDS = Array.from({ length: 200 }, (_, i) => `palette-${i}`);

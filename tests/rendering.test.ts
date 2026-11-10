@@ -12,7 +12,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { inflateSync } from "node:zlib";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "bun:test";
 import {
   buildRenderPlan,
   evalGradientLinear,
@@ -252,7 +252,7 @@ describe("SDF resolution and cache", () => {
     expect(recommendedSdfResolution(4096, 0.55)).toBe(1024);
     for (const size of [48, 96, 200, 300, 700]) {
       const r = recommendedSdfResolution(size, 0.55);
-      expect(SDF_RESOLUTIONS).toContain(r);
+      expect<readonly number[]>(SDF_RESOLUTIONS).toContain(r);
       expect(r).toBeGreaterThanOrEqual(size * 0.55 * 1.7);
     }
     const d = generatePuzzleIcon({ seed: "res", size: 256 });

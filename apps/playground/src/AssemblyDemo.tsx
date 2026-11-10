@@ -42,7 +42,7 @@ export function AssemblyDemo({ options, renderer, backdrop }: { options: PuzzleI
       if (set) return set;
     }
     return null;
-  }, [lookKey, options.seed, round, cols, rows]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lookKey, options.seed, round, cols, rows]);
 
   // a new set arrives scattered, then snaps together on the next frame
   const [shown, setShown] = useState(pieces);

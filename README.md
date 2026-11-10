@@ -8,14 +8,15 @@ Design spec: [docs/design.md](docs/design.md).
 
 ## Quick start
 
+The only tool to install is [Bun](https://bun.sh) 1.4 or later; Node is not needed.
+
 ```bash
-pnpm install
-pnpm dev        # playground at http://localhost:5173
-pnpm test       # unit + determinism + rendering / visual regression tests
-pnpm typecheck
-pnpm lint       # ESLint
-pnpm check      # lint, format check, typecheck, tests and convention gate, as CI runs them
-pnpm build      # production build of the playground
+bun install
+bun run dev        # playground at http://localhost:5173
+bun run test       # unit + determinism + rendering / visual regression tests
+bun run typecheck
+bun run check      # format check, typecheck, tests and convention gate, as CI runs them
+bun run build      # production build of the playground
 ```
 
 ## Packages
@@ -26,7 +27,7 @@ pnpm build      # production build of the playground
 | `@jigsaw/renderer` | WebGPU backend (`shaders/puzzle.wgsl`), WebGL2 fallback (`shaders/puzzle.frag.glsl`), CPU fallback, and the `PuzzleIconGenerator` API. One shared device, cached SDF textures. |
 | `@jigsaw/export` | Pure-TS PNG encoder (with sRGB chunk, straight alpha) and WebP via the browser canvas. |
 | `@jigsaw/react` | `<PuzzleIcon />` (rendered, on a canvas), `<PuzzlePictogram />` and `<PuzzleMosaic />` (inline SVG) and `useRendererBackend()`. |
-| `apps/playground` | Vite + React playground. |
+| `apps/playground` | React playground, bundled and served by Bun. |
 
 ## Usage
 

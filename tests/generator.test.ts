@@ -3,7 +3,7 @@
  * between slices of work, skip icons whose render was aborted, recover when
  * the device is lost, and keep the image cache within its byte budget.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { sharedSdfCache } from "@jigsaw/core";
 import { CpuBackend, getSharedGenerator, LruMap, PuzzleIconGenerator, type RenderBackend } from "@jigsaw/renderer";
 
@@ -34,17 +34,17 @@ describe("PuzzleIconGenerator", () => {
   it("yields to the event loop while a batch is building", async () => {
     sharedSdfCache.clear();
     const gen = make();
+    // counts with messages, not timers: Bun runs queued messages before any timer
+    const channel = new MessageChannel();
     let tasks = 0;
-    let done = false;
-    const tick = () => {
-      if (done) return;
+    channel.port1.onmessage = () => {
       tasks++;
-      setTimeout(tick, 0);
+      channel.port2.postMessage(null);
     };
-    setTimeout(tick, 0);
+    channel.port2.postMessage(null);
     // 512 px fields take long enough that each one fills a slice
     await Promise.all(Array.from({ length: 6 }, (_, i) => gen.render({ seed: `yield-${i}`, size: 64 }, { size: 512 })));
-    done = true;
+    channel.port1.close();
     expect(tasks).toBeGreaterThan(0);
   });
 
@@ -120,7 +120,7 @@ describe("a lost device", () => {
     const r = await gen.render({ seed: "idle-2", size: 32 });
     expect(r.cached).toBe(false);
     expect(created).toHaveLength(2);
-    expect(await gen.backend()).toBe(created[1]);
+    expect(await gen.backend()).toBe(created[1]!);
     expect(gen.fallbackErrors).toEqual(["cpu: test loss"]);
   });
 

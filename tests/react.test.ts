@@ -4,7 +4,7 @@
  */
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "bun:test";
 import { PuzzleIcon } from "@jigsaw/react";
 import { clientDpr, serverDpr, subscribeDpr } from "../packages/react/src/dpr";
 
@@ -31,7 +31,14 @@ function fakeWindow(ratio: number) {
   return { win, queries, change };
 }
 
-afterEach(() => vi.unstubAllGlobals());
+const realWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+function stubWindow(win: unknown) {
+  Object.defineProperty(globalThis, "window", { value: win, configurable: true, writable: true });
+}
+afterEach(() => {
+  if (realWindow) Object.defineProperty(globalThis, "window", realWindow);
+  else delete (globalThis as { window?: unknown }).window;
+});
 
 describe("<PuzzleIcon> markup", () => {
   it("is hidden from assistive technology without a title, and an image with one", () => {
@@ -46,7 +53,7 @@ describe("<PuzzleIcon> markup", () => {
   });
 
   it("uses a pixel ratio of 1 on the server whatever the device, so hydration matches", () => {
-    vi.stubGlobal("window", fakeWindow(2).win);
+    stubWindow(fakeWindow(2).win);
     const html = renderToStaticMarkup(createElement(PuzzleIcon, { seed: "alpha", size: 40 }));
     expect(html).toContain('width="40"');
     expect(html).toContain('height="40"');
@@ -55,16 +62,16 @@ describe("<PuzzleIcon> markup", () => {
 
 describe("device pixel ratio store", () => {
   it("reads the ratio, capped at 3, and 1 on the server", () => {
-    vi.stubGlobal("window", fakeWindow(2).win);
+    stubWindow(fakeWindow(2).win);
     expect(clientDpr()).toBe(2);
-    vi.stubGlobal("window", fakeWindow(4).win);
+    stubWindow(fakeWindow(4).win);
     expect(clientDpr()).toBe(3);
     expect(serverDpr()).toBe(1);
   });
 
   it("reports every change, following the ratio to a new query each time", () => {
     const { win, queries, change } = fakeWindow(1);
-    vi.stubGlobal("window", win);
+    stubWindow(win);
     let calls = 0;
     const stop = subscribeDpr(() => calls++);
     expect(queries.map((q) => q.media)).toEqual(["(resolution: 1dppx)"]);

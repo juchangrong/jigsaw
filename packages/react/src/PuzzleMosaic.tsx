@@ -34,7 +34,7 @@ export function PuzzleMosaic({ seed, colors, size = 24, variant, shape, radius, 
   const id = `mosaic${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   const mosaic = useMemo(() => generateMosaic(seed), [seed]);
   const colorKey = colors.join();
-  const d = useMemo(() => mosaicDrawing(mosaic, colors, { variant, shape, radius, gap, edge }), [mosaic, colorKey, variant, shape, radius, gap, edge]); // eslint-disable-line react-hooks/exhaustive-deps
+  const d = useMemo(() => mosaicDrawing(mosaic, colors, { variant, shape, radius, gap, edge }), [mosaic, colorKey, variant, shape, radius, gap, edge]);
   const a11y = title ? ({ role: "img", "aria-label": title } as const) : ({ "aria-hidden": true } as const);
   return (
     <svg className={className} style={style} width={size} height={size} viewBox={mosaic.viewBox} {...a11y}>

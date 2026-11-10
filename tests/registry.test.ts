@@ -6,7 +6,7 @@
 import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { COLOR_SETS, generateMosaic as libraryMosaic, MOSAIC_GAP, mosaicDrawing, mosaicFills as libraryFills } from "@jigsaw/core";
 import {
   DEFAULT_MOSAIC_PALETTES,
@@ -45,8 +45,8 @@ describe("installable PuzzleMosaic: parity with the library", () => {
     const expected = Object.fromEntries(
       [...["bright", "candy", "mono"].flatMap((id) => COLOR_SETS.find((s) => s.id === id)!.families)].map((f) => [f.id, f.colors]),
     );
-    expect(MOSAIC_PALETTES).toEqual(expected);
-    expect([...DEFAULT_MOSAIC_PALETTES]).toEqual(COLOR_SETS.find((s) => s.id === "bright")!.families.map((f) => f.id));
+    expect<unknown>(MOSAIC_PALETTES).toEqual(expected);
+    expect<string[]>([...DEFAULT_MOSAIC_PALETTES]).toEqual(COLOR_SETS.find((s) => s.id === "bright")!.families.map((f) => f.id));
   });
 
   it("uses the library's outline, cut width, cut corners and ground", () => {
@@ -126,7 +126,7 @@ describe("registry build", () => {
     expect(item.files).toEqual([{ path: "registry/jigsaw/puzzle-mosaic.tsx", type: "registry:component" }]);
   });
 
-  it("has a built file that matches the source (run `pnpm registry:build` after editing it)", () => {
+  it("has a built file that matches the source (run `bun run registry:build` after editing it)", () => {
     const built = JSON.parse(readFileSync("public/r/puzzle-mosaic.json", "utf8")) as {
       name: string;
       files: { path: string; content: string; type: string }[];

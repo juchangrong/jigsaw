@@ -9,10 +9,10 @@ packages/core/      options, seeded PRNG, geometry, SDF, palettes, stamp glyphs,
 packages/renderer/  WebGPU, WebGL2 and CPU backends, WGSL/GLSL shaders, PuzzleIconGenerator
 packages/react/     <PuzzleIcon> and <PuzzlePictogram> components, shared generator
 packages/export/    PNG/WebP encoding
-apps/playground/    Vite + React playground
+apps/playground/    React playground, bundled and served by Bun
 registry/           shadcn-format components, self-contained source (registry.json lists them)
 public/r/           built registry files that consumers install; generated, committed
-tests/              Vitest suites and golden image signatures
+tests/              bun:test suites and golden image signatures
 docs/               project documentation
 .agents/            skills, decision records and convention gates
 .github/            CI workflow
@@ -21,18 +21,20 @@ docs/               project documentation
 ## Commands
 
 ```sh
-pnpm install
-pnpm dev                    # playground on http://localhost:5173
-pnpm check                  # everything CI runs except the build: lint, format:check, typecheck, test, verify-covenant
-pnpm lint                   # ESLint, type-checked rules
-pnpm format                 # Prettier; format:check only reports
-pnpm typecheck
-pnpm test                   # Vitest, CPU renderer
-pnpm registry:build         # rebuild public/r/ after editing registry/
-node .agents/scripts/verify-covenant.mjs
+bun install
+bun run dev                 # playground on http://localhost:5173
+bun run check               # everything CI runs except the build: format:check, typecheck, test, verify-covenant
+bun run format              # Prettier; format:check only reports
+bun run typecheck
+bun run test                # bun:test, CPU renderer
+bun run build               # production build of the playground
+bun run registry:build      # rebuild public/r/ after editing registry/
+bun .agents/scripts/verify-covenant.mjs
 git diff --cached --check
-node .agents/skills/covenant/scripts/check-commit-message.mjs <message-file>
+bun .agents/skills/covenant/scripts/check-commit-message.mjs <message-file>
 ```
+
+Bun 1.4 is the only toolchain: package manager, script runner, test runner, bundler and dev server ([note](.agents/notes/implemented/process/2026-11-10-bun-toolchain.md)). Write `bun run test` and `bun run build`; bare `bun test` and `bun build` skip the scripts' flags.
 
 Commit every change to the long-lived `dev` branch and push it; do not open a pull request per change. `dev` reaches `main` through one pull request, merged with a merge commit, only when the maintainer asks:
 
@@ -44,7 +46,7 @@ gh pr merge <number> --merge
 git -C /Users/bytedance/Workspace/jigsaw pull --ff-only origin main
 ```
 
-The main checkout holds `main`; pull there after merging so new worktrees start from the merged state. CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `pnpm check` and `pnpm build` on every push to `dev` and `main`; run `pnpm check` before pushing. See [the change workflow](.agents/skills/covenant/references/change-workflow.md#pushing-and-prs) and [the dev-branch note](.agents/notes/implemented/process/2026-11-04-dev-branch-workflow.md).
+The main checkout holds `main`; pull there after merging so new worktrees start from the merged state. CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `bun run check` and `bun run build` on every push to `dev` and `main`; run `bun run check` before pushing. See [the change workflow](.agents/skills/covenant/references/change-workflow.md#pushing-and-prs) and [the dev-branch note](.agents/notes/implemented/process/2026-11-04-dev-branch-workflow.md).
 
 ## Conventions
 
@@ -59,7 +61,7 @@ The main checkout holds `main`; pull there after merging so new worktrees start 
 - **Shader parity:** `packages/core/src/shading.ts` is the reference for `puzzle.wgsl` and `puzzle.frag.glsl`; change all three together and keep `packPieceUniforms` in step with both uniform layouts.
 - **Determinism:** generation draws randomness only from `createRng` streams in `packages/core/src/prng.ts`, never `Math.random`; a change to generated output bumps `ALGORITHM_VERSION` or `PRESET_VERSION` in `options.ts`.
 - **Registry copies:** `registry/jigsaw/*.tsx` are self-contained copies of library code that consumers install as source; change the library and the copy together and rebuild `public/r/` ([maintenance](docs/registry-maintenance.md)).
-- **Golden signatures:** an intended image change re-baselines `tests/golden/signatures.json` (delete it and re-run `pnpm test`) in the same change, and the note says why.
+- **Golden signatures:** an intended image change re-baselines `tests/golden/signatures.json` (delete it and re-run `bun run test`) in the same change, and the note says why.
 
 ## Editing this file
 

@@ -3,7 +3,7 @@
  * draws a vertical bar (an "I") and check the option handling, the glyph SDF
  * and how the relief is lit by the CPU reference renderer.
  */
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
   buildRenderPlan,
   buildStampSdf,

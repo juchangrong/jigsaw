@@ -3,43 +3,30 @@
   "private": true,
   "type": "module",
   "description": "Procedural puzzle-piece icon generator (TypeScript + React + WebGPU)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "pnpm --filter @jigsaw/playground dev",
-    "build": "pnpm --filter @jigsaw/playground build",
-    "preview": "pnpm --filter @jigsaw/playground preview",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "dev": "bun run --cwd apps/playground dev",
+    "build": "bun run --cwd apps/playground build",
+    "test": "bun test --timeout 60000",
+    "test:watch": "bun test --timeout 60000 --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && node .agents/scripts/verify-covenant.mjs",
-    "registry:build": "pnpm dlx shadcn@4.23.0 build"
+    "check": "bun run format:check && bun run typecheck && bun run test && bun .agents/scripts/verify-covenant.mjs",
+    "registry:build": "bun x shadcn@4.23.0 build"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@types/node": "^22.10.0",
+    "@types/bun": "^1.4.4",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@webgpu/types": "^0.1.51",
-    "eslint": "^10.14.0",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "globals": "^17.14.0",
     "prettier": "^3.9.10",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "typescript": "~5.7.2",
-    "typescript-eslint": "^8.72.2",
-    "vite": "^6.0.0",
-    "vitest": "^3.0.0"
+    "typescript": "~5.7.2"
   },
-  "packageManager": "pnpm@10.28.1",
-  "engines": {
-    "node": ">=22"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ]
-  }
+  "packageManager": "bun@1.4.4"
 }

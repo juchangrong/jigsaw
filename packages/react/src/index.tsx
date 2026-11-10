@@ -32,7 +32,7 @@ export function PuzzleIcon({ renderer, className, style, title, onRender, onErro
   const dpr = useSyncExternalStore(subscribeDpr, clientDpr, serverDpr);
   const px = Math.round(size * dpr);
   const key = JSON.stringify(options);
-  const opts = useMemo(() => options, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+  const opts = useMemo(() => options, [key]);
   const callbacks = useRef({ onRender, onError });
   // declared before the render effect so a callback that changed with the options is the one called
   useEffect(() => {

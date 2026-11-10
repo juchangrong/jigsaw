@@ -2,7 +2,7 @@
  * Surface textures on the CPU reference renderer (the shaders mirror it;
  * WebGPU / WebGL2 parity is checked in the playground).
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { buildRenderPlan, generatePuzzleIcon, SURFACE_TEXTURES, texHash, valueNoise, type PuzzleIconOptions, type SurfaceTexture } from "@jigsaw/core";
 import { renderPlanCpu } from "../packages/renderer/src/cpu";
 

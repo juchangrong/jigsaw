@@ -2,7 +2,7 @@
  * Vector forms of a piece: the geometric pictogram, the realistic outline,
  * the standalone SVG, and the colour families that go with them.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import {
   COLOR_SETS,
   colorFamily,
@@ -325,7 +325,7 @@ describe("mosaic", () => {
   it("fills cells with their own shade, or keeps one deep piece as an accent", () => {
     for (const seed of SEEDS.slice(0, 40)) {
       const m = generateMosaic(seed);
-      expect(mosaicFills(m, colors)).toEqual(m.tones.map((t) => colors[t]));
+      expect(mosaicFills(m, colors)).toEqual(m.tones.map((t) => colors[t]!));
       const accent = mosaicFills(m, colors, "accent");
       expect(accent[m.tones.indexOf(0)]).toBe(colors[0]);
       expect(accent[m.tones.indexOf(1)]).toBe(colors[3]);
@@ -352,7 +352,7 @@ describe("mosaic", () => {
       m.seams.forEach((seam, i) => {
         expect(seam.endsWith("Z")).toBe(false);
         const pts = numbers(seam);
-        expect([...pts[0]!, ...pts[pts.length - 1]!]).toEqual(ends[i]);
+        expect([...pts[0]!, ...pts[pts.length - 1]!]).toEqual(ends[i]!);
         // one knob with a join on both sides
         expect(seam.match(/A /g)).toHaveLength(3);
       });
