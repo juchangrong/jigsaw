@@ -61,7 +61,7 @@ The pictogram reduces the piece to a sign built on one grid: a unit square whose
 
 A mosaic makes the tile itself the puzzle: four pieces, each a shade of one colour family, with the two deep shades on one diagonal so every seam has contrast. A seed picks one of 8 tone layouts and 16 knob layouts. The pieces are separated by thin transparent cuts with rounded corners, inside a squircle outline, so a mosaic sits on any background; `gap={0}`, `shape="round"` and `edge={false}` turn each of those off. `mosaicSvg(generateMosaic(seed), family.colors, { size, variant })` returns it as a standalone SVG string, and `mosaicDrawing` returns the parts for drawing it yourself.
 
-`COLOR_SETS` holds six sets of at most five colour families (Studio, Aluminum, Titanium, Desktop, Mono, System); a family's `colors` also work as a gradient palette for `<PuzzleIcon>`.
+`COLOR_SETS` holds nine sets of at most five colour families: six restrained ones (Studio, Aluminum, Titanium, Desktop, Mono, System) and three bright ones made for mosaics (Bright, Candy, and Ink, where every family's deepest shade is one navy); a family's `colors` also work as a gradient palette for `<PuzzleIcon>`.
 
 ### Core API
 

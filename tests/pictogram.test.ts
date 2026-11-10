@@ -227,6 +227,31 @@ describe("colour families", () => {
     }
   });
 
+  it("has bright sets, and an ink set whose families share one deep navy", () => {
+    const set = (id: string) => COLOR_SETS.find((s) => s.id === id)!;
+    for (const id of ["bright", "candy"]) {
+      for (const f of set(id).families) {
+        const lch = f.colors.map((c) => hexToOklch(c));
+        for (let i = 1; i < 4; i++) expect(lch[i]![0]).toBeGreaterThan(lch[i - 1]![0]);
+        // vivid at the deep end, a pale tint at the light end
+        expect(lch[0]![1]).toBeGreaterThan(0.09);
+        // 0.88 or more before rounding to hex
+        expect(lch[3]![0]).toBeGreaterThan(0.87);
+      }
+    }
+    const ink = set("ink").families;
+    const navy = ink[0]!.colors[0]!;
+    expect(hexToOklch(navy)[0]).toBeLessThan(0.4);
+    for (const f of ink) {
+      expect(f.colors[0]).toBe(navy);
+      const rest = f.colors.slice(1).map((c) => hexToOklch(c));
+      // the other three are one bright hue, stepping up from the full colour to a tint
+      expect(rest[0]![0]).toBeGreaterThan(0.6);
+      expect(rest[0]![1]).toBeGreaterThan(0.1);
+      for (let i = 1; i < 3; i++) expect(rest[i]![0]).toBeGreaterThan(rest[i - 1]![0]);
+    }
+  });
+
   it("picks flat colours that stand clear of white, and a light tint", () => {
     for (const set of COLOR_SETS)
       for (const f of set.families) {

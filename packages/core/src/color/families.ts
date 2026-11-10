@@ -33,6 +33,18 @@ export function colorFamily(id: string, hue: number, chroma: number, deep: numbe
 
 const preset = (id: PaletteName): ColorFamily => ({ id, colors: [...PALETTES[id]] });
 
+/** A deep navy, the ink that bright mascot-style icons use for eyes and outlines. */
+const INK = oklchToHex([0.32, 0.048, 268]);
+/**
+ * A bright hue with the ink as its deepest shade: the colour of a friendly
+ * mascot and the navy of its eyes. In a mosaic one piece is ink and the rest
+ * step from the full colour to a tint.
+ */
+function inked(id: string, hue: number, chroma: number, deep: number, light: number): ColorFamily {
+  const taper = [1, 0.85, 0.5];
+  return { id, colors: [INK, ...taper.map((k, i) => oklchToHex([deep + ((light - deep) * i) / 2, chroma * k, hue]))] };
+}
+
 /**
  * Sets of at most five families. They take their cue from restrained product
  * finishes: near-neutral metals with one accent, or a few soft hues of equal
@@ -91,6 +103,37 @@ export const COLOR_SETS: readonly ColorSet[] = [
       colorFamily("orange", 58, 0.13, 0.58, 0.88),
       colorFamily("pink", 8, 0.12, 0.55, 0.86),
     ],
+  },
+  // The next three take their hues from a set of mascot app icons: saturated,
+  // friendly colours, each drawn with navy eyes. They are brighter than the
+  // sets above and suit mosaics, where four shades of one hue sit together.
+  {
+    id: "bright",
+    label: "Bright",
+    families: [
+      colorFamily("blue", 255, 0.17, 0.55, 0.9, 6),
+      colorFamily("coral", 22, 0.185, 0.6, 0.9, 6),
+      colorFamily("orange", 62, 0.165, 0.68, 0.92, 14),
+      colorFamily("green", 142, 0.16, 0.6, 0.9, 8),
+      colorFamily("purple", 295, 0.175, 0.56, 0.88, 6),
+    ],
+  },
+  {
+    id: "candy",
+    label: "Candy",
+    families: [
+      colorFamily("pink", 354, 0.19, 0.6, 0.9, 6),
+      // yellow cannot go deep without turning olive, so its deep end leans to amber
+      colorFamily("yellow", 92, 0.18, 0.76, 0.95, 24),
+      colorFamily("teal", 189, 0.12, 0.55, 0.9, 8),
+      colorFamily("sky", 248, 0.13, 0.62, 0.92, 8),
+      colorFamily("caramel", 60, 0.11, 0.5, 0.88, 8),
+    ],
+  },
+  {
+    id: "ink",
+    label: "Ink",
+    families: [inked("coral", 22, 0.18, 0.7, 0.93), inked("orange", 64, 0.16, 0.78, 0.94), inked("blue", 252, 0.16, 0.66, 0.92), inked("green", 140, 0.16, 0.74, 0.93), inked("purple", 296, 0.17, 0.67, 0.92)],
   },
 ];
 
