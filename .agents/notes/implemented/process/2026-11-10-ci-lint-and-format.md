@@ -40,4 +40,4 @@ The action pins do not update themselves; no Dependabot or Renovate configuratio
 
 ## Later changes
 
-[The Bun toolchain note](2026-11-10-bun-toolchain.md) supersedes the parts of this decision about pnpm, Node, `.nvmrc` and ESLint: Bun runs every step, and no linter is installed. The workflow triggers, the pinned actions, Prettier at a width of 160, the two TypeScript flags and the private packages stay as described here.
+[The Bun toolchain note](2026-11-10-bun-toolchain.md) supersedes the parts of this decision about pnpm, Node, `.nvmrc`, ESLint and Prettier: Bun runs every step, `bun fmt` formats at the same width of 160, and no linter is installed. `.git-blame-ignore-revs` is removed at the maintainer's request, so `git blame` shows the reformat commit on the lines it touched. The workflow triggers, the pinned actions, the two TypeScript flags and the private packages stay as described here.

@@ -13,9 +13,7 @@
     "test": "bun test --timeout 60000",
     "test:watch": "bun test --timeout 60000 --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "check": "bun run format:check && bun run typecheck && bun run test && bun .agents/scripts/verify-covenant.mjs",
+    "check": "bun fmt --check && bun run typecheck && bun run test && bun .agents/scripts/verify-covenant.mjs",
     "registry:build": "bun x shadcn@4.23.0 build"
   },
   "devDependencies": {
@@ -23,7 +21,6 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@webgpu/types": "^0.1.51",
-    "prettier": "^3.9.10",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "typescript": "~5.7.2"

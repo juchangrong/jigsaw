@@ -1,8 +1,0 @@
-bun.lock
-dist/
-public/r/
-tests/golden/
-tests/__output__/
-.agents/
-.claude/
-*.md

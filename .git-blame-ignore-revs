@@ -1,5 +1,0 @@
-# Mechanical reformats, skipped by git blame and by GitHub's blame view.
-# Local use: git config blame.ignoreRevsFile .git-blame-ignore-revs
-
-# style: format the codebase with prettier
-e5bb452d18690131139425d6f09aa9158e6cd3a6

@@ -23,8 +23,8 @@ docs/               project documentation
 ```sh
 bun install
 bun run dev                 # playground on http://localhost:5173
-bun run check               # everything CI runs except the build: format:check, typecheck, test, verify-covenant
-bun run format              # Prettier; format:check only reports
+bun run check               # everything CI runs except the build: format check, typecheck, test, verify-covenant
+bun fmt                     # format in place; bun fmt --check only reports
 bun run typecheck
 bun run test                # bun:test, CPU renderer
 bun run build               # production build of the playground
@@ -34,7 +34,7 @@ git diff --cached --check
 bun .agents/skills/covenant/scripts/check-commit-message.mjs <message-file>
 ```
 
-Bun 1.4 is the only toolchain: package manager, script runner, test runner, bundler and dev server ([note](.agents/notes/implemented/process/2026-11-10-bun-toolchain.md)). Write `bun run test` and `bun run build`; bare `bun test` and `bun build` skip the scripts' flags.
+Bun 1.4 is the only toolchain: package manager, script runner, test runner, formatter, bundler and dev server ([note](.agents/notes/implemented/process/2026-11-10-bun-toolchain.md)). Write `bun run test` and `bun run build`; bare `bun test` and `bun build` skip the scripts' flags.
 
 Commit every change to the long-lived `dev` branch and push it; do not open a pull request per change. `dev` reaches `main` through one pull request, merged with a merge commit, only when the maintainer asks:
 
@@ -65,4 +65,4 @@ The main checkout holds `main`; pull there after merging so new worktrees start 
 
 ## Editing this file
 
-Use one shared `AGENTS.md` filename without per-tool copies; `CLAUDE.md` is a symlink to it. Keep rules to 1–3 lines; follow [the budget policy](.agents/skills/covenant/references/instruction-tiers.md#word-budgets) before raising a ceiling.
+Use one shared `AGENTS.md` filename without per-tool copies or symlinks; Claude Code reads it directly. Keep rules to 1–3 lines; follow [the budget policy](.agents/skills/covenant/references/instruction-tiers.md#word-budgets) before raising a ceiling.

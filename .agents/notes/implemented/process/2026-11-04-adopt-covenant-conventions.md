@@ -10,7 +10,7 @@ The repository had no written agent instructions, decision records or convention
 
 The repository adopts covenant at level L0, with no CI and no host settings.
 
-- `AGENTS.md` holds the project instructions, the commands and the conventions. `CLAUDE.md` is a symlink to it.
+- `AGENTS.md` holds the project instructions, the commands and the conventions. No `CLAUDE.md` exists: Claude Code reads `AGENTS.md` directly, so the symlink this adoption added was later removed.
 - The skill lives at `.agents/skills/covenant/`, copied from `juchangrong/skills` at `f61e477`. `.claude/skills` is a symlink to `../.agents/skills`, so Claude Code and other agents read one copy.
 - Decision records live in `.agents/notes/`, whose README owns note naming, format and the note threshold. `formatAdopted` is 2026-11-04.
 - `.agents/scripts/verify-covenant.mjs` runs the notes, budgets, links, wrap, language and docs-placement checks configured in `.agents/covenant.json`. `AGENTS.md` has a 1,500-word budget.

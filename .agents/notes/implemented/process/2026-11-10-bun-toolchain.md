@@ -4,19 +4,19 @@ Status: implemented
 
 ## Problem
 
-Installing, linting, testing, bundling and serving took five tools: pnpm, ESLint, Vitest and Vite, with Node under all of them. The maintainer asked for one toolchain, Bun, and for ESLint to be removed. This note supersedes the pnpm, Node and ESLint parts of [the CI, lint and format note](2026-11-10-ci-lint-and-format.md).
+Installing, linting, formatting, testing, bundling and serving took six tools: pnpm, ESLint, Prettier, Vitest and Vite, with Node under all of them. The maintainer asked for one toolchain, Bun, and for ESLint to be removed. This note supersedes the pnpm, Node, ESLint and Prettier parts of [the CI, lint and format note](2026-11-10-ci-lint-and-format.md).
 
 ## Decision
 
-Bun 1.4 is the package manager, script runner, test runner, bundler and dev server. Nothing in the repository needs Node.
+Bun 1.4 is the package manager, script runner, test runner, formatter, bundler and dev server. Nothing in the repository needs Node.
 
-The root `package.json` lists the workspaces and sets `packageManager` to the Bun version, which CI reads through `oven-sh/setup-bun`. `bun.lock` replaces `pnpm-lock.yaml`. `bunfig.toml` pins the public npm registry, because a lockfile written against a private mirror records the mirror's URLs and CI cannot reach them. It also sets `run.bun`, so `tsc`, Prettier and the shadcn CLI run on Bun instead of looking for Node.
+The root `package.json` lists the workspaces and sets `packageManager` to the Bun version, which CI reads through `oven-sh/setup-bun`. `bun.lock` replaces `pnpm-lock.yaml`. `bunfig.toml` pins the public npm registry, because a lockfile written against a private mirror records the mirror's URLs and CI cannot reach them. It also sets `run.bun`, so `tsc` and the shadcn CLI run on Bun instead of looking for Node.
 
 The tests import from `bun:test`. `bunfig.toml` sets the test root to `tests/`, so the covenant skill's own `.test.mjs` file is not collected. `bun run test` passes `--timeout 60000`, the limit the Vitest configuration had.
 
 The playground is served by `bun ./index.html` and built by `bun build ./index.html --production`. The two shader files are imported with the `with { type: "text" }` import attribute instead of Vite's `?raw` suffix, and `packages/renderer/src/shaders.d.ts` declares the modules.
 
-ESLint, its configuration, its plugins and the four `eslint-disable-line` comments are removed. `tsc` with the strict flags and Prettier stay as checks, because Bun has neither a type checker nor a formatter.
+ESLint, its configuration, its plugins and the four `eslint-disable-line` comments are removed. `bun fmt` replaces Prettier: the `[fmt]` section of `bunfig.toml` keeps the width of 160 and the ignored paths, and no file needed reformatting. `tsc` with the strict flags stays as the type checker, because Bun has none.
 
 ## Alternatives considered
 
@@ -36,7 +36,7 @@ ESLint, its configuration, its plugins and the four `eslint-disable-line` commen
 
 A contributor installs Bun and nothing else; CI no longer sets up Node or pnpm. `bunfig.toml` makes every install use the public registry, whatever mirror a user's `.npmrc` names.
 
-No linter runs. The hook dependency rules, unhandled promises and unsafe use of `any` are no longer checked; `tsc` still reports unused names and type errors. The four hook dependency arrays that carried disable comments are narrower than their closures on purpose, keyed by a serialized value.
+No linter runs. The hook dependency rules, unhandled promises and unsafe use of `any` are no longer checked; `tsc` still reports unused names and type errors, and `bun fmt --check` still gates formatting. The four hook dependency arrays that carried disable comments are narrower than their closures on purpose, keyed by a serialized value.
 
 The scripts carry flags, so `bun run test` and `bun run build` are the commands to use. A bare `bun test` applies Bun's 5 s limit, and one interlock test takes about 6 s.
 
