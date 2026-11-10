@@ -1,7 +1,7 @@
 import { COLOR_SETS, deriveSeed, generateMosaic, generatePictogram, mosaicDrawing, pictogramColor, pieceArrangement, pieceOutline, tileColor, tintColor, type ColorFamily } from "@jigsaw/core";
 import { PuzzleIcon, PuzzleMosaic, PuzzlePictogram } from "@jigsaw/react";
 import { useEffect, useId, useMemo, useState, type CSSProperties } from "react";
-import { useStoredState } from "./storage";
+import { STORAGE_PREFIX, useStoredState } from "./storage";
 
 /** Mock items, in the copy style of the product list this page imitates. */
 const ITEMS = [
@@ -24,17 +24,35 @@ const SECTIONS = [...new Set(ITEMS.map((item) => item.tag))];
 /** `index` is the position on screen (sections in order), so icons rotate the way they are read. */
 const INDEXED = SECTIONS.flatMap((tag) => ITEMS.filter((item) => item.tag === tag)).map((item, index) => ({ ...item, index }));
 
-type IconStyle = "glass" | "tile" | "outline" | "abstract" | "solid" | "mosaic" | "mosaicTile" | "mosaicJoined" | "bare";
-const STYLE_NAMES: Record<IconStyle, string> = { glass: "Glass", tile: "Plain tile", outline: "Outline", abstract: "Abstract", solid: "Solid", mosaic: "Mosaic", mosaicTile: "Mosaic tile", mosaicJoined: "Joined tile", bare: "Bare piece" };
-/** which switches change anything in each style */
-const STYLES: readonly IconStyle[] = ["glass", "tile", "outline", "abstract", "solid", "mosaic", "mosaicTile", "mosaicJoined", "bare"];
+type IconStyle = "glass" | "tile" | "outline" | "abstract" | "solid" | "mosaic" | "bare";
+const STYLE_NAMES: Record<IconStyle, string> = { glass: "Glass", tile: "Plain tile", outline: "Outline", abstract: "Abstract", solid: "Solid", mosaic: "Mosaic", bare: "Bare piece" };
+const STYLES: readonly IconStyle[] = ["glass", "tile", "outline", "abstract", "solid", "mosaic", "bare"];
 const asBoolean = (v: unknown) => (typeof v === "boolean" ? v : undefined);
+/** which switches change anything in each style */
 // for a mosaic the switch chooses four tones (on) or one accent piece (off)
-const USES_GRADIENT: IconStyle[] = ["glass", "tile", "mosaic", "mosaicTile", "mosaicJoined", "bare"];
-const USES_TINT: IconStyle[] = ["glass", "tile", "abstract", "mosaicTile", "mosaicJoined"];
-/** the mosaic on a white tile: with cuts between the pieces, or with the pieces joined */
-const isFramedMosaic = (s: IconStyle) => s === "mosaicTile" || s === "mosaicJoined";
-const isMosaic = (s: IconStyle) => s === "mosaic" || isFramedMosaic(s);
+const USES_GRADIENT: IconStyle[] = ["glass", "tile", "mosaic", "bare"];
+// a mosaic has a tile to tint only when Padding puts it on one
+const USES_TINT: IconStyle[] = ["glass", "tile", "abstract"];
+/**
+ * Two switches that only a mosaic has. Padding sets it inside a white tile
+ * with white around it; Gaps keeps the thin cuts between its four pieces.
+ */
+interface MosaicLook {
+  padded: boolean;
+  gaps: boolean;
+}
+/**
+ * Mosaic tile and Joined tile were styles of their own before Padding and
+ * Gaps became switches. A style saved under either name maps to the switches.
+ */
+const LEGACY_MOSAIC: Record<string, MosaicLook> = { mosaicTile: { padded: true, gaps: true }, mosaicJoined: { padded: true, gaps: false } };
+function legacyMosaic(): MosaicLook | null {
+  try {
+    return LEGACY_MOSAIC[JSON.parse(window.localStorage.getItem(`${STORAGE_PREFIX}cardStyle`) ?? "null") as string] ?? null;
+  } catch {
+    return null;
+  }
+}
 const isGlyph = (s: IconStyle) => s === "abstract" || s === "solid";
 
 /** The realistic piece as a line; its colour comes from CSS. */
@@ -43,11 +61,11 @@ const OutlineIcon = ({ seed, size }: { seed: string; size: number }) => <PuzzleP
 const AbstractIcon = ({ seed, size, color }: { seed: string; size: number; color: string }) => <PuzzlePictogram seed={seed} size={size} color={color} className="outline-icon" />;
 
 /** A tile cut into four pieces in the family's shades. */
-const MosaicIcon = ({ seed, size, family, solid, framed, joined }: { seed: string; size: number; family: ColorFamily; solid: boolean; framed?: boolean; joined?: boolean }) => (
+const MosaicIcon = ({ seed, size, family, solid, look }: { seed: string; size: number; family: ColorFamily; solid: boolean; look: MosaicLook }) => (
   // inside a white tile the tile is the frame, so the mosaic drops its own edge line
-  <PuzzleMosaic seed={seed} size={size} colors={family.colors} variant={solid ? "accent" : "tonal"} edge={!framed} gap={joined ? 0 : undefined} className="mosaic-icon" />
+  <PuzzleMosaic seed={seed} size={size} colors={family.colors} variant={solid ? "accent" : "tonal"} edge={!look.padded} gap={look.gaps ? undefined : 0} className="mosaic-icon" />
 );
-/** mosaic size relative to its white tile, in the Mosaic tile style */
+/** mosaic size relative to its white tile, with Padding on */
 const MOSAIC_INSET = 0.75;
 
 const ICON_PX = 40;
@@ -62,7 +80,7 @@ function gradientFor(f: ColorFamily, solid: boolean) {
   return { palette: [tone, tone] };
 }
 
-function CardIcon({ seed, family: f, style, solid, tint }: { seed: string; family: ColorFamily; style: IconStyle; solid: boolean; tint: boolean }) {
+function CardIcon({ seed, family: f, style, solid, tint, mosaic }: { seed: string; family: ColorFamily; style: IconStyle; solid: boolean; tint: boolean; mosaic: MosaicLook }) {
   const gradient = gradientFor(f, solid);
   if (style === "solid") {
     return (
@@ -71,10 +89,10 @@ function CardIcon({ seed, family: f, style, solid, tint }: { seed: string; famil
       </span>
     );
   }
-  if (isFramedMosaic(style)) {
+  if (style === "mosaic" && mosaic.padded) {
     return (
       <span className="card-icon tile mosaic-tile" style={tint ? { background: tintColor(f) } : undefined} aria-hidden="true">
-        <MosaicIcon seed={seed} size={Math.round(ICON_PX * MOSAIC_INSET)} family={f} solid={solid} framed joined={style === "mosaicJoined"} />
+        <MosaicIcon seed={seed} size={Math.round(ICON_PX * MOSAIC_INSET)} family={f} solid={solid} look={mosaic} />
       </span>
     );
   }
@@ -82,7 +100,7 @@ function CardIcon({ seed, family: f, style, solid, tint }: { seed: string; famil
     return (
       <span className="card-icon tile mosaic" aria-hidden="true">
         {/* full of colour edge to edge, so it sits a size smaller than the white tiles of the other styles */}
-        <MosaicIcon seed={seed} size={Math.round(ICON_PX * 0.85)} family={f} solid={solid} />
+        <MosaicIcon seed={seed} size={Math.round(ICON_PX * 0.85)} family={f} solid={solid} look={mosaic} />
       </span>
     );
   }
@@ -144,11 +162,14 @@ interface CardPreset {
   colorSet: string;
   gradient: boolean;
   tint: boolean;
+  /** the two mosaic switches */
+  padding: boolean;
+  gaps: boolean;
   picks: Candidate[];
 }
 const PRESETS: readonly CardPreset[] = [
   // the look the maintainer settled on: one deep piece per tile, four bright hues
-  { id: "bright-mosaic", label: "Bright mosaic", style: "mosaic", colorSet: "bright", gradient: false, tint: false, picks: [37, 25, 29, 8].map(candidateAt) },
+  { id: "bright-mosaic", label: "Bright mosaic", style: "mosaic", colorSet: "bright", gradient: false, tint: false, padding: false, gaps: true, picks: [37, 25, 29, 8].map(candidateAt) },
 ];
 /** what a first visit shows */
 const DEFAULT_PRESET = PRESETS[0]!;
@@ -182,8 +203,9 @@ function savePicks(picks: Candidate[]) {
 }
 
 /** A grid of candidate icons; clicking one picks or unpicks it. */
-function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidate[]) => void; solid: boolean; tint: boolean; set: ColorFamily[]; setId: string; style: IconStyle }) {
-  const { picks, onChange, solid, tint, set, setId, style } = props;
+function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidate[]) => void; solid: boolean; tint: boolean; set: ColorFamily[]; setId: string; style: IconStyle; mosaic: MosaicLook }) {
+  const { picks, onChange, solid, tint, set, setId, style, mosaic } = props;
+  const padded = style === "mosaic" && mosaic.padded;
   const headingId = useId();
   const [count, setCount] = useState(BATCH);
   const [note, setNote] = useState("");
@@ -197,7 +219,7 @@ function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidat
         ? pieceArrangement(c.seed).join()
         : isGlyph(style)
           ? `${generatePictogram(c.seed).key}|${familyOf(set, c.slot).id}`
-          : isMosaic(style)
+          : style === "mosaic"
             ? `${generateMosaic(c.seed).key}|${familyOf(set, c.slot).id}`
             : c.seed;
     const chosen = new Set(pickedKey.split(","));
@@ -226,15 +248,15 @@ function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidat
         picks: picks.map((p) => {
           const fam = familyOf(set, p.slot);
           const g = isGlyph(style) ? generatePictogram(p.seed) : null;
-          const m = isMosaic(style) ? generateMosaic(p.seed) : null;
+          const m = style === "mosaic" ? generateMosaic(p.seed) : null;
           return {
             seed: p.seed,
             family: fam.id,
             colors: fam.colors,
             ...(g ? { glyph: { path: g.path, viewBox: g.viewBox, fill: style === "solid" ? "#ffffff" : pictogramColor(fam), tile: style === "solid" ? tileColor(fam) : "#ffffff" } } : {}),
             // clip to outline, cut the seams (stroked at `gap`) and corners away, then paint ground and layers
-            ...(m ? { mosaic: { viewBox: m.viewBox, layers: m.layers, seams: m.seams, ...mosaicDrawing(m, fam.colors, { variant: solid ? "accent" : "tonal", edge: !isFramedMosaic(style), gap: style === "mosaicJoined" ? 0 : undefined }) } } : {}),
-            ...(isFramedMosaic(style) ? { tile: { background: tint ? tintColor(fam) : "#ffffff", mosaicScale: MOSAIC_INSET } } : {}),
+            ...(m ? { mosaic: { viewBox: m.viewBox, layers: m.layers, seams: m.seams, ...mosaicDrawing(m, fam.colors, { variant: solid ? "accent" : "tonal", edge: !mosaic.padded, gap: mosaic.gaps ? undefined : 0 }) } } : {}),
+            ...(padded ? { tile: { background: tint ? tintColor(fam) : "#ffffff", mosaicScale: MOSAIC_INSET } } : {}),
             ...(style === "outline" ? { outline: pieceOutline({ seed: p.seed }) } : {}),
           };
         }),
@@ -264,7 +286,7 @@ function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidat
               <button
                 type="button"
                 className={`picker-tile${order !== undefined ? " on" : ""}`}
-                style={tint && USES_TINT.includes(style) ? { background: tintColor(familyOf(set, c.slot)) } : undefined}
+                style={tint && (USES_TINT.includes(style) || padded) ? { background: tintColor(familyOf(set, c.slot)) } : undefined}
                 aria-pressed={order !== undefined}
                 aria-label={`Candidate ${i + 1}, ${familyOf(set, c.slot).id}${order !== undefined ? `, pick ${order + 1}` : ""}`}
                 onClick={() => toggle(c)}
@@ -277,13 +299,13 @@ function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidat
                   <span className="picker-solid" style={{ backgroundColor: tileColor(familyOf(set, c.slot)) }}>
                     <AbstractIcon seed={c.seed} size={36} color="#ffffff" />
                   </span>
+                ) : padded ? (
+                  // the picker tile is already a white tile, so only the inset mosaic is drawn
+                  <MosaicIcon seed={c.seed} size={Math.round(60 * MOSAIC_INSET)} family={familyOf(set, c.slot)} solid={solid} look={mosaic} />
                 ) : style === "mosaic" ? (
                   <span className="picker-mosaic">
-                    <MosaicIcon seed={c.seed} size={46} family={familyOf(set, c.slot)} solid={solid} />
+                    <MosaicIcon seed={c.seed} size={46} family={familyOf(set, c.slot)} solid={solid} look={mosaic} />
                   </span>
-                ) : isFramedMosaic(style) ? (
-                  // the picker tile is already a white tile, so only the inset mosaic is drawn
-                  <MosaicIcon seed={c.seed} size={Math.round(60 * MOSAIC_INSET)} family={familyOf(set, c.slot)} solid={solid} framed joined={style === "mosaicJoined"} />
                 ) : (
                   <PuzzleIcon seed={c.seed} layout="single" gradient={gradientFor(familyOf(set, c.slot), solid)} size={46} />
                 )}
@@ -319,7 +341,19 @@ function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidat
  */
 export function CardsPage() {
   const groupId = useId();
-  const [style, setStyle] = useStoredState<IconStyle>("cardStyle", DEFAULT_PRESET.style, (v) => STYLES.find((s) => s === v));
+  const [legacy] = useState(legacyMosaic);
+  const [style, setStyle] = useStoredState<IconStyle>("cardStyle", DEFAULT_PRESET.style, (v) => (typeof v === "string" && v in LEGACY_MOSAIC ? "mosaic" : STYLES.find((s) => s === v)));
+  const [paddingOn, setPaddingOn] = useStoredState("cardPadding", legacy?.padded ?? DEFAULT_PRESET.padding, asBoolean);
+  const [gapsOn, setGapsOn] = useStoredState("cardGaps", legacy?.gaps ?? DEFAULT_PRESET.gaps, asBoolean);
+  // save a carried-over style under its new names, so it no longer depends on the old one
+  useEffect(() => {
+    if (!legacy) return;
+    setStyle("mosaic");
+    setPaddingOn(legacy.padded);
+    setGapsOn(legacy.gaps);
+  }, [legacy, setStyle, setPaddingOn, setGapsOn]);
+  const mosaic: MosaicLook = { padded: paddingOn, gaps: gapsOn };
+  const usesTint = USES_TINT.includes(style) || (style === "mosaic" && paddingOn);
   const [salt, setSalt] = useState(0);
   const [picks, setPicks] = useState<Candidate[]>(loadPicks);
   const [gradientOn, setGradientOn] = useStoredState("cardGradient", DEFAULT_PRESET.gradient, asBoolean);
@@ -329,11 +363,11 @@ export function CardsPage() {
   useEffect(() => savePicks(picks), [picks]);
 
   const presetLabelId = useId();
-  const look = { style, colorSet: colorSet.id, gradient: gradientOn, tint: tintOn, picks };
+  const look = { style, colorSet: colorSet.id, gradient: gradientOn, tint: tintOn, padding: paddingOn, gaps: gapsOn, picks };
   // the same picks in another order are the same look: Shuffle already moves icons between cards
   const pickSet = (list: Candidate[]) => list.map(keyOf).sort().join();
   const matches = (p: CardPreset) =>
-    p.style === look.style && p.colorSet === look.colorSet && p.gradient === look.gradient && p.tint === look.tint && pickSet(p.picks) === pickSet(look.picks);
+    p.style === look.style && p.colorSet === look.colorSet && p.gradient === look.gradient && p.tint === look.tint && p.padding === look.padding && p.gaps === look.gaps && pickSet(p.picks) === pickSet(look.picks);
   // applying a preset replaces the picks, so the look it replaced is kept for one undo
   const [replaced, setReplaced] = useState<Omit<CardPreset, "id" | "label"> | null>(null);
   const show = (p: Omit<CardPreset, "id" | "label">) => {
@@ -341,6 +375,8 @@ export function CardsPage() {
     setSetId(p.colorSet);
     setGradientOn(p.gradient);
     setTintOn(p.tint);
+    setPaddingOn(p.padding);
+    setGapsOn(p.gaps);
     setPicks(p.picks);
     setSalt(0);
   };
@@ -429,8 +465,16 @@ export function CardsPage() {
             <span>Gradient</span>
           </label>
           <label className="row check">
-            <input type="checkbox" role="switch" checked={tintOn} disabled={!USES_TINT.includes(style)} onChange={(e) => setTintOn(e.target.checked)} />
+            <input type="checkbox" role="switch" checked={tintOn} disabled={!usesTint} onChange={(e) => setTintOn(e.target.checked)} />
             <span>Tint</span>
+          </label>
+          <label className="row check" title="Mosaic only: sets the icon inside a white tile">
+            <input type="checkbox" role="switch" checked={paddingOn} disabled={style !== "mosaic"} onChange={(e) => setPaddingOn(e.target.checked)} />
+            <span>Padding</span>
+          </label>
+          <label className="row check" title="Mosaic only: thin cuts between the four pieces">
+            <input type="checkbox" role="switch" checked={gapsOn} disabled={style !== "mosaic"} onChange={(e) => setGapsOn(e.target.checked)} />
+            <span>Gaps</span>
           </label>
         </div>
         <div className="toolbar">
@@ -462,7 +506,7 @@ export function CardsPage() {
             ))}
           </span>
         </div>
-        <CandidatePicker picks={picks} onChange={setPicks} solid={!gradientOn} tint={tintOn} set={colorSet.families} setId={colorSet.id} style={style} />
+        <CandidatePicker picks={picks} onChange={setPicks} solid={!gradientOn} tint={tintOn} set={colorSet.families} setId={colorSet.id} style={style} mosaic={mosaic} />
         {SECTIONS.map((section) => (
           <section key={section} className="cards-section" aria-labelledby={`${groupId}-${section}`}>
             <h2 id={`${groupId}-${section}`} className="cards-heading">
@@ -474,7 +518,7 @@ export function CardsPage() {
             <ul className="cards" role="list">
               {INDEXED.filter((item) => item.tag === section).map((item) => (
                 <li key={item.name} className="card">
-                  <CardIcon {...iconFor(item.name, item.index)} style={style} solid={!gradientOn} tint={tintOn} />
+                  <CardIcon {...iconFor(item.name, item.index)} style={style} solid={!gradientOn} tint={tintOn} mosaic={mosaic} />
                   <div className="card-body">
                     <span className="card-name">{item.name}</span>
                     <p className="card-desc">{item.desc || "No description yet"}</p>
