@@ -29,7 +29,7 @@ WebGPU renderer ── diffuse gradient, bevel normals,          (@jigsaw/render
                    lighting, ambient shadow, AA
    │
    ▼
-Composite → React preview / PNG / WebP export               (@jigsaw/react, @jigsaw/export)
+Composite → React preview / PNG / WebP export               (@jigsaw/react, @jigsaw/renderer)
 ```
 
 Geometry, color, material and rendering live in separate modules.
@@ -187,9 +187,8 @@ await gen.export(opts, { format: "png" }); // also toPNG() / toWebP()
 
 ```
 packages/core        PRNG, geometry, SDF, color, material presets, generate()
-packages/renderer    WebGPU (shaders/*.wgsl), WebGL2 and CPU backends, PuzzleIconGenerator
+packages/renderer    WebGPU (shaders/*.wgsl), WebGL2 and CPU backends, PuzzleIconGenerator, PNG / WebP encoding
 packages/react       <PuzzleIcon/>
-packages/export      PNG / WebP encoding
 apps/playground      React playground, bundled and served by Bun
 tests/               geometry, deterministic, rendering tests
 ```

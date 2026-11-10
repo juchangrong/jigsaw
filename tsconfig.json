@@ -20,8 +20,7 @@
     "paths": {
       "@jigsaw/core": ["packages/core/src/index.ts"],
       "@jigsaw/renderer": ["packages/renderer/src/index.ts"],
-      "@jigsaw/react": ["packages/react/src/index.tsx"],
-      "@jigsaw/export": ["packages/export/src/index.ts"]
+      "@jigsaw/react": ["packages/react/src/index.tsx"]
     }
   },
   "include": ["packages/*/src", "apps/playground/src", "registry", "tests"]

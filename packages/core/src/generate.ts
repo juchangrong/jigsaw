@@ -3,7 +3,7 @@ import { resolvePalette } from "./color/palettes";
 import { buildLayout } from "./geometry/layout";
 import { ALGORITHM_VERSION, PRESET_VERSION, resolveOptions } from "./options";
 import { createRng, type Rng } from "./prng";
-import { recommendedSdfResolution } from "./sdf/sdf";
+import { recommendedSdfResolution } from "./sdf";
 import type { PuzzleIconDescription, PuzzleIconOptions } from "./types";
 
 function pieceTexture(rng: Rng) {

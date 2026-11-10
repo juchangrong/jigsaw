@@ -10,7 +10,7 @@ import {
   type StampStyle,
   type SurfaceTexture,
 } from "@jigsaw/core";
-import { downloadBlob } from "@jigsaw/export";
+import { downloadBlob } from "@jigsaw/renderer";
 import { PuzzleIcon, getSharedGenerator, useRendererBackend } from "@jigsaw/react";
 import { AppIconPreview } from "./AppIconPreview";
 import { AssemblyDemo } from "./AssemblyDemo";

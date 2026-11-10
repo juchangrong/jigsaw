@@ -8,8 +8,8 @@
  * canvas (Node), no stamp is drawn unless a rasterizer is installed with
  * `setGlyphRasterizer` (tests do this).
  */
-import type { SdfField } from "../sdf/sdf";
-import { squaredEdt } from "../sdf/sdf";
+import type { SdfField } from "./sdf";
+import { squaredEdt } from "./sdf";
 
 /** Coverage of one glyph, fitted into the central `FIT` part of a square. */
 export interface GlyphCoverage {

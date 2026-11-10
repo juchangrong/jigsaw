@@ -1,5 +1,5 @@
-import { flattenPath, polygonBounds } from "../geometry/bezier";
-import type { BezierSegment, Vec2 } from "../types";
+import { flattenPath, polygonBounds } from "./geometry/bezier";
+import type { BezierSegment, Vec2 } from "./types";
 
 /**
  * Signed distance field of a piece outline, in piece units, positive inside.

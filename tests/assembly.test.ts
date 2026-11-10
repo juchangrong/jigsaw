@@ -19,7 +19,7 @@ import {
   type PuzzleIconOptions,
   type Vec2,
 } from "@jigsaw/core";
-import { encodePNG, unpremultiply } from "@jigsaw/export";
+import { encodePNG, unpremultiply } from "@jigsaw/renderer";
 import { renderPlanCpu } from "../packages/renderer/src/cpu";
 
 const N = 3;

@@ -9,9 +9,9 @@
  */
 import { hexToSrgb, linearToSrgbChannel, type RGB } from "./color/oklch";
 import { gradientToLinear } from "./color/gradient";
-import { recommendedSdfResolution, sampleSdf, sharedSdfCache, type SdfCache, type SdfField } from "./sdf/sdf";
+import { recommendedSdfResolution, sampleSdf, sharedSdfCache, type SdfCache, type SdfField } from "./sdf";
 import { envLight, texHeight, TEXTURE_KIND, TEXTURE_LOOKS } from "./material/texture";
-import { EMPTY_STAMP, stampCache, stampResolution } from "./stamp/glyph";
+import { EMPTY_STAMP, stampCache, stampResolution } from "./stamp";
 import type { PuzzleIconDescription } from "./types";
 
 export const MAX_SPOTS = 5;

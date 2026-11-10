@@ -1,6 +1,6 @@
 # Agent Notes
 
-This file owns note naming and format. `bun .agents/scripts/verify-covenant.mjs --only notes` checks the mechanical requirements.
+This file owns note naming and format. `bun .agents/skills/covenant/scripts/verify-covenant.mjs --only notes` checks the mechanical requirements.
 
 ## Layout and naming
 

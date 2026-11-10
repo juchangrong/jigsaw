@@ -11,7 +11,7 @@ The project as it stands has three layers:
 | Layer | Where | Can a product use it today? |
 |---|---|---|
 | Generation: seeded randomness, geometry, colour, the vector forms | `packages/core` | Only inside this workspace |
-| Rendering and React components | `packages/renderer`, `packages/react`, `packages/export` | Only inside this workspace |
+| Rendering and React components | `packages/renderer`, `packages/react` | Only inside this workspace |
 | Design decisions tuned by eye: which style, palettes, padding, gaps, the Bright mosaic preset | `apps/playground/src/CardsPage.tsx` and its CSS | No; they are demo code |
 
 The packages are `workspace:*` dependencies with no build and no npm release, so nothing outside the repository can import them. The look the user settled on in the card list is spread over the third layer. And of everything in the library, the mosaic is the one piece that suits copying: it is plain SVG, about 300 lines with its helpers, and needs no GPU, canvas or cache.

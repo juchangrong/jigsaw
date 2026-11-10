@@ -13,7 +13,7 @@
     "test": "bun test --timeout 60000",
     "test:watch": "bun test --timeout 60000 --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "check": "bun fmt --check && bun run typecheck && bun run test && bun .agents/scripts/verify-covenant.mjs",
+    "check": "bun fmt --check && bun run typecheck && bun run test && bun .agents/skills/covenant/scripts/verify-covenant.mjs",
     "registry:build": "bun x shadcn@4.23.0 build"
   },
   "devDependencies": {

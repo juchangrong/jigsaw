@@ -14,7 +14,7 @@ The vector forms and colours move into the library. The playground uses them lik
 - `packages/core/src/color/families.ts`: `colorFamily`, `COLOR_SETS`, `pictogramColor`, `tileColor` and `tintColor`.
 - `packages/react/src/PuzzlePictogram.tsx`: `<PuzzlePictogram seed size variant color background radius scale strokeWidth title />` draws inline SVG. It is hidden from assistive technology unless it has a `title`.
 
-The name is "pictogram", not "glyph", because `packages/core/src/stamp/glyph.ts` already uses "glyph" for stamped letters.
+The name is "pictogram", not "glyph", because `packages/core/src/stamp.ts` already uses "glyph" for stamped letters.
 
 The geometry and colours are the ones the card list already used, so the page looks the same. The centroid sampling grid is finer (160 instead of 120 per side), which moves view boxes by under 0.001. Rendered icons are untouched, so no version changes.
 

@@ -6,9 +6,8 @@ Procedural puzzle-piece icon generator: a seed becomes a top-down jigsaw piece w
 
 ```text
 packages/core/      options, seeded PRNG, geometry, SDF, palettes, stamp glyphs, reference shading, SVG pictograms (no GPU)
-packages/renderer/  WebGPU, WebGL2 and CPU backends, WGSL/GLSL shaders, PuzzleIconGenerator
+packages/renderer/  WebGPU, WebGL2 and CPU backends, WGSL/GLSL shaders, PuzzleIconGenerator, PNG/WebP encoding
 packages/react/     <PuzzleIcon> and <PuzzlePictogram> components, shared generator
-packages/export/    PNG/WebP encoding
 apps/playground/    React playground, bundled and served by Bun
 registry/           shadcn-format components, self-contained source (registry.json lists them)
 public/r/           built registry files that consumers install; generated, committed
@@ -29,7 +28,7 @@ bun run typecheck
 bun run test                # bun:test, CPU renderer
 bun run build               # production build of the playground
 bun run registry:build      # rebuild public/r/ after editing registry/
-bun .agents/scripts/verify-covenant.mjs
+bun .agents/skills/covenant/scripts/verify-covenant.mjs
 git diff --cached --check
 bun .agents/skills/covenant/scripts/check-commit-message.mjs <message-file>
 ```

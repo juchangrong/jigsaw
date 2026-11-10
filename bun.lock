@@ -19,7 +19,6 @@
       "version": "1.0.0",
       "dependencies": {
         "@jigsaw/core": "workspace:*",
-        "@jigsaw/export": "workspace:*",
         "@jigsaw/react": "workspace:*",
         "@jigsaw/renderer": "workspace:*",
         "react": "^18.3.1",
@@ -28,10 +27,6 @@
     },
     "packages/core": {
       "name": "@jigsaw/core",
-      "version": "1.0.0",
-    },
-    "packages/export": {
-      "name": "@jigsaw/export",
       "version": "1.0.0",
     },
     "packages/react": {
@@ -50,14 +45,11 @@
       "version": "1.0.0",
       "dependencies": {
         "@jigsaw/core": "workspace:*",
-        "@jigsaw/export": "workspace:*",
       },
     },
   },
   "packages": {
     "@jigsaw/core": ["@jigsaw/core@workspace:packages/core"],
-
-    "@jigsaw/export": ["@jigsaw/export@workspace:packages/export"],
 
     "@jigsaw/playground": ["@jigsaw/playground@workspace:apps/playground"],
 

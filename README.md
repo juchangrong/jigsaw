@@ -24,8 +24,7 @@ bun run build      # production build of the playground
 | Package | What it does |
 | --- | --- |
 | `@jigsaw/core` | Seeded PRNG (Mulberry32, separate `geometry` / `palette` / `gradient` / `layout` / `texture` streams), cubic-Bézier edge profiles, shared-edge layouts (`single`, `cluster`, `grid`), mask rasterization + exact EDT signed distance field, OKLCH palettes, Gaussian-spot gradients, material presets, render plan + reference shading. No GPU needed. |
-| `@jigsaw/renderer` | WebGPU backend (`shaders/puzzle.wgsl`), WebGL2 fallback (`shaders/puzzle.frag.glsl`), CPU fallback, and the `PuzzleIconGenerator` API. One shared device, cached SDF textures. |
-| `@jigsaw/export` | Pure-TS PNG encoder (with sRGB chunk, straight alpha) and WebP via the browser canvas. |
+| `@jigsaw/renderer` | WebGPU backend (`shaders/puzzle.wgsl`), WebGL2 fallback (`shaders/puzzle.frag.glsl`), CPU fallback, and the `PuzzleIconGenerator` API. One shared device, cached SDF textures. Also the pure-TS PNG encoder (with sRGB chunk, straight alpha) and WebP via the browser canvas. |
 | `@jigsaw/react` | `<PuzzleIcon />` (rendered, on a canvas), `<PuzzlePictogram />` and `<PuzzleMosaic />` (inline SVG) and `useRendererBackend()`. |
 | `apps/playground` | React playground, bundled and served by Bun. |
 
@@ -115,8 +114,7 @@ Without any renderer at all (e.g. on a server), `@jigsaw/core` gives you the des
 
 ```ts
 import { buildRenderPlan, generatePuzzleIcon } from "@jigsaw/core";
-import { renderPlanCpu } from "@jigsaw/renderer";
-import { encodePNG, unpremultiply } from "@jigsaw/export";
+import { encodePNG, renderPlanCpu, unpremultiply } from "@jigsaw/renderer";
 
 const plan = buildRenderPlan(generatePuzzleIcon({ seed: "alpha", size: 256 }));
 const png = await encodePNG({ width: plan.width, height: plan.height, data: unpremultiply(renderPlanCpu(plan)) });

@@ -27,7 +27,7 @@ import {
   toLocal,
   type PuzzleIconOptions,
 } from "@jigsaw/core";
-import { encodePNG, unpremultiply } from "@jigsaw/export";
+import { encodePNG, unpremultiply } from "@jigsaw/renderer";
 import { renderPlanCpu } from "../packages/renderer/src/cpu";
 
 const OUT = "tests/__output__";

@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "@jigsaw/core": "workspace:*",
-    "@jigsaw/export": "workspace:*",
     "@jigsaw/react": "workspace:*",
     "@jigsaw/renderer": "workspace:*",
     "react": "^18.3.1",

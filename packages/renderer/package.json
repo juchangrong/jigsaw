@@ -9,7 +9,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@jigsaw/core": "workspace:*",
-    "@jigsaw/export": "workspace:*"
+    "@jigsaw/core": "workspace:*"
   }
 }
