@@ -123,11 +123,29 @@ const keyOf = (c: Candidate) => c.seed;
 const candidateAt = (i: number): Candidate => ({ seed: deriveSeed("card-candidates", i), slot: i });
 const familyOf = (set: ColorFamily[], slot: number) => set[((slot % set.length) + set.length) % set.length]!;
 
-/** Saved picks: a per-viewer convenience, so any storage failure just starts empty. */
+/** A whole look for the list: icon style, colours, switches and the icons to use. */
+interface CardPreset {
+  id: string;
+  label: string;
+  style: IconStyle;
+  colorSet: string;
+  gradient: boolean;
+  tint: boolean;
+  picks: Candidate[];
+}
+const PRESETS: readonly CardPreset[] = [
+  // the look the maintainer settled on: one deep piece per tile, four bright hues
+  { id: "bright-mosaic", label: "Bright mosaic", style: "mosaic", colorSet: "bright", gradient: false, tint: false, picks: [37, 25, 29, 8].map(candidateAt) },
+];
+/** what a first visit shows */
+const DEFAULT_PRESET = PRESETS[0]!;
+
+/** Saved picks: a per-viewer convenience. A first visit starts from the default preset; a storage failure starts empty. */
 function loadPicks(): Candidate[] {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    const list = raw ? (JSON.parse(raw) as unknown) : [];
+    if (raw === null) return DEFAULT_PRESET.picks;
+    const list = JSON.parse(raw) as unknown;
     if (!Array.isArray(list)) return [];
     // picks saved before slots existed only have a seed: find its candidate slot
     let index: Map<string, number> | null = null;
@@ -284,14 +302,29 @@ function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidat
  */
 export function CardsPage() {
   const groupId = useId();
-  const [style, setStyle] = useStoredState<IconStyle>("cardStyle", "glass", (v) => STYLES.find((s) => s === v));
+  const [style, setStyle] = useStoredState<IconStyle>("cardStyle", DEFAULT_PRESET.style, (v) => STYLES.find((s) => s === v));
   const [salt, setSalt] = useState(0);
   const [picks, setPicks] = useState<Candidate[]>(loadPicks);
-  const [gradientOn, setGradientOn] = useStoredState("cardGradient", true, asBoolean);
-  const [tintOn, setTintOn] = useStoredState("cardTint", false, asBoolean);
-  const [setId, setSetId] = useStoredState("cardColorSet", "studio", (v) => COLOR_SETS.find((c) => c.id === v)?.id);
+  const [gradientOn, setGradientOn] = useStoredState("cardGradient", DEFAULT_PRESET.gradient, asBoolean);
+  const [tintOn, setTintOn] = useStoredState("cardTint", DEFAULT_PRESET.tint, asBoolean);
+  const [setId, setSetId] = useStoredState("cardColorSet", DEFAULT_PRESET.colorSet, (v) => COLOR_SETS.find((c) => c.id === v)?.id);
   const colorSet = COLOR_SETS.find((c) => c.id === setId) ?? COLOR_SETS[0]!;
   useEffect(() => savePicks(picks), [picks]);
+
+  const presetLabelId = useId();
+  const look = { style, colorSet: colorSet.id, gradient: gradientOn, tint: tintOn, picks };
+  const matches = (p: CardPreset) =>
+    p.style === look.style && p.colorSet === look.colorSet && p.gradient === look.gradient && p.tint === look.tint && p.picks.map(keyOf).join() === look.picks.map(keyOf).join();
+  // applying a preset replaces the picks, so the look it replaced is kept for one undo
+  const [replaced, setReplaced] = useState<Omit<CardPreset, "id" | "label"> | null>(null);
+  const show = (p: Omit<CardPreset, "id" | "label">) => {
+    setStyle(p.style);
+    setSetId(p.colorSet);
+    setGradientOn(p.gradient);
+    setTintOn(p.tint);
+    setPicks(p.picks);
+    setSalt(0);
+  };
   const setsLabelId = useId();
   /** icon for the card at list position `index` */
   const iconFor = (name: string, index: number): { seed: string; family: ColorFamily } => {
@@ -313,6 +346,39 @@ export function CardsPage() {
         </div>
       </header>
       <main className="cards-main">
+        <div className="toolbar" role="group" aria-labelledby={presetLabelId}>
+          <span className="label" id={presetLabelId}>
+            Preset
+          </span>
+          {PRESETS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={matches(p) ? "preset on" : "preset"}
+              aria-pressed={matches(p)}
+              title="Sets the icon style, colours, switches and picks"
+              onClick={() => {
+                if (matches(p)) return;
+                setReplaced(look);
+                show(p);
+              }}
+            >
+              {p.label}
+            </button>
+          ))}
+          {/* offered right after applying; once the look changes again there is nothing clean to go back to */}
+          {replaced && PRESETS.some(matches) && (
+            <button
+              type="button"
+              onClick={() => {
+                show(replaced);
+                setReplaced(null);
+              }}
+            >
+              Undo
+            </button>
+          )}
+        </div>
         <div className="toolbar">
           <span className="label" id={groupId}>
             Icon
