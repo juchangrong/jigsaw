@@ -1,10 +1,10 @@
 # Maintain the registry
 
-The registry is named `jigsaw-ui` and follows the shadcn format: `registry.json` lists the items, `registry/jigsaw-ui/` holds their source, and `pnpm registry:build` writes the files the CLI installs to `public/r/`. Commit `public/r/`; it is what consumers fetch.
+The registry is named `jigsaw` and follows the shadcn format: `registry.json` lists the items, `registry/jigsaw/` holds their source, and `pnpm registry:build` writes the files the CLI installs to `public/r/`. Commit `public/r/`; it is what consumers fetch.
 
 ## Change PuzzleMosaic
 
-`registry/jigsaw-ui/puzzle-mosaic.tsx` is a self-contained copy of the mosaic in `packages/core/src/pictogram.ts`, and `tests/registry.test.ts` holds the two to the same output. When the design changes, change both.
+`registry/jigsaw/puzzle-mosaic.tsx` is a self-contained copy of the mosaic in `packages/core/src/pictogram.ts`, and `tests/registry.test.ts` holds the two to the same output. When the design changes, change both.
 
 1. Edit the library and the registry file together.
 2. Rebuild the installable file:
@@ -23,7 +23,7 @@ Keep the file's only import `react`. A file comment above the imports is dropped
 
 ## Add a component
 
-1. Write the component as one file under `registry/jigsaw-ui/`, importing nothing from this repository's packages.
+1. Write the component as one file under `registry/jigsaw/`, importing nothing from this repository's packages.
 2. Add an item to `registry.json` with `"type": "registry:component"` and the file's path.
 3. Run `pnpm registry:build`, then add tests beside the existing ones in `tests/registry.test.ts`.
 4. Install it into a scratch project to confirm it compiles there:

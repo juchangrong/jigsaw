@@ -1,5 +1,5 @@
 /**
- * The installable PuzzleMosaic (registry/jigsaw-ui/puzzle-mosaic.tsx) is a
+ * The installable PuzzleMosaic (registry/jigsaw/puzzle-mosaic.tsx) is a
  * self-contained copy of the library's mosaic, so it is checked against the
  * library, rendered to markup, and compared with the built registry file.
  */
@@ -8,7 +8,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { COLOR_SETS, generateMosaic as libraryMosaic, MOSAIC_GAP, mosaicDrawing, mosaicFills as libraryFills } from "@jigsaw/core";
-import { DEFAULT_MOSAIC_PALETTES, generateMosaic, MOSAIC_PALETTES, mosaicFills, mosaicPaletteFor, PuzzleMosaic, type PuzzleMosaicProps } from "../registry/jigsaw-ui/puzzle-mosaic";
+import { DEFAULT_MOSAIC_PALETTES, generateMosaic, MOSAIC_PALETTES, mosaicFills, mosaicPaletteFor, PuzzleMosaic, type PuzzleMosaicProps } from "../registry/jigsaw/puzzle-mosaic";
 
 const SEEDS = [...Array.from({ length: 300 }, (_, i) => `registry-${i}`), 7, "alpha", ""];
 const render = (props: PuzzleMosaicProps) => renderToStaticMarkup(createElement(PuzzleMosaic, props));
@@ -101,14 +101,14 @@ describe("installable PuzzleMosaic: rendering", () => {
 });
 
 describe("registry build", () => {
-  const source = readFileSync("registry/jigsaw-ui/puzzle-mosaic.tsx", "utf8");
+  const source = readFileSync("registry/jigsaw/puzzle-mosaic.tsx", "utf8");
 
   it("lists the component in registry.json", () => {
     const registry = JSON.parse(readFileSync("registry.json", "utf8")) as { name: string; items: { name: string; type: string; files: { path: string; type: string }[] }[] };
-    expect(registry.name).toBe("jigsaw-ui");
+    expect(registry.name).toBe("jigsaw");
     const item = registry.items.find((i) => i.name === "puzzle-mosaic")!;
     expect(item.type).toBe("registry:component");
-    expect(item.files).toEqual([{ path: "registry/jigsaw-ui/puzzle-mosaic.tsx", type: "registry:component" }]);
+    expect(item.files).toEqual([{ path: "registry/jigsaw/puzzle-mosaic.tsx", type: "registry:component" }]);
   });
 
   it("has a built file that matches the source (run `pnpm registry:build` after editing it)", () => {

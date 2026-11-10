@@ -18,9 +18,9 @@ The packages are `workspace:*` dependencies with no build and no npm release, so
 
 ## Decision
 
-The repository gains a registry in the shadcn format, named `jigsaw-ui` at the user's choice, with one item. Nothing goes to npm: the CLI reads a JSON file from a path or a URL and writes source into the consumer's project.
+The repository gains a registry in the shadcn format, named `jigsaw`, with one item. Nothing goes to npm: the CLI reads a JSON file from a path or a URL and writes source into the consumer's project.
 
-- `registry/jigsaw-ui/puzzle-mosaic.tsx` is `PuzzleMosaic` as one self-contained file whose only import is `react`. It carries its own seeded randomness, geometry, OKLab mixing and eleven palettes as hex values.
+- `registry/jigsaw/puzzle-mosaic.tsx` is `PuzzleMosaic` as one self-contained file whose only import is `react`. It carries its own seeded randomness, geometry, OKLab mixing and eleven palettes as hex values.
 - `registry.json` lists the item, and `pnpm registry:build` (the shadcn CLI, pinned to 4.23.0) writes `public/r/puzzle-mosaic.json`, the file consumers install. The built file is committed, because it is what a URL serves.
 - The component's defaults are the look the user chose: the accent variant, gaps on, no padding, and a palette picked from the seed among the five Bright ones. The playground's Padding and Gaps switches are its `padding` and `gaps` props; with `padding` it draws the tile itself in SVG, so it needs no CSS.
 - It uses no hook other than `useId`, so it also renders in a React Server Component and needs no `"use client"`.

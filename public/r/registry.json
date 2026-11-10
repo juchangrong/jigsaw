@@ -1,6 +1,6 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry.json",
-  "name": "jigsaw-ui",
+  "name": "jigsaw",
   "homepage": "https://github.com/juchangrong/jigsaw",
   "items": [
     {
@@ -10,7 +10,7 @@
       "description": "A seeded icon of four interlocking puzzle pieces in the shades of one colour. Plain SVG, no dependencies.",
       "files": [
         {
-          "path": "registry/jigsaw-ui/puzzle-mosaic.tsx",
+          "path": "registry/jigsaw/puzzle-mosaic.tsx",
           "type": "registry:component"
         }
       ]
