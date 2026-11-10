@@ -81,7 +81,7 @@ import { PuzzleMosaic } from "@/components/puzzle-mosaic";
 <PuzzleMosaic seed={app.id} title={app.name} />
 ```
 
-See [Install PuzzleMosaic as source](docs/registry.md) and the [PuzzleMosaic reference](docs/puzzle-mosaic.md).
+See [the PuzzleMosaic registry](docs/registry.md) for installing it and for its props and palettes.
 
 ### Core API
 
