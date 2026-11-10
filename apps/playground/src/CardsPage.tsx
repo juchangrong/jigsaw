@@ -24,14 +24,15 @@ const SECTIONS = [...new Set(ITEMS.map((item) => item.tag))];
 /** `index` is the position on screen (sections in order), so icons rotate the way they are read. */
 const INDEXED = SECTIONS.flatMap((tag) => ITEMS.filter((item) => item.tag === tag)).map((item, index) => ({ ...item, index }));
 
-type IconStyle = "glass" | "tile" | "outline" | "abstract" | "solid" | "mosaic" | "bare";
-const STYLE_NAMES: Record<IconStyle, string> = { glass: "Glass", tile: "Plain tile", outline: "Outline", abstract: "Abstract", solid: "Solid", mosaic: "Mosaic", bare: "Bare piece" };
+type IconStyle = "glass" | "tile" | "outline" | "abstract" | "solid" | "mosaic" | "mosaicTile" | "bare";
+const STYLE_NAMES: Record<IconStyle, string> = { glass: "Glass", tile: "Plain tile", outline: "Outline", abstract: "Abstract", solid: "Solid", mosaic: "Mosaic", mosaicTile: "Mosaic tile", bare: "Bare piece" };
 /** which switches change anything in each style */
-const STYLES: readonly IconStyle[] = ["glass", "tile", "outline", "abstract", "solid", "mosaic", "bare"];
+const STYLES: readonly IconStyle[] = ["glass", "tile", "outline", "abstract", "solid", "mosaic", "mosaicTile", "bare"];
 const asBoolean = (v: unknown) => (typeof v === "boolean" ? v : undefined);
 // for a mosaic the switch chooses four tones (on) or one accent piece (off)
-const USES_GRADIENT: IconStyle[] = ["glass", "tile", "mosaic", "bare"];
-const USES_TINT: IconStyle[] = ["glass", "tile", "abstract"];
+const USES_GRADIENT: IconStyle[] = ["glass", "tile", "mosaic", "mosaicTile", "bare"];
+const USES_TINT: IconStyle[] = ["glass", "tile", "abstract", "mosaicTile"];
+const isMosaic = (s: IconStyle) => s === "mosaic" || s === "mosaicTile";
 const isGlyph = (s: IconStyle) => s === "abstract" || s === "solid";
 
 /** The realistic piece as a line; its colour comes from CSS. */
@@ -40,9 +41,12 @@ const OutlineIcon = ({ seed, size }: { seed: string; size: number }) => <PuzzleP
 const AbstractIcon = ({ seed, size, color }: { seed: string; size: number; color: string }) => <PuzzlePictogram seed={seed} size={size} color={color} className="outline-icon" />;
 
 /** A tile cut into four pieces in the family's shades. */
-const MosaicIcon = ({ seed, size, family, solid }: { seed: string; size: number; family: ColorFamily; solid: boolean }) => (
-  <PuzzleMosaic seed={seed} size={size} colors={family.colors} variant={solid ? "accent" : "tonal"} className="mosaic-icon" />
+const MosaicIcon = ({ seed, size, family, solid, framed }: { seed: string; size: number; family: ColorFamily; solid: boolean; framed?: boolean }) => (
+  // inside a white tile the tile is the frame, so the mosaic drops its own edge line
+  <PuzzleMosaic seed={seed} size={size} colors={family.colors} variant={solid ? "accent" : "tonal"} edge={!framed} className="mosaic-icon" />
 );
+/** mosaic size relative to its white tile, in the Mosaic tile style */
+const MOSAIC_INSET = 0.64;
 
 const ICON_PX = 40;
 /**
@@ -62,6 +66,13 @@ function CardIcon({ seed, family: f, style, solid, tint }: { seed: string; famil
     return (
       <span className="card-icon tile solid" style={{ backgroundColor: tileColor(f) }} aria-hidden="true">
         <AbstractIcon seed={seed} size={Math.round(ICON_PX * 0.8)} color="#ffffff" />
+      </span>
+    );
+  }
+  if (style === "mosaicTile") {
+    return (
+      <span className="card-icon tile mosaic-tile" style={tint ? { background: tintColor(f) } : undefined} aria-hidden="true">
+        <MosaicIcon seed={seed} size={Math.round(ICON_PX * MOSAIC_INSET)} family={f} solid={solid} framed />
       </span>
     );
   }
@@ -184,7 +195,7 @@ function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidat
         ? pieceArrangement(c.seed).join()
         : isGlyph(style)
           ? `${generatePictogram(c.seed).key}|${familyOf(set, c.slot).id}`
-          : style === "mosaic"
+          : isMosaic(style)
             ? `${generateMosaic(c.seed).key}|${familyOf(set, c.slot).id}`
             : c.seed;
     const chosen = new Set(pickedKey.split(","));
@@ -213,14 +224,15 @@ function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidat
         picks: picks.map((p) => {
           const fam = familyOf(set, p.slot);
           const g = isGlyph(style) ? generatePictogram(p.seed) : null;
-          const m = style === "mosaic" ? generateMosaic(p.seed) : null;
+          const m = isMosaic(style) ? generateMosaic(p.seed) : null;
           return {
             seed: p.seed,
             family: fam.id,
             colors: fam.colors,
             ...(g ? { glyph: { path: g.path, viewBox: g.viewBox, fill: style === "solid" ? "#ffffff" : pictogramColor(fam), tile: style === "solid" ? tileColor(fam) : "#ffffff" } } : {}),
             // clip to outline, cut the seams (stroked at `gap`) and corners away, then paint ground and layers
-            ...(m ? { mosaic: { viewBox: m.viewBox, layers: m.layers, seams: m.seams, ...mosaicDrawing(m, fam.colors, { variant: solid ? "accent" : "tonal" }) } } : {}),
+            ...(m ? { mosaic: { viewBox: m.viewBox, layers: m.layers, seams: m.seams, ...mosaicDrawing(m, fam.colors, { variant: solid ? "accent" : "tonal", edge: style !== "mosaicTile" }) } } : {}),
+            ...(style === "mosaicTile" ? { tile: { background: tint ? tintColor(fam) : "#ffffff", mosaicScale: MOSAIC_INSET } } : {}),
             ...(style === "outline" ? { outline: pieceOutline({ seed: p.seed }) } : {}),
           };
         }),
@@ -267,6 +279,9 @@ function CandidatePicker(props: { picks: Candidate[]; onChange: (picks: Candidat
                   <span className="picker-mosaic">
                     <MosaicIcon seed={c.seed} size={46} family={familyOf(set, c.slot)} solid={solid} />
                   </span>
+                ) : style === "mosaicTile" ? (
+                  // the picker tile is already a white tile, so only the inset mosaic is drawn
+                  <MosaicIcon seed={c.seed} size={Math.round(60 * MOSAIC_INSET)} family={familyOf(set, c.slot)} solid={solid} framed />
                 ) : (
                   <PuzzleIcon seed={c.seed} layout="single" gradient={gradientFor(familyOf(set, c.slot), solid)} size={46} />
                 )}

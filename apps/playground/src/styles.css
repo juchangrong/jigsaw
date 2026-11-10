@@ -613,6 +613,13 @@ input[type="checkbox"] {
 .picker-mosaic {
   display: block;
 }
+/* mosaic tile: the mosaic set inside a white tile with a margin of white around it */
+.card-icon.mosaic-tile {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  box-shadow: inset 0 0 0 1px #e7e7ed;
+}
 .mosaic-icon {
   display: block;
 }
