@@ -68,7 +68,8 @@ function CardIcon({ seed, family: f, style, solid, tint }: { seed: string; famil
   if (style === "mosaic") {
     return (
       <span className="card-icon tile mosaic" aria-hidden="true">
-        <MosaicIcon seed={seed} size={ICON_PX} family={f} solid={solid} />
+        {/* full of colour edge to edge, so it sits a size smaller than the white tiles of the other styles */}
+        <MosaicIcon seed={seed} size={Math.round(ICON_PX * 0.85)} family={f} solid={solid} />
       </span>
     );
   }

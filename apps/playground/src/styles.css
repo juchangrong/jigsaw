@@ -598,6 +598,8 @@ input[type="checkbox"] {
 /* mosaic: the tile is the puzzle. It draws its own outline and edge, so the
    holder has no ground, no clipping and no rim, only a shadow. */
 .card-icon.mosaic {
+  display: grid;
+  place-items: center;
   padding: 0;
   background: none;
   box-shadow: none;
