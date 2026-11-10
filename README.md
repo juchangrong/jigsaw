@@ -40,7 +40,9 @@ import { PuzzleIcon } from "@jigsaw/react";
 <PuzzleIcon seed="board" size={256} layout="grid" pieceCount={9} material={{ preset: "matteAcrylic" }} background="#FFFFFF" />
 ```
 
-All `<PuzzleIcon>`s share one generator (one GPU device). Rendered images are cached, and the canvas is rendered at `size × devicePixelRatio`. Icons that mount together are built in short slices, so the page keeps painting and responding, and an icon that changes or unmounts while it is queued is skipped.
+`<PuzzleIcon>`s that ask for the same `renderer` share one generator (one GPU device). Rendered images are cached within a count and a memory limit, and the canvas is rendered at `size × devicePixelRatio`, again when that ratio changes. Icons that mount together are built in short slices, so the page keeps painting and responding, and an icon that changes or unmounts while it is queued is skipped.
+
+Pass `title` to give an icon an accessible name; without one it is hidden from assistive technology, like the SVG components. On a server the canvas is emitted at a pixel ratio of 1 and corrected after hydration. If the GPU device or WebGL context is lost, the next render starts a new backend, so icons keep rendering without a reload.
 
 ### Pictograms, mosaics and outlines (SVG)
 
@@ -87,6 +89,7 @@ See [Install PuzzleMosaic as source](docs/registry.md) and the [PuzzleMosaic ref
 import { PuzzleIconGenerator } from "@jigsaw/renderer";
 
 const gen = new PuzzleIconGenerator({ renderer: "webgpu" }); // or "webgl2" | "cpu" | "auto"
+// also: imageCacheSize (default 128 images) and imageCacheBytes (default 64 MB) bound the rendered-image cache
 
 // Deterministic description: geometry, transforms, palette, spots, material. No GPU.
 const description = gen.generate({ seed: "alpha", size: 128 });
@@ -187,6 +190,7 @@ interface PuzzleIconOptions {
 
 - `tests/stamp.test.ts`, `tests/texture.test.ts`, `tests/palette.test.ts`: letter stamps, surface textures and palettes.
 - `tests/interlock.test.ts`, `tests/assembly.test.ts`: single pieces from different seeds fit each other and assemble into a framed puzzle with no gaps.
+- `tests/generator.test.ts`, `tests/react.test.ts`: render queueing and aborts, recovery from a lost device, the image cache's memory limit, and `<PuzzleIcon>`'s server markup, accessibility defaults and pixel-ratio tracking.
 - `tests/registry.test.ts`: the installable `PuzzleMosaic` against the library (designs, fills, palettes), its rendered markup, and the built registry file.
 - `tests/pictogram.test.ts`: pictogram arrangements and geometry, mosaics, the piece outline, standalone SVG, and colour families.
 

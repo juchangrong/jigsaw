@@ -9,6 +9,7 @@ export default defineConfig({
       "@jigsaw/core": r("./packages/core/src/index.ts"),
       "@jigsaw/renderer": r("./packages/renderer/src/index.ts"),
       "@jigsaw/export": r("./packages/export/src/index.ts"),
+      "@jigsaw/react": r("./packages/react/src/index.tsx"),
     },
   },
   test: {

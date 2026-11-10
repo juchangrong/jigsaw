@@ -22,6 +22,7 @@ export class WebGpuBackend implements RenderBackend {
   private readback: GPUBuffer | null = null;
   private live = 0;
   private disposed = false;
+  readonly lost: Promise<string>;
 
   private constructor(
     private device: GPUDevice,
@@ -32,6 +33,12 @@ export class WebGpuBackend implements RenderBackend {
     this.textures = new LruMap<GPUTexture>(96, (t) => {
       t.destroy();
       this.live--;
+    });
+    this.lost = new Promise((resolve) => {
+      // dispose destroys the device, which also settles device.lost
+      void device.lost.then((info) => {
+        if (!this.disposed) resolve(info.message || `WebGPU device lost (${info.reason ?? "unknown"})`);
+      });
     });
   }
 

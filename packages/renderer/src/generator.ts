@@ -8,6 +8,7 @@ import { WebGpuBackend } from "./webgpu";
 export class CpuBackend implements RenderBackend {
   readonly kind = "cpu" as const;
   readonly liveTextures = 0;
+  readonly lost = new Promise<string>(() => {});
   async render(plan: RenderPlan) {
     return renderPlanCpu(plan);
   }
@@ -55,8 +56,12 @@ export async function createBackend(pref: RendererPreference = "auto"): Promise<
 
 export interface GeneratorConfig {
   renderer?: RendererPreference;
-  /** max cached rendered images */
+  /** max cached rendered images (default 128) */
   imageCacheSize?: number;
+  /** max bytes of cached rendered images (default 64 MB); an image larger than this is not cached */
+  imageCacheBytes?: number;
+  /** replaces `createBackend`, for a custom backend or a test */
+  createBackend?: typeof createBackend;
 }
 
 export interface RenderResult {
@@ -88,7 +93,9 @@ export interface ExportOptions {
 
 /**
  * High-level API. One generator owns one backend (one GPU device) and caches
- * descriptions, SDFs and rendered images; reuse it for every icon.
+ * descriptions, SDFs and rendered images; reuse it for every icon. When the
+ * device or context is lost, the next render starts a new backend, falling
+ * back as at startup.
  */
 export class PuzzleIconGenerator {
   private backendPromise: Promise<RenderBackend> | null = null;
@@ -96,13 +103,21 @@ export class PuzzleIconGenerator {
   private images: LruMap<{ image: RgbaImage; premultiplied: Uint8ClampedArray }>;
   private planQueue: Promise<unknown> = Promise.resolve();
   private sliceMs = 0;
-  readonly config: Required<GeneratorConfig>;
-  /** messages from backends that failed to initialize */
+  private lostBackends = new WeakSet<RenderBackend>();
+  private createBackend: typeof createBackend;
+  readonly config: Required<Omit<GeneratorConfig, "createBackend">>;
+  /** messages from backends that failed to initialize or were lost */
   readonly fallbackErrors: string[] = [];
 
   constructor(config: GeneratorConfig = {}) {
-    this.config = { renderer: config.renderer ?? "auto", imageCacheSize: config.imageCacheSize ?? 128 };
-    this.images = new LruMap(this.config.imageCacheSize);
+    this.config = {
+      renderer: config.renderer ?? "auto",
+      imageCacheSize: config.imageCacheSize ?? 128,
+      imageCacheBytes: config.imageCacheBytes ?? 64 * 1024 * 1024,
+    };
+    this.createBackend = config.createBackend ?? createBackend;
+    // each entry holds the image twice, straight and premultiplied
+    this.images = new LruMap(this.config.imageCacheSize, undefined, (e) => e.image.data.byteLength + e.premultiplied.byteLength, this.config.imageCacheBytes);
   }
 
   /** Deterministic description; no GPU needed. */
@@ -117,10 +132,17 @@ export class PuzzleIconGenerator {
 
   backend(): Promise<RenderBackend> {
     if (!this.backendPromise) {
-      this.backendPromise = createBackend(this.config.renderer).then(({ backend, errors }) => {
+      const created: Promise<RenderBackend> = this.createBackend(this.config.renderer).then(({ backend, errors }) => {
         this.fallbackErrors.push(...errors);
+        void backend.lost.then((reason) => {
+          this.lostBackends.add(backend);
+          this.fallbackErrors.push(`${backend.kind}: ${reason}`);
+          if (this.backendPromise === created) this.backendPromise = null;
+          backend.dispose();
+        });
         return backend;
       });
+      this.backendPromise = created;
     }
     return this.backendPromise;
   }
@@ -149,7 +171,11 @@ export class PuzzleIconGenerator {
     return run;
   }
 
-  async render(options: PuzzleIconOptions | PuzzleIconDescription, o: RenderOptions = {}): Promise<RenderResult> {
+  render(options: PuzzleIconOptions | PuzzleIconDescription, o: RenderOptions = {}): Promise<RenderResult> {
+    return this.renderOn(options, o, true);
+  }
+
+  private async renderOn(options: PuzzleIconOptions | PuzzleIconDescription, o: RenderOptions, retry: boolean): Promise<RenderResult> {
     const backend = await this.backend();
     const { description, plan, t0 } = await this.enqueue(() => {
       const t0 = performance.now();
@@ -159,7 +185,15 @@ export class PuzzleIconGenerator {
     const key = `${backend.kind}|${plan.key}`;
     const hit = this.images.get(key);
     if (hit) return { ...hit, backend: backend.kind, description, ms: performance.now() - t0, cached: true };
-    const premultiplied = await backend.render(plan);
+    let premultiplied: Uint8ClampedArray;
+    try {
+      premultiplied = await backend.render(plan);
+    } catch (e) {
+      // a loss is reported in its own task, possibly after the render it broke has failed
+      await nextTask();
+      if (retry && this.lostBackends.has(backend)) return this.renderOn(options, o, false);
+      throw e;
+    }
     const image = { width: plan.width, height: plan.height, data: unpremultiply(premultiplied) };
     this.images.set(key, { image, premultiplied });
     return { image, premultiplied, backend: backend.kind, description, ms: performance.now() - t0, cached: false };
@@ -192,12 +226,15 @@ export class PuzzleIconGenerator {
   }
 }
 
-let shared: PuzzleIconGenerator | null = null;
-/** Process-wide generator so every icon shares one device. */
+const shared = new Map<RendererPreference, PuzzleIconGenerator>();
+/**
+ * Process-wide generators, one per renderer preference (`auto` when none is
+ * given), so every icon asking for the same renderer shares one device. The
+ * rest of `config` applies only when the generator is first created.
+ */
 export function getSharedGenerator(config?: GeneratorConfig): PuzzleIconGenerator {
-  if (!shared || (config?.renderer && config.renderer !== shared.config.renderer)) {
-    void shared?.dispose();
-    shared = new PuzzleIconGenerator(config);
-  }
-  return shared;
+  const renderer = config?.renderer ?? "auto";
+  let generator = shared.get(renderer);
+  if (!generator) shared.set(renderer, (generator = new PuzzleIconGenerator({ ...config, renderer })));
+  return generator;
 }

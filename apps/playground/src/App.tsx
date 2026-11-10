@@ -349,7 +349,7 @@ export function App() {
           </div>
 
           <div className={`preview ${backdrop}`}>
-            <PuzzleIcon {...options} renderer={renderer} onRender={setStats} />
+            <PuzzleIcon {...options} renderer={renderer} onRender={setStats} title={`Puzzle icon for seed ${String(options.seed)}`} />
           </div>
 
           <div className={`sizes ${backdrop}`}>

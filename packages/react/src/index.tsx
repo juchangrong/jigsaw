@@ -1,6 +1,9 @@
+"use client";
+
 import type { PuzzleIconOptions } from "@jigsaw/core";
 import { getSharedGenerator, type BackendKind, type RenderResult, type RendererPreference } from "@jigsaw/renderer";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { clientDpr, serverDpr, subscribeDpr } from "./dpr";
 
 export interface PuzzleIconProps extends Omit<PuzzleIconOptions, "seed"> {
   seed: PuzzleIconOptions["seed"];
@@ -9,7 +12,7 @@ export interface PuzzleIconProps extends Omit<PuzzleIconOptions, "seed"> {
   renderer?: RendererPreference;
   className?: string;
   style?: CSSProperties;
-  /** accessible label */
+  /** accessible name; without one the image is hidden from assistive technology */
   title?: string;
   onRender?: (result: RenderResult) => void;
   onError?: (error: Error) => void;
@@ -18,13 +21,15 @@ export interface PuzzleIconProps extends Omit<PuzzleIconOptions, "seed"> {
 /**
  * `<PuzzleIcon seed="alpha" size={64} gradient={{ palette: "aurora" }} />`
  *
- * All icons share one generator (one GPU device); rendered images are cached,
- * so re-mounting or repeating an icon costs a cache lookup.
+ * Icons asking for the same renderer share one generator (one GPU device);
+ * rendered images are cached, so re-mounting or repeating an icon costs a
+ * cache lookup. The canvas is drawn at `size × devicePixelRatio` and redrawn
+ * when that ratio changes; server markup uses a ratio of 1.
  */
 export function PuzzleIcon({ renderer, className, style, title, onRender, onError, ...options }: PuzzleIconProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const size = options.size ?? 128;
-  const dpr = typeof window !== "undefined" ? Math.min(3, window.devicePixelRatio || 1) : 1;
+  const dpr = useSyncExternalStore(subscribeDpr, clientDpr, serverDpr);
   const px = Math.round(size * dpr);
   const key = JSON.stringify(options);
   const opts = useMemo(() => options, [key]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -51,17 +56,8 @@ export function PuzzleIcon({ renderer, className, style, title, onRender, onErro
     return () => abort.abort();
   }, [opts, size, px, renderer]);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      width={px}
-      height={px}
-      className={className}
-      role="img"
-      aria-label={title ?? `Puzzle icon ${String(options.seed)}`}
-      style={{ width: size, height: size, display: "block", ...style }}
-    />
-  );
+  const a11y = title ? ({ role: "img", "aria-label": title } as const) : ({ "aria-hidden": true } as const);
+  return <canvas ref={canvasRef} width={px} height={px} className={className} style={{ width: size, height: size, display: "block", ...style }} {...a11y} />;
 }
 
 /** Which backend the shared generator ended up with. */

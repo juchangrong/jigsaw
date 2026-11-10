@@ -16,6 +16,9 @@ export class WebGl2Backend implements RenderBackend {
   private ids = new WeakMap<SdfField, string>();
   private nextId = 0;
   private live = 0;
+  private disposed = false;
+  private reportLost!: (reason: string) => void;
+  readonly lost: Promise<string>;
   private loc: {
     u: WebGLUniformLocation;
     tex: WebGLUniformLocation;
@@ -39,6 +42,13 @@ export class WebGl2Backend implements RenderBackend {
       return l;
     };
     this.loc = { u: get("u"), tex: get("sdfTex"), stamp: get("stampTex"), height: get("uHeight"), mode: get("uMode") };
+    this.lost = new Promise((resolve) => {
+      // dispose loses the context on purpose
+      this.reportLost = (reason) => {
+        if (!this.disposed) resolve(reason);
+      };
+    });
+    canvas.addEventListener("webglcontextlost", () => this.reportLost("WebGL context lost"), { once: true });
   }
 
   static async create(): Promise<WebGl2Backend> {
@@ -99,6 +109,7 @@ export class WebGl2Backend implements RenderBackend {
     return this.queue.run(async () => {
       const gl = this.gl;
       const { width: w, height: h } = plan;
+      if (this.disposed) throw new Error("Renderer disposed");
       if (this.canvas.width !== w || this.canvas.height !== h) {
         this.canvas.width = w;
         this.canvas.height = h;
@@ -128,6 +139,11 @@ export class WebGl2Backend implements RenderBackend {
       draw(1);
       const raw = new Uint8Array(w * h * 4);
       gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, raw);
+      // a lost context draws nothing and reads back zeros without raising an error
+      if (gl.isContextLost()) {
+        this.reportLost("WebGL context lost");
+        throw new Error("WebGL context lost");
+      }
       // flip rows: GL reads bottom-up
       const out = new Uint8ClampedArray(w * h * 4);
       for (let y = 0; y < h; y++) out.set(raw.subarray((h - 1 - y) * w * 4, (h - y) * w * 4), y * w * 4);
@@ -136,6 +152,8 @@ export class WebGl2Backend implements RenderBackend {
   }
 
   dispose() {
+    if (this.disposed) return;
+    this.disposed = true;
     this.textures.clear();
     this.gl.deleteProgram(this.program);
     this.gl.getExtension("WEBGL_lose_context")?.loseContext();
