@@ -2,7 +2,7 @@ import { COLOR_SETS, deriveSeed, hashString, tintColor, type ColorFamily, type M
 import { PuzzleMosaic } from "@jigsaw/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MOSAIC_INSET } from "./CardsPage";
-import { Choice, ModeSwitch, Section, Segmented, nameOf } from "./controls";
+import { Choice, PlaygroundNav, Section, Segmented, nameOf } from "./controls";
 
 type Backdrop = "checker" | "white" | "dark";
 /** the sizes a list, a toolbar or a card shows an icon at */
@@ -72,16 +72,7 @@ export function MosaicPage() {
   return (
     <div className="app">
       <header className="top">
-        <div className="brand">
-          <span aria-hidden="true">
-            <PuzzleMosaic seed="brand" size={28} colors={COLOR_SETS.find((c) => c.id === "bright")!.families[0]!.colors} variant="accent" />
-          </span>
-          <h1>Puzzle Icon Playground</h1>
-          <ModeSwitch mode="mosaic" />
-          <a className="nav-link" href="#/cards">
-            Card list demo
-          </a>
-        </div>
+        <PlaygroundNav page="mosaic" />
         <div className="status">
           <span className="badge">SVG</span>
           <span className="muted">{family.id}</span>

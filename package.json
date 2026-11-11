@@ -8,8 +8,7 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "bun run --cwd apps/playground dev",
-    "dev:site": "bun run --cwd apps/site dev",
+    "dev": "bun run --cwd apps/site dev",
     "build": "bun run --cwd apps/site build",
     "test": "bun test --timeout 60000",
     "test:watch": "bun test --timeout 60000 --watch",

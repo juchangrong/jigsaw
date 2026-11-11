@@ -1,4 +1,8 @@
+import { COLOR_SETS } from "@jigsaw/core";
+import { PuzzleMosaic } from "@jigsaw/react";
 import { useId, useRef, type KeyboardEvent, type ReactNode } from "react";
+
+const BRAND_COLORS = COLOR_SETS.find((c) => c.id === "bright")!.families[0]!.colors;
 
 /** Radio group with roving focus: Tab enters at the selection, arrow keys move it. */
 export function Segmented<T extends string | number>(props: {
@@ -116,17 +120,35 @@ export function Choice<T extends string | number>(props: {
   );
 }
 
-/** The playground's two modes. The URL hash holds the mode, so a reload keeps it. */
-export function ModeSwitch({ mode }: { mode: "mosaic" | "piece" }) {
+const ROOT = document.documentElement.dataset.root ?? "./";
+const PAGES = [
+  { id: "mosaic", label: "Mosaic", path: "playground/" },
+  { id: "piece", label: "Piece", path: "playground/piece/" },
+  { id: "cards", label: "Cards", path: "playground/cards/" },
+] as const;
+export type PlaygroundPage = (typeof PAGES)[number]["id"];
+
+/** Path of a playground page from the page being shown, which `data-root` on the `html` element locates. */
+export const pagePath = (page: PlaygroundPage) => `${ROOT}${PAGES.find((p) => p.id === page)!.path}`;
+
+/** The left half of every playground header: the way back to the site, the three pages, and the docs. */
+export function PlaygroundNav({ page }: { page: PlaygroundPage }) {
   return (
-    <Segmented
-      label="Mode"
-      value={mode}
-      options={["mosaic", "piece"] as const}
-      onChange={(m) => {
-        window.location.hash = m === "piece" ? "#/piece" : "#/";
-      }}
-      render={nameOf}
-    />
+    <div className="brand">
+      <a className="home" href={ROOT} aria-label="jigsaw home">
+        <PuzzleMosaic seed="brand" size={28} colors={BRAND_COLORS} variant="accent" />
+      </a>
+      <h1>Playground</h1>
+      <nav className="segmented" aria-label="Playground pages">
+        {PAGES.map((p) => (
+          <a key={p.id} href={`${ROOT}${p.path}`} className={p.id === page ? "on" : undefined} aria-current={p.id === page ? "page" : undefined}>
+            {p.label}
+          </a>
+        ))}
+      </nav>
+      <a className="nav-link" href={`${ROOT}docs/`}>
+        Docs
+      </a>
+    </div>
   );
 }

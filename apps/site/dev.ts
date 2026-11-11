@@ -4,13 +4,23 @@ import api from "./docs/api/index.html";
 import docs from "./docs/index.html";
 import registry from "./docs/registry/index.html";
 import landing from "./index.html";
+import cards from "./playground/cards/index.html";
 import playground from "./playground/index.html";
+import piece from "./playground/piece/index.html";
 
-const pages = { "/docs/": docs, "/docs/api/": api, "/docs/registry/": registry, "/playground/": playground };
+// the whole route table; `build` in package.json lists the same pages
+const pages = {
+  "/docs/": docs,
+  "/docs/registry/": registry,
+  "/docs/api/": api,
+  "/playground/": playground,
+  "/playground/piece/": piece,
+  "/playground/cards/": cards,
+};
 const redirects = Object.fromEntries(Object.keys(pages).map((path) => [path.slice(0, -1), Response.redirect(path)]));
 
 const server = Bun.serve({
-  port: 5174,
+  port: 5173,
   development: true,
   routes: {
     "/": landing,

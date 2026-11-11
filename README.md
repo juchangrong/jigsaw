@@ -10,8 +10,7 @@ The only tool to install is [Bun](https://bun.sh) 1.4 or later; Node is not need
 
 ```bash
 bun install
-bun run dev        # playground at http://localhost:5173
-bun run dev:site   # landing page, docs and playground at http://localhost:5174
+bun run dev        # landing page, docs and playground at http://localhost:5173
 bun run test       # unit + determinism + rendering / visual regression tests
 bun run typecheck
 bun run check      # format check, typecheck, tests and convention gate, as CI runs them
@@ -25,8 +24,8 @@ bun run build      # production build of the site, playground included
 | `@jigsaw/core` | Seeded PRNG (Mulberry32, separate `geometry` / `palette` / `gradient` / `layout` / `texture` streams), cubic-Bézier edge profiles, shared-edge layouts (`single`, `cluster`, `grid`), mask rasterization + exact EDT signed distance field, OKLCH palettes, Gaussian-spot gradients, material presets, render plan + reference shading. No GPU needed. |
 | `@jigsaw/renderer` | WebGPU backend (`shaders/puzzle.wgsl`), WebGL2 fallback (`shaders/puzzle.frag.glsl`), CPU fallback, and the `PuzzleIconGenerator` API. One shared device, cached SDF textures. Also the pure-TS PNG encoder (with sRGB chunk, straight alpha) and WebP via the browser canvas. |
 | `@jigsaw/react` | `<PuzzleIcon />` (rendered, on a canvas), `<PuzzlePictogram />` and `<PuzzleMosaic />` (inline SVG) and `useRendererBackend()`. |
-| `apps/playground` | React playground, bundled and served by Bun: Mosaic mode (the default), the rendered Piece mode at `#/piece`, and a card list at `#/cards`. |
-| `apps/site` | Landing page and documentation pages, built into one static site together with the playground and the registry files. |
+| `apps/site` | The one site: landing page at `/`, documentation at `/docs/`, `/docs/registry/` and `/docs/api/`, the playground, and the registry files at `/r/`. It owns the dev server and the build. |
+| `apps/playground` | Source of the playground pages, which the site serves: Mosaic at `/playground/`, the rendered Piece at `/playground/piece/` and a card list at `/playground/cards/`. |
 
 ## Usage
 
@@ -49,7 +48,7 @@ The same seed always draws the same icon. The packages are not published to npm:
 | [PuzzleMosaic registry](docs/registry.md) | Installing `PuzzleMosaic` as source, its props and palettes, and maintaining the registry. |
 | [Design spec](docs/design.md) | The geometry, distance field, shading and material model. |
 
-The same documents are served by the site in `apps/site`, next to a landing page and the playground: `bun run dev:site`, then http://localhost:5174.
+The same documents are served by the site in `apps/site`, next to a landing page and the playground: `bun run dev`, then http://localhost:5173.
 
 ## How it works
 

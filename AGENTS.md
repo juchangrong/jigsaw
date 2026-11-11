@@ -8,8 +8,8 @@ Procedural puzzle-piece icon generator: a seed becomes a top-down jigsaw piece w
 packages/core/      options, seeded PRNG, geometry, SDF, palettes, stamp glyphs, reference shading, SVG pictograms (no GPU)
 packages/renderer/  WebGPU, WebGL2 and CPU backends, WGSL/GLSL shaders, PuzzleIconGenerator, PNG/WebP encoding
 packages/react/     <PuzzleIcon> and <PuzzlePictogram> components, shared generator
-apps/playground/    React playground, bundled and served by Bun
-apps/site/          landing page and docs pages; builds one static site with the playground and public/r
+apps/site/          the site: landing page, docs pages, HTML entries for every route, dev server and build
+apps/playground/    source of the playground pages (Mosaic, Piece, Cards), served by the site under /playground/
 registry/           shadcn-format components, self-contained source (registry.json lists them)
 public/r/           built registry files that consumers install; generated, committed
 tests/              bun:test suites and golden image signatures
@@ -22,8 +22,7 @@ docs/               project documentation
 
 ```sh
 bun install
-bun run dev                 # playground on http://localhost:5173
-bun run dev:site            # landing page, docs and playground on http://localhost:5174
+bun run dev                 # landing page, docs and playground on http://localhost:5173
 bun run check               # everything CI runs except the build: format check, typecheck, test, verify-covenant
 bun fmt                     # format in place; bun fmt --check only reports
 bun run typecheck

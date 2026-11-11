@@ -189,7 +189,8 @@ await gen.export(opts, { format: "png" }); // also toPNG() / toWebP()
 packages/core        PRNG, geometry, SDF, color, material presets, generate()
 packages/renderer    WebGPU (shaders/*.wgsl), WebGL2 and CPU backends, PuzzleIconGenerator, PNG / WebP encoding
 packages/react       <PuzzleIcon/>
-apps/playground      React playground, bundled and served by Bun
+apps/site            landing page, docs pages, dev server and build for every route
+apps/playground      React playground pages, served by apps/site under /playground/
 tests/               geometry, deterministic, rendering tests
 ```
 

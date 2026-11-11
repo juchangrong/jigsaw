@@ -13,7 +13,7 @@ import {
 import { downloadBlob } from "@jigsaw/renderer";
 import { PuzzleIcon, getSharedGenerator, useRendererBackend } from "@jigsaw/react";
 import { AppIconPreview } from "./AppIconPreview";
-import { Choice, ModeSwitch, Section, Segmented, Slider, nameOf } from "./controls";
+import { Choice, PlaygroundNav, Section, Segmented, Slider, nameOf } from "./controls";
 import type { RendererPreference, RenderResult } from "@jigsaw/renderer";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -201,16 +201,7 @@ export function App() {
   return (
     <div className="app">
       <header className="top">
-        <div className="brand">
-          <span aria-hidden="true">
-            <PuzzleIcon seed="brand" size={28} gradient={{ palette: "aurora" }} renderer={renderer} />
-          </span>
-          <h1>Puzzle Icon Playground</h1>
-          <ModeSwitch mode="piece" />
-          <a className="nav-link" href="#/cards">
-            Card list demo
-          </a>
-        </div>
+        <PlaygroundNav page="piece" />
         <div className="status">
           <span className={`badge ${backend ?? ""}`}>{backend ? nameOf(backend) : "Starting"}</span>
           {stats && (

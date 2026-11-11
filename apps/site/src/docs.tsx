@@ -35,7 +35,13 @@ const NAV: { group: string; items: { label: string; href: string; doc?: DocId }[
       { label: "Colour sets", href: "docs/api/#colour-sets" },
     ],
   },
-  { group: "Tools", items: [{ label: "Playground", href: "playground/" }] },
+  {
+    group: "Tools",
+    items: [
+      { label: "Playground", href: "playground/" },
+      { label: "Card list demo", href: "playground/cards/" },
+    ],
+  },
 ];
 
 const id = (document.documentElement.dataset.doc ?? "usage") as DocId;

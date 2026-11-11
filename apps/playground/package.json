@@ -3,10 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "bun --port 5173 ./index.html",
-    "build": "rm -rf dist && bun build ./index.html --outdir dist --production"
-  },
   "dependencies": {
     "@jigsaw/core": "workspace:*",
     "@jigsaw/react": "workspace:*",

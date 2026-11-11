@@ -13,7 +13,7 @@ import {
 } from "@jigsaw/core";
 import { PuzzleIcon, PuzzleMosaic, PuzzlePictogram } from "@jigsaw/react";
 import { useEffect, useId, useMemo, useState, type CSSProperties } from "react";
-import { Segmented } from "./controls";
+import { PlaygroundNav, Segmented } from "./controls";
 import { useStoredState } from "./storage";
 
 /** Mock items, in the copy style of the product list this page imitates. */
@@ -432,12 +432,7 @@ export function CardsPage() {
   return (
     <div className="app cards-app">
       <header className="top">
-        <div className="brand">
-          <h1>Card list</h1>
-          <a className="nav-link" href="#/">
-            Back to playground
-          </a>
-        </div>
+        <PlaygroundNav page="cards" />
       </header>
       <main className="cards-main">
         <div className="toolbar">

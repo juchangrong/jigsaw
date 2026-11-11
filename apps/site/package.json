@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun ./dev.ts",
-    "build": "rm -rf dist && bun build ./index.html ./docs/index.html ./docs/api/index.html ./docs/registry/index.html ./playground/index.html --outdir dist --production --splitting && cp -R ../../public/r dist/r"
+    "build": "rm -rf dist && bun build ./index.html ./docs/index.html ./docs/api/index.html ./docs/registry/index.html ./playground/index.html ./playground/piece/index.html ./playground/cards/index.html --outdir dist --production --splitting && cp -R ../../public/r dist/r"
   },
   "dependencies": {
     "@jigsaw/core": "workspace:*",
