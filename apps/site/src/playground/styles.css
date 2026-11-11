@@ -506,95 +506,6 @@ input[type="checkbox"] {
     inset 0 0 0 1px #ececf1,
     0 1px 2px rgba(20, 20, 40, 0.06);
 }
-/* Liquid Glass tile: a translucent frosted body with a soft vertical sheen, a
-   thin rim that catches light strongest at the top-left, a gloss over the top
-   half above the piece, and a small lift shadow. --glass-tint colours the body
-   when Tint is on. */
-.card-icon.glass {
-  --glass-tint: #ffffff;
-  border-radius: 11px;
-  overflow: visible;
-  isolation: isolate;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.55) 55%, rgba(255, 255, 255, 0.35) 100%), var(--glass-tint);
-  -webkit-backdrop-filter: blur(8px) saturate(1.6);
-  backdrop-filter: blur(8px) saturate(1.6);
-  box-shadow:
-    inset 0 1px 0.5px rgba(255, 255, 255, 0.95),
-    inset 0 -1px 1px rgba(20, 20, 40, 0.08),
-    0 1px 1.5px rgba(20, 20, 40, 0.1),
-    0 3px 8px rgba(20, 20, 40, 0.08);
-}
-/* the rim: a 1px ring, bright at the top-left and bottom-right, faint between */
-.card-icon.glass::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.25) 35%, rgba(20, 20, 40, 0.1) 60%, rgba(255, 255, 255, 0.7) 100%);
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box exclude,
-    linear-gradient(#000 0 0);
-  pointer-events: none;
-  z-index: 2;
-}
-/* the gloss: a soft specular sheen over the upper half, above the piece */
-.card-icon.glass::after {
-  content: "";
-  position: absolute;
-  inset: 1px 1px 50% 1px;
-  border-radius: 10px 10px 40% 40% / 10px 10px 18px 18px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
-  pointer-events: none;
-  z-index: 2;
-}
-.card-icon.glass > canvas {
-  z-index: 1;
-}
-/* outline style: the piece as a line on a white tile with a hairline edge */
-.card-icon.outline {
-  background: #ffffff;
-  box-shadow: inset 0 0 0 1px #e7e7ed;
-  /* a mid gray line: lighter than text, still about 4:1 on white */
-  color: #7a7a8c;
-}
-.card-icon.abstract {
-  background: #ffffff;
-  box-shadow: inset 0 0 0 1px #e7e7ed;
-}
-/* solid: a white glyph on a tile filled with the family colour, like an app icon */
-.card-icon.solid {
-  box-shadow: none;
-}
-/* light from the top-left: a soft sheen over the family colour and a bright
-   top edge, so the tile reads as an object and not a flat swatch */
-.card-icon.solid,
-.picker-solid {
-  background-image: linear-gradient(155deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0) 48%, rgba(0, 0, 0, 0.08));
-}
-.card-icon.solid::after,
-.picker-solid::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    inset 0 0 0 1px rgba(20, 20, 40, 0.07);
-  pointer-events: none;
-}
-.picker-solid {
-  position: relative;
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-}
 /* mosaic: the tile is the puzzle. It draws its own outline and edge, so the
    holder has no ground, no clipping and no rim, only a shadow. */
 .card-icon.mosaic {
@@ -632,24 +543,6 @@ input[type="checkbox"] {
 }
 .row.check:has(input:disabled) {
   opacity: 0.45;
-}
-.card-icon > .outline-icon {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  display: block;
-}
-.picker-tile .outline-icon {
-  color: #7a7a8c;
-  display: block;
-}
-
-.card-icon > canvas {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
 }
 .card-body {
   flex: 1;

@@ -1,18 +1,6 @@
-import {
-  COLOR_SETS,
-  deriveSeed,
-  generateMosaic,
-  generatePictogram,
-  mosaicDrawing,
-  pictogramColor,
-  pieceArrangement,
-  pieceOutline,
-  tileColor,
-  tintColor,
-  type ColorFamily,
-} from "@jigsaw/core";
-import { PuzzleIcon, PuzzleMosaic, PuzzlePictogram } from "@jigsaw/react";
-import { useEffect, useId, useMemo, useState, type CSSProperties } from "react";
+import { COLOR_SETS, deriveSeed, generateMosaic, mosaicDrawing, tintColor, type ColorFamily } from "@jigsaw/core";
+import { PuzzleMosaic } from "@jigsaw/react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { PlaygroundNav, Segmented } from "./controls";
 import { useStoredState } from "./storage";
 
@@ -37,48 +25,23 @@ const SECTIONS = [...new Set(ITEMS.map((item) => item.tag))];
 /** `index` is the position on screen (sections in order), so icons rotate the way they are read. */
 const INDEXED = SECTIONS.flatMap((tag) => ITEMS.filter((item) => item.tag === tag)).map((item, index) => ({ ...item, index }));
 
-type IconStyle = "glass" | "tile" | "outline" | "abstract" | "solid" | "mosaic" | "bare";
-const STYLE_NAMES: Record<IconStyle, string> = {
-  glass: "Glass",
-  tile: "Plain tile",
-  outline: "Outline",
-  abstract: "Abstract",
-  solid: "Solid",
-  mosaic: "Mosaic",
-  bare: "Bare piece",
-};
-const STYLES: readonly IconStyle[] = ["glass", "tile", "outline", "abstract", "solid", "mosaic", "bare"];
 const asBoolean = (v: unknown) => (typeof v === "boolean" ? v : undefined);
-/** which switches change anything in each style */
-// the switch chooses four tones (on) or one accent piece (off) for a mosaic
-const USES_TONAL: IconStyle[] = ["mosaic"];
-// a mosaic has a tile to tint only when Padding puts it on one
-const USES_TINT: IconStyle[] = ["glass", "tile", "abstract"];
 /**
- * Two switches that only a mosaic has. Padding sets it inside a white tile
- * with white around it; Gaps keeps the thin cuts between its four pieces.
+ * Padding sets the mosaic inside a white tile with white around it; Gaps
+ * keeps the thin cuts between its four pieces.
  */
 interface MosaicLook {
   padded: boolean;
   gaps: boolean;
 }
-const isGlyph = (s: IconStyle) => s === "abstract" || s === "solid";
-
-/** The realistic piece as a line; its colour comes from CSS. */
-const OutlineIcon = ({ seed, size }: { seed: string; size: number }) => <PuzzlePictogram seed={seed} size={size} variant="outline" className="outline-icon" />;
-/** The geometric pictogram in one flat colour. */
-const AbstractIcon = ({ seed, size, color }: { seed: string; size: number; color: string }) => (
-  <PuzzlePictogram seed={seed} size={size} color={color} className="outline-icon" />
-);
-
 /** A tile cut into four pieces in the family's shades. */
-const MosaicIcon = ({ seed, size, family, solid, look }: { seed: string; size: number; family: ColorFamily; solid: boolean; look: MosaicLook }) => (
+const MosaicIcon = ({ seed, size, family, tonal, look }: { seed: string; size: number; family: ColorFamily; tonal: boolean; look: MosaicLook }) => (
   // inside a white tile the tile is the frame, so the mosaic drops its own edge line
   <PuzzleMosaic
     seed={seed}
     size={size}
     colors={family.colors}
-    variant={solid ? "accent" : "tonal"}
+    variant={tonal ? "tonal" : "accent"}
     edge={!look.padded}
     gap={look.gaps ? undefined : 0}
     className="mosaic-icon"
@@ -88,75 +51,20 @@ const MosaicIcon = ({ seed, size, family, solid, look }: { seed: string; size: n
 export const MOSAIC_INSET = 0.75;
 
 const ICON_PX = 40;
-/** A rendered piece takes the family's main tone: its second, mid-deep shade. */
-const pieceColor = (f: ColorFamily) => [f.colors[1]!];
 
-function CardIcon({
-  seed,
-  family: f,
-  style,
-  solid,
-  tint,
-  mosaic,
-}: {
-  seed: string;
-  family: ColorFamily;
-  style: IconStyle;
-  solid: boolean;
-  tint: boolean;
-  mosaic: MosaicLook;
-}) {
-  if (style === "solid") {
-    return (
-      <span className="card-icon tile solid" style={{ backgroundColor: tileColor(f) }} aria-hidden="true">
-        <AbstractIcon seed={seed} size={Math.round(ICON_PX * 0.8)} color="#ffffff" />
-      </span>
-    );
-  }
-  if (style === "mosaic" && mosaic.padded) {
+/** The icon of one card: a mosaic, on a white or tinted tile when Padding is on. */
+function CardIcon({ seed, family: f, tonal, tint, mosaic }: { seed: string; family: ColorFamily; tonal: boolean; tint: boolean; mosaic: MosaicLook }) {
+  if (mosaic.padded) {
     return (
       <span className="card-icon tile mosaic-tile" style={tint ? { background: tintColor(f) } : undefined} aria-hidden="true">
-        <MosaicIcon seed={seed} size={Math.round(ICON_PX * MOSAIC_INSET)} family={f} solid={solid} look={mosaic} />
-      </span>
-    );
-  }
-  if (style === "mosaic") {
-    return (
-      <span className="card-icon tile mosaic" aria-hidden="true">
-        {/* full of colour edge to edge, so it sits a size smaller than the white tiles of the other styles */}
-        <MosaicIcon seed={seed} size={Math.round(ICON_PX * 0.85)} family={f} solid={solid} look={mosaic} />
-      </span>
-    );
-  }
-  if (style === "abstract") {
-    return (
-      <span className="card-icon tile abstract" style={tint ? { background: tintColor(f) } : undefined} aria-hidden="true">
-        <AbstractIcon seed={seed} size={Math.round(ICON_PX * 0.8)} color={pictogramColor(f)} />
-      </span>
-    );
-  }
-  if (style === "outline") {
-    return (
-      <span className="card-icon tile outline" aria-hidden="true">
-        {/* the outline fills about half the tile, like line icons in a product list */}
-        <OutlineIcon seed={seed} size={Math.round(ICON_PX * 0.68)} />
-      </span>
-    );
-  }
-  if (style === "bare") {
-    return (
-      <span className="card-icon bare" aria-hidden="true">
-        <PuzzleIcon seed={seed} layout="single" palette={pieceColor(f)} size={ICON_PX} />
+        <MosaicIcon seed={seed} size={Math.round(ICON_PX * MOSAIC_INSET)} family={f} tonal={tonal} look={mosaic} />
       </span>
     );
   }
   return (
-    <span
-      className={`card-icon tile${style === "glass" ? " glass" : ""}`}
-      style={tint ? ({ "--glass-tint": tintColor(f), background: style === "glass" ? undefined : tintColor(f) } as CSSProperties) : undefined}
-      aria-hidden="true"
-    >
-      <PuzzleIcon seed={seed} layout="single" palette={pieceColor(f)} size={Math.round(ICON_PX * 0.95)} />
+    <span className="card-icon tile mosaic" aria-hidden="true">
+      {/* full of colour edge to edge, so it sits a size smaller than a white tile would */}
+      <MosaicIcon seed={seed} size={Math.round(ICON_PX * 0.85)} family={f} tonal={tonal} look={mosaic} />
     </span>
   );
 }
@@ -183,7 +91,6 @@ const familyOf = (set: ColorFamily[], slot: number) => set[((slot % set.length) 
  * mosaics in the Bright set with one deep piece per tile, on four picks.
  */
 const DEFAULT_LOOK = {
-  style: "mosaic" as IconStyle,
   colorSet: "bright",
   tonal: false,
   tint: false,
@@ -220,31 +127,23 @@ function savePicks(picks: Candidate[]) {
 function CandidatePicker(props: {
   picks: Candidate[];
   onChange: (picks: Candidate[]) => void;
-  solid: boolean;
+  tonal: boolean;
   tint: boolean;
   set: ColorFamily[];
   setId: string;
-  style: IconStyle;
   mosaic: MosaicLook;
 }) {
-  const { picks, onChange, solid, tint, set, setId, style, mosaic } = props;
-  const padded = style === "mosaic" && mosaic.padded;
+  const { picks, onChange, tonal, tint, set, setId, mosaic } = props;
+  const padded = mosaic.padded;
   const headingId = useId();
   const [count, setCount] = useState(BATCH);
   const [note, setNote] = useState("");
   const picked = new Map(picks.map((c, i) => [keyOf(c), i]));
   const pickedKey = picks.map(keyOf).join();
-  // Line and glyph styles have few distinct shapes, so candidates that would
-  // look identical are skipped (a picked one always stays visible).
+  // Mosaics have few distinct shapes, so candidates that would look identical
+  // are skipped (a picked one always stays visible).
   const { list, exhausted } = useMemo(() => {
-    const lookKey = (c: Candidate) =>
-      style === "outline"
-        ? pieceArrangement(c.seed).join()
-        : isGlyph(style)
-          ? `${generatePictogram(c.seed).key}|${familyOf(set, c.slot).id}`
-          : style === "mosaic"
-            ? `${generateMosaic(c.seed).key}|${familyOf(set, c.slot).id}`
-            : c.seed;
+    const lookKey = (c: Candidate) => `${generateMosaic(c.seed).key}|${familyOf(set, c.slot).id}`;
     const chosen = new Set(pickedKey.split(","));
     const seen = new Set<string>();
     const out: Candidate[] = [];
@@ -257,48 +156,32 @@ function CandidatePicker(props: {
       out.push(c);
     }
     return { list: out, exhausted: out.length < count };
-  }, [count, style, set, pickedKey]);
+  }, [count, set, pickedKey]);
   const toggle = (c: Candidate) => {
     const k = keyOf(c);
     onChange(picked.has(k) ? picks.filter((p) => keyOf(p) !== k) : [...picks, c]);
   };
   const copy = async () => {
     try {
-      // everything needed to redraw each pick elsewhere: its seed, its colours and, for vector styles, its path
+      // everything needed to redraw each pick elsewhere: its seed, its colours and its paths
       const payload = {
-        style,
+        style: "mosaic",
         colorSet: setId,
         picks: picks.map((p) => {
           const fam = familyOf(set, p.slot);
-          const g = isGlyph(style) ? generatePictogram(p.seed) : null;
-          const m = style === "mosaic" ? generateMosaic(p.seed) : null;
+          const m = generateMosaic(p.seed);
           return {
             seed: p.seed,
             family: fam.id,
             colors: fam.colors,
-            ...(g
-              ? {
-                  glyph: {
-                    path: g.path,
-                    viewBox: g.viewBox,
-                    fill: style === "solid" ? "#ffffff" : pictogramColor(fam),
-                    tile: style === "solid" ? tileColor(fam) : "#ffffff",
-                  },
-                }
-              : {}),
             // clip to outline, cut the seams (stroked at `gap`) and corners away, then paint ground and layers
-            ...(m
-              ? {
-                  mosaic: {
-                    viewBox: m.viewBox,
-                    layers: m.layers,
-                    seams: m.seams,
-                    ...mosaicDrawing(m, fam.colors, { variant: solid ? "accent" : "tonal", edge: !mosaic.padded, gap: mosaic.gaps ? undefined : 0 }),
-                  },
-                }
-              : {}),
+            mosaic: {
+              viewBox: m.viewBox,
+              layers: m.layers,
+              seams: m.seams,
+              ...mosaicDrawing(m, fam.colors, { variant: tonal ? "tonal" : "accent", edge: !mosaic.padded, gap: mosaic.gaps ? undefined : 0 }),
+            },
             ...(padded ? { tile: { background: tint ? tintColor(fam) : "#ffffff", mosaicScale: MOSAIC_INSET } } : {}),
-            ...(style === "outline" ? { outline: pieceOutline({ seed: p.seed }) } : {}),
           };
         }),
       };
@@ -327,28 +210,18 @@ function CandidatePicker(props: {
               <button
                 type="button"
                 className={`picker-tile${order !== undefined ? " on" : ""}`}
-                style={tint && (USES_TINT.includes(style) || padded) ? { background: tintColor(familyOf(set, c.slot)) } : undefined}
+                style={tint && padded ? { background: tintColor(familyOf(set, c.slot)) } : undefined}
                 aria-pressed={order !== undefined}
                 aria-label={`Candidate ${i + 1}, ${familyOf(set, c.slot).id}${order !== undefined ? `, pick ${order + 1}` : ""}`}
                 onClick={() => toggle(c)}
               >
-                {style === "outline" ? (
-                  <OutlineIcon seed={c.seed} size={40} />
-                ) : style === "abstract" ? (
-                  <AbstractIcon seed={c.seed} size={46} color={pictogramColor(familyOf(set, c.slot))} />
-                ) : style === "solid" ? (
-                  <span className="picker-solid" style={{ backgroundColor: tileColor(familyOf(set, c.slot)) }}>
-                    <AbstractIcon seed={c.seed} size={36} color="#ffffff" />
-                  </span>
-                ) : padded ? (
+                {padded ? (
                   // the picker tile is already a white tile, so only the inset mosaic is drawn
-                  <MosaicIcon seed={c.seed} size={Math.round(60 * MOSAIC_INSET)} family={familyOf(set, c.slot)} solid={solid} look={mosaic} />
-                ) : style === "mosaic" ? (
-                  <span className="picker-mosaic">
-                    <MosaicIcon seed={c.seed} size={46} family={familyOf(set, c.slot)} solid={solid} look={mosaic} />
-                  </span>
+                  <MosaicIcon seed={c.seed} size={Math.round(60 * MOSAIC_INSET)} family={familyOf(set, c.slot)} tonal={tonal} look={mosaic} />
                 ) : (
-                  <PuzzleIcon seed={c.seed} layout="single" palette={pieceColor(familyOf(set, c.slot))} size={46} />
+                  <span className="picker-mosaic">
+                    <MosaicIcon seed={c.seed} size={46} family={familyOf(set, c.slot)} tonal={tonal} look={mosaic} />
+                  </span>
                 )}
                 {order !== undefined && (
                   <span className="picker-badge" aria-hidden="true">
@@ -365,7 +238,7 @@ function CandidatePicker(props: {
           type="button"
           onClick={() => setCount((n) => n + BATCH)}
           disabled={exhausted}
-          title={exhausted ? "This style has no more distinct shapes" : undefined}
+          title={exhausted ? "There are no more distinct shapes" : undefined}
         >
           Show more candidates
         </button>
@@ -381,17 +254,15 @@ function CandidatePicker(props: {
 }
 
 /**
- * A product-style card list where every item gets a puzzle icon, to judge the
+ * A product-style card list where every item gets a mosaic icon, to judge the
  * icons in the context they are meant for. Icons come from the picks in the
  * candidate picker, or, with no picks, from each card's name.
  */
 export function CardsPage() {
   const groupId = useId();
-  const [style, setStyle] = useStoredState<IconStyle>("cardStyle", DEFAULT_LOOK.style, (v) => STYLES.find((s) => s === v));
   const [paddingOn, setPaddingOn] = useStoredState("cardPadding", DEFAULT_LOOK.padding, asBoolean);
   const [gapsOn, setGapsOn] = useStoredState("cardGaps", DEFAULT_LOOK.gaps, asBoolean);
   const mosaic: MosaicLook = { padded: paddingOn, gaps: gapsOn };
-  const usesTint = USES_TINT.includes(style) || (style === "mosaic" && paddingOn);
   const [salt, setSalt] = useState(0);
   const [picks, setPicks] = useState<Candidate[]>(loadPicks);
   const [tonalOn, setTonalOn] = useStoredState("cardGradient", DEFAULT_LOOK.tonal, asBoolean);
@@ -401,7 +272,6 @@ export function CardsPage() {
   useEffect(() => savePicks(picks), [picks]);
 
   const reset = () => {
-    setStyle(DEFAULT_LOOK.style);
     setSetId(DEFAULT_LOOK.colorSet);
     setTonalOn(DEFAULT_LOOK.tonal);
     setTintOn(DEFAULT_LOOK.tint);
@@ -427,27 +297,23 @@ export function CardsPage() {
       </header>
       <main className="cards-main">
         <div className="toolbar">
-          <span className="label" id={groupId}>
-            Icon
-          </span>
-          <Segmented labelledBy={groupId} value={style} options={STYLES} onChange={setStyle} render={(v) => STYLE_NAMES[v]} />
           <button type="button" onClick={() => setSalt((n) => n + 1)}>
             Shuffle icons
           </button>
-          <label className="row check">
-            <input type="checkbox" role="switch" checked={tonalOn} disabled={!USES_TONAL.includes(style)} onChange={(e) => setTonalOn(e.target.checked)} />
+          <label className="row check" title="Four tones of the family instead of one deep piece">
+            <input type="checkbox" role="switch" checked={tonalOn} onChange={(e) => setTonalOn(e.target.checked)} />
             <span>Tonal</span>
           </label>
-          <label className="row check">
-            <input type="checkbox" role="switch" checked={tintOn} disabled={!usesTint} onChange={(e) => setTintOn(e.target.checked)} />
-            <span>Tint</span>
-          </label>
-          <label className="row check" title="Mosaic only: sets the icon inside a white tile">
-            <input type="checkbox" role="switch" checked={paddingOn} disabled={style !== "mosaic"} onChange={(e) => setPaddingOn(e.target.checked)} />
+          <label className="row check" title="Sets the icon inside a white tile">
+            <input type="checkbox" role="switch" checked={paddingOn} onChange={(e) => setPaddingOn(e.target.checked)} />
             <span>Padding</span>
           </label>
-          <label className="row check" title="Mosaic only: thin cuts between the four pieces">
-            <input type="checkbox" role="switch" checked={gapsOn} disabled={style !== "mosaic"} onChange={(e) => setGapsOn(e.target.checked)} />
+          <label className="row check" title="With Padding: colours the tile with a tint of the family">
+            <input type="checkbox" role="switch" checked={tintOn} disabled={!paddingOn} onChange={(e) => setTintOn(e.target.checked)} />
+            <span>Tint</span>
+          </label>
+          <label className="row check" title="Thin cuts between the four pieces">
+            <input type="checkbox" role="switch" checked={gapsOn} onChange={(e) => setGapsOn(e.target.checked)} />
             <span>Gaps</span>
           </label>
           <button type="button" onClick={reset} title="Back to the default look: bright mosaic icons on the four default picks">
@@ -471,16 +337,7 @@ export function CardsPage() {
             ))}
           </span>
         </div>
-        <CandidatePicker
-          picks={picks}
-          onChange={setPicks}
-          solid={!tonalOn}
-          tint={tintOn}
-          set={colorSet.families}
-          setId={colorSet.id}
-          style={style}
-          mosaic={mosaic}
-        />
+        <CandidatePicker picks={picks} onChange={setPicks} tonal={tonalOn} tint={tintOn} set={colorSet.families} setId={colorSet.id} mosaic={mosaic} />
         {SECTIONS.map((section) => (
           <section key={section} className="cards-section" aria-labelledby={`${groupId}-${section}`}>
             <h2 id={`${groupId}-${section}`} className="cards-heading">
@@ -492,7 +349,7 @@ export function CardsPage() {
             <ul className="cards" role="list">
               {INDEXED.filter((item) => item.tag === section).map((item) => (
                 <li key={item.name} className="card">
-                  <CardIcon {...iconFor(item.name, item.index)} style={style} solid={!tonalOn} tint={tintOn} mosaic={mosaic} />
+                  <CardIcon {...iconFor(item.name, item.index)} tonal={tonalOn} tint={tintOn} mosaic={mosaic} />
                   <div className="card-body">
                     <span className="card-name">{item.name}</span>
                     <p className="card-desc">{item.desc || "No description yet"}</p>
