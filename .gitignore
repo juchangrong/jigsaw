@@ -1,5 +1,4 @@
 node_modules
 dist
-tests/__output__
 *.log
 .DS_Store

@@ -57,44 +57,11 @@ export function Section({ title, children }: { title: string; children: ReactNod
   );
 }
 
-export function Slider(props: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (v: number) => void;
-  format?: (v: number) => string;
-}) {
-  const { label, value, min, max, step, onChange, format } = props;
-  return (
-    <label className="row">
-      <span className="label">{label}</span>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(+e.target.value)} />
-      <span className="value">{format ? format(value) : value.toFixed(step < 0.01 ? 3 : 2)}</span>
-    </label>
-  );
-}
-
 /** Display names for option values that are identifiers in the API. */
 const NAMES: Record<string, string> = {
   checker: "Checker",
   white: "White",
   dark: "Dark",
-  single: "Single",
-  cluster: "Cluster",
-  grid: "Grid",
-  softResin: "Soft resin",
-  matteAcrylic: "Matte acrylic",
-  satinResin: "Satin resin",
-  deboss: "Deboss",
-  emboss: "Emboss",
-  auto: "Auto",
-  webgpu: "WebGPU",
-  webgl2: "WebGL2",
-  cpu: "CPU",
-  mosaic: "Mosaic",
-  piece: "Piece",
   accent: "Accent",
   tonal: "Tonal",
 };
@@ -123,7 +90,6 @@ export function Choice<T extends string | number>(props: {
 const ROOT = document.documentElement.dataset.root ?? "./";
 const PAGES = [
   { id: "mosaic", label: "Mosaic", path: "playground/" },
-  { id: "piece", label: "Piece", path: "playground/piece/" },
   { id: "cards", label: "Cards", path: "playground/cards/" },
 ] as const;
 export type PlaygroundPage = (typeof PAGES)[number]["id"];
@@ -131,7 +97,7 @@ export type PlaygroundPage = (typeof PAGES)[number]["id"];
 /** Path of a playground page from the page being shown, which `data-root` on the `html` element locates. */
 export const pagePath = (page: PlaygroundPage) => `${ROOT}${PAGES.find((p) => p.id === page)!.path}`;
 
-/** The left half of every playground header: the way back to the site, the three pages, and the docs. */
+/** The left half of every playground header: the way back to the site, the two pages, and the docs. */
 export function PlaygroundNav({ page }: { page: PlaygroundPage }) {
   return (
     <div className="brand">

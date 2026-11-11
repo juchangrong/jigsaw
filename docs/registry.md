@@ -118,7 +118,7 @@ The registry is named `jigsaw` and follows the shadcn format: `registry.json` li
 
 ### Change PuzzleMosaic
 
-`registry/jigsaw/puzzle-mosaic.tsx` is a self-contained copy of the mosaic in `packages/core/src/pictogram.ts`, and `tests/registry.test.ts` holds the two to the same output. When the design changes, change both.
+`registry/jigsaw/puzzle-mosaic.tsx` is a self-contained copy of the mosaic in `packages/core/src/mosaic.ts`, and `tests/registry.test.ts` holds the two to the same output. When the design changes, change both.
 
 1. Edit the library and the registry file together.
 2. Rebuild the installable file:

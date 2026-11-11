@@ -20,18 +20,11 @@ const NAV: { group: string; items: { label: string; href: string; doc?: DocId }[
     ],
   },
   {
-    group: "Components",
-    items: [
-      { label: "PuzzleIcon", href: "docs/api/#puzzleicon" },
-      { label: "PuzzleMosaic", href: "docs/api/#puzzlemosaic" },
-      { label: "PuzzlePictogram", href: "docs/api/#puzzlepictogram" },
-    ],
-  },
-  {
     group: "Reference",
     items: [
       { label: DOCS.api.title, href: DOCS.api.path, doc: "api" },
-      { label: "Options", href: "docs/api/#puzzleiconoptions" },
+      { label: "PuzzleMosaic", href: "docs/api/#puzzlemosaic" },
+      { label: "SVG functions", href: "docs/api/#svg-functions" },
       { label: "Colour sets", href: "docs/api/#colour-sets" },
     ],
   },

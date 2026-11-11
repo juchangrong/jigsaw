@@ -38,3 +38,7 @@ Gaps:
 
 - The sets were tuned as mosaics and not reviewed in the other styles. As flat pictograms the Ink families are uneven: `pictogramColor` takes the lightest shade at lightness 0.68 or below, which is the colour for blue and purple and the navy for coral, orange and green.
 - Yellow has the narrowest lightness range of any family (0.19), so its mosaic relies on the cuts and the hue drift for separation.
+
+## Later change
+
+The rendered piece and the pictogram were removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md); what this note says about the mosaic, the colour sets and the registry still holds.

@@ -51,3 +51,7 @@ Code that relied on `getSharedGenerator()` with no argument returning the most r
 A `<PuzzleIcon>` without a `title` is no longer exposed to assistive technology. Callers that relied on the default label must pass `title`.
 
 The hydration fix is covered by server-markup tests only; no test hydrates in a DOM. The pixel-ratio subscription is tested against a fake `matchMedia`, not a real display change. Every `<PuzzleIcon>` holds its own media-query listener.
+
+## Superseded
+
+The code this note describes was removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md). The note is kept as history.

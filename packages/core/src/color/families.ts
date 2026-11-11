@@ -4,11 +4,10 @@
  * a set is at most five families that sit well together.
  */
 import { hexToOklch, mixOklab, oklchToHex } from "./oklch";
-import { PALETTES, type PaletteName } from "./palettes";
 
 export interface ColorFamily {
   id: string;
-  /** four sRGB hex shades, deep to light; usable as a palette */
+  /** four sRGB hex shades, deep to light */
   colors: string[];
 }
 
@@ -31,7 +30,14 @@ export function colorFamily(id: string, hue: number, chroma: number, deep: numbe
   };
 }
 
-const preset = (id: PaletteName): ColorFamily => ({ id, colors: [...PALETTES[id]] });
+/** Low-chroma sweeps within one hue, deep (L 0.46) to light (L 0.82), for the Studio set. */
+const MUTED = {
+  slate: ["#395C77", "#607D9B", "#8BA0BD", "#B9C4DA"],
+  sage: ["#486042", "#668368", "#8AA792", "#B4CBBE"],
+  clay: ["#784B3F", "#9A6E5D", "#BA9582", "#D7BFAE"],
+  plum: ["#664E6B", "#8B708B", "#B095AA", "#D3BDCA"],
+};
+const preset = (id: keyof typeof MUTED): ColorFamily => ({ id, colors: [...MUTED[id]] });
 
 /** A deep navy, the ink that bright mascot-style icons use for eyes and outlines. */
 const INK = oklchToHex([0.32, 0.048, 268]);
@@ -142,22 +148,6 @@ export const COLOR_SETS: readonly ColorSet[] = [
     ],
   },
 ];
-
-const lightestAtMost = (f: ColorFamily, L: number) => [...f.colors].reverse().find((c) => hexToOklch(c)[0] <= L) ?? f.colors[0]!;
-
-/**
- * The flat colour of a pictogram on a white tile: the lightest shade of the
- * family that still stands clear of white (OKLCH lightness at most 0.68), else
- * its deepest shade.
- */
-export function pictogramColor(f: ColorFamily): string {
-  return lightestAtMost(f, 0.68);
-}
-
-/** The fill of a solid tile under a white pictogram: a deeper shade (lightness at most 0.6), else the deepest. */
-export function tileColor(f: ColorFamily): string {
-  return lightestAtMost(f, 0.6);
-}
 
 const tints = new Map<string, string>();
 /** A light tint of a family for the tile behind its icon: its OKLab mix at lightness 0.955 and low chroma. */

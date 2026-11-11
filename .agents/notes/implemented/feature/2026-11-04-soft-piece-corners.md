@@ -34,3 +34,7 @@ Output changes, so `ALGORITHM_VERSION` is `1.1.0` and `tests/golden/signatures.j
 Pieces look softer at every size, and grids still close up with no holes. The two corner-rounding tests in `tests/geometry.test.ts` check that every single-piece corner leaves more than 0.045 between the outline and the sharp corner (the old arc left 0.019), and that a grid's centre vertex stays tight (under 0.025) while its outer corner is soft. The existing geometry tests still pass: no self-intersection, no thin necks, shared edges matching, and pieces in bounds. All 107 tests pass, and single, cluster and grid were checked in the playground on WebGPU.
 
 This change and the vivid-palette change (PR #5) both rewrite `tests/golden/signatures.json` and the version line in `options.ts`. Whichever merges second needs those two files regenerated.
+
+## Superseded
+
+The code this note describes was removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md). The note is kept as history.

@@ -18,10 +18,10 @@ A stored `cardStyle` value from an earlier visit is no longer read.
 
 Hiding the other styles behind a setting would keep six code paths that nothing shows.
 
-Removing the rendered piece, pictogram and outline from the whole project was not done: the request named styles, which is what the card list calls these looks. The Piece page, `PuzzleIcon` and `PuzzlePictogram` are untouched.
+Removing the rendered piece, pictogram and outline from the whole project was not part of this change: the request named styles, which is what the card list calls these looks. The maintainer asked for that next, and [the project became mosaic-only](2026-11-11-mosaic-only.md).
 
 ## Consequences
 
-The card list no longer shows `PuzzleIcon` or `PuzzlePictogram` in a list; the landing page and the docs examples still do.
+The card list no longer shows a rendered piece or a pictogram.
 
 Checked on the dev server with the stored settings of an earlier visit: the picker and the cards draw mosaics, and the four switches are enabled as described.

@@ -1,5 +1,5 @@
-import { deriveSeed, pictogramColor, tileColor } from "@jigsaw/core";
-import { PuzzleIcon, PuzzleMosaic, PuzzlePictogram, useRendererBackend } from "@jigsaw/react";
+import { COLOR_SETS, deriveSeed, tintColor } from "@jigsaw/core";
+import { PuzzleMosaic } from "@jigsaw/react";
 import { StrictMode, useRef, useState, type ReactNode } from "react";
 import { BRIGHT, CodeBlock, Footer, Header, ROOT, familyFor, mount } from "./chrome";
 import "./site.css";
@@ -14,7 +14,6 @@ const TASKS = [
   "Answers pages after hours",
 ];
 const SIZES = [24, 32, 48, 64, 96] as const;
-const BACKENDS = { webgpu: "WebGPU", webgl2: "WebGL2", cpu: "the CPU" } as const;
 
 const LIST_CODE = `import { PuzzleMosaic } from "@/components/puzzle-mosaic";
 
@@ -26,12 +25,12 @@ const LIST_CODE = `import { PuzzleMosaic } from "@/components/puzzle-mosaic";
   />
 ))}`;
 
-const pieceCode = (seed: string) => `import { PuzzleIcon } from "@jigsaw/react";
+const useCode = (seed: string) => `import { PuzzleMosaic } from "@/components/puzzle-mosaic";
 
-<PuzzleIcon seed=${JSON.stringify(seed)} size={128} />`;
+<PuzzleMosaic seed=${JSON.stringify(seed)} size={40} />`;
 
-type TileKind = "piece" | "accent" | "tonal" | "solid" | "outline";
-const KINDS: TileKind[] = ["accent", "piece", "solid", "tonal", "piece", "outline"];
+type TileKind = "accent" | "tonal" | "padded";
+const KINDS: TileKind[] = ["accent", "tonal", "padded", "accent", "accent", "tonal"];
 /** three columns of icons from derived seeds; each column starts at a different kind so rows do not line up */
 const WALL = [0, 1, 2].map((col) => KINDS.map((_, i) => ({ seed: deriveSeed("wall", col * 10 + i), kind: KINDS[(i + col * 2) % KINDS.length]! })));
 
@@ -39,11 +38,13 @@ function Tile({ seed, kind }: { seed: string; kind: TileKind }) {
   const family = familyFor(seed);
   return (
     <li>
-      {kind === "piece" && <PuzzleIcon seed={seed} size={104} />}
-      {kind === "accent" && <PuzzleMosaic seed={seed} size={84} colors={family.colors} variant="accent" />}
-      {kind === "tonal" && <PuzzleMosaic seed={seed} size={84} colors={family.colors} />}
-      {kind === "solid" && <PuzzlePictogram seed={seed} size={84} color="#fff" background={tileColor(family)} />}
-      {kind === "outline" && <PuzzlePictogram seed={seed} size={84} variant="outline" color={pictogramColor(family)} strokeWidth={2} scale={0.8} />}
+      {kind === "padded" ? (
+        <span className="padded" style={{ background: tintColor(family) }}>
+          <PuzzleMosaic seed={seed} size={62} colors={family.colors} variant="accent" edge={false} />
+        </span>
+      ) : (
+        <PuzzleMosaic seed={seed} size={84} colors={family.colors} variant={kind} />
+      )}
     </li>
   );
 }
@@ -109,9 +110,7 @@ function Heading({ id, eyebrow, title, text, link }: { id: string; eyebrow: stri
 function Landing() {
   const [seed, setSeed] = useState("aurora-01");
   const counter = useRef(0);
-  const backend = useRendererBackend();
   const family = familyFor(seed);
-  const blue = BRIGHT[0]!;
   const randomize = () => {
     counter.current++;
     setSeed((s) => deriveSeed(`${s}|${Date.now()}`, counter.current));
@@ -126,26 +125,25 @@ function Landing() {
           <div className="hero-copy">
             <a className="pill" href={`${ROOT}playground/`}>
               <strong>Playground</strong>
-              Tune a mosaic or a rendered piece <span aria-hidden="true">→</span>
+              Tune a mosaic and try it in a list <span aria-hidden="true">→</span>
             </a>
             <h1>Puzzle-piece icons, generated from a seed.</h1>
             <p className="lede">
-              jigsaw turns any id or name into an icon: a rendered resin piece for app icons and avatars, or a flat SVG mosaic for lists. The same seed always
-              draws the same icon, so there is nothing to design and nothing to store.
+              jigsaw turns any id or name into an icon: a tile cut into four interlocking puzzle pieces, in the shades of one colour. The same seed always draws
+              the same icon, so there is nothing to design and nothing to store.
             </p>
             <div className="actions">
-              <a className="button primary" href={`${ROOT}docs/api/#components`}>
-                Browse components
+              <a className="button primary" href={`${ROOT}docs/api/#puzzlemosaic`}>
+                See the component
               </a>
               <a className="button" href={`${ROOT}docs/`}>
                 Read the docs
               </a>
             </div>
             <p className="runs">
-              Renders with <span>WebGPU</span>
-              <span>WebGL2</span>
-              <span>CPU</span>
-              <span>SVG</span>
+              Ships as <span>Inline SVG</span>
+              <span>One React file</span>
+              <span>No dependencies</span>
             </p>
           </div>
           <Wall />
@@ -155,8 +153,8 @@ function Landing() {
           <Heading
             id="try"
             eyebrow="Try it"
-            title="One seed, four forms"
-            text="Type a name or an id. Every form below is drawn from it on this page, with the same code the components ship."
+            title="One seed, one icon"
+            text="Type a name or an id. Every icon below is drawn from it on this page, with the same code the component ships."
             link={{ label: "Open the playground", href: `${ROOT}playground/` }}
           />
           <div className="stage">
@@ -169,7 +167,7 @@ function Landing() {
                 </button>
               </div>
               <div className="stage-art">
-                <PuzzleIcon seed={seed} size={216} title={`Rendered piece for the seed ${seed}`} />
+                <PuzzleMosaic seed={seed} size={200} colors={family.colors} variant="accent" title={`Mosaic for the seed ${seed}`} />
               </div>
               <div className="samples">
                 <span id="samples-label">Try a name</span>
@@ -185,66 +183,50 @@ function Landing() {
               </div>
             </div>
             <ul className="forms">
-              <Form name="Mosaic" note="Inline SVG, for lists and cards">
+              <Form name="Accent" note="One deep piece on light ones">
                 <PuzzleMosaic seed={seed} size={64} colors={family.colors} variant="accent" />
               </Form>
-              <Form name="Pictogram" note="Inline SVG, from 24 px">
-                <PuzzlePictogram seed={seed} size={64} color={pictogramColor(family)} scale={0.86} />
+              <Form name="Tonal" note="One shade per piece">
+                <PuzzleMosaic seed={seed} size={64} colors={family.colors} />
               </Form>
-              <Form name="Outline" note="Inline SVG, beside text">
-                <PuzzlePictogram seed={seed} size={64} variant="outline" color="currentColor" strokeWidth={1.6} scale={0.86} />
+              <Form name="Joined" note="No cuts between the pieces">
+                <PuzzleMosaic seed={seed} size={64} colors={family.colors} variant="accent" gap={0} />
               </Form>
               <li className="size-row" aria-label={`The seed ${seed} at five sizes`}>
                 {SIZES.map((px) => (
                   <span key={px}>
-                    <PuzzleIcon seed={seed} size={px} />
+                    <PuzzleMosaic seed={seed} size={px} colors={family.colors} variant="accent" />
                     {px}
                   </span>
                 ))}
               </li>
             </ul>
           </div>
-          <p className="note" aria-live="polite">
-            {backend ? `The rendered pieces on this page are drawn with ${BACKENDS[backend]}.` : " "}
-          </p>
         </section>
 
         <section aria-labelledby="components">
           <Heading
             id="components"
-            eyebrow="Components"
-            title="Three React components, one seed"
-            text="Pick the form by where the icon appears. All three take the same seed and are deterministic."
-            link={{ label: "Browse the reference", href: `${ROOT}docs/api/#components` }}
+            eyebrow="Component"
+            title="One component, a few looks"
+            text="PuzzleMosaic takes a seed and four shades of one colour. Its props choose the look."
+            link={{ label: "Browse the reference", href: `${ROOT}docs/api/#puzzlemosaic` }}
           />
           <ul className="cards">
-            <Card
-              name="PuzzleIcon"
-              text="A piece in one colour with a soft bevel, rendered on a canvas from 32 px to 1024 px."
-              href={`${ROOT}docs/api/#puzzleicon`}
-            >
-              <PuzzleIcon seed="alpha" size={88} />
-              <PuzzleIcon seed="team-42" size={88} layout="cluster" pieceCount={3} />
-              <PuzzleIcon seed="board" size={88} layout="grid" pieceCount={4} />
-            </Card>
-            <Card
-              name="PuzzleMosaic"
-              text="A tile cut into four pieces in the shades of one colour. Inline SVG, made for lists and cards."
-              href={`${ROOT}docs/api/#puzzlemosaic`}
-            >
+            <Card name="Accent" text="One deep piece stands out on three light ones. The default look in lists." href={`${ROOT}docs/api/#puzzlemosaic`}>
               {BRIGHT.slice(0, 4).map((f, i) => (
-                <PuzzleMosaic key={f.id} seed={`m${i}`} size={56} colors={f.colors} variant={i % 2 ? "tonal" : "accent"} />
+                <PuzzleMosaic key={f.id} seed={`a${i}`} size={56} colors={f.colors} variant="accent" />
               ))}
             </Card>
-            <Card
-              name="PuzzlePictogram"
-              text="One piece as a flat sign or a line, for toolbars and dense lists at about 24 px."
-              href={`${ROOT}docs/api/#puzzlepictogram`}
-            >
-              <PuzzlePictogram seed="p1" size={48} color={pictogramColor(blue)} />
-              <PuzzlePictogram seed="p2" size={56} color="#fff" background={tileColor(BRIGHT[3]!)} />
-              <PuzzlePictogram seed="p3" size={48} variant="outline" color="currentColor" strokeWidth={1.6} />
-              <PuzzlePictogram seed="p4" size={56} color="#fff" background={tileColor(BRIGHT[1]!)} />
+            <Card name="Tonal" text="Each piece takes its own shade, deep to light, for a fuller tile." href={`${ROOT}docs/api/#puzzlemosaic`}>
+              {BRIGHT.slice(0, 4).map((f, i) => (
+                <PuzzleMosaic key={f.id} seed={`t${i}`} size={56} colors={f.colors} />
+              ))}
+            </Card>
+            <Card name="Colour sets" text="Nine sets of colour families, from restrained metals to bright hues." href={`${ROOT}docs/api/#colour-sets`}>
+              {["studio", "aluminum", "candy", "ink"].map((id, i) => (
+                <PuzzleMosaic key={id} seed={`c${i}`} size={56} colors={COLOR_SETS.find((c) => c.id === id)!.families[i]!.colors} variant="accent" />
+              ))}
             </Card>
           </ul>
         </section>
@@ -276,11 +258,11 @@ function Landing() {
           <dl>
             <div>
               <dt>Deterministic</dt>
-              <dd>Geometry, colour and material come from seeded random streams. The same options give the same description on every machine.</dd>
+              <dd>The design and the colour come from the seed through seeded random streams. The same seed gives the same markup on every machine.</dd>
             </div>
             <div>
-              <dt>Pieces that fit</dt>
-              <dd>Every single piece shares one connector, so icons from different seeds interlock and assemble into a framed puzzle.</dd>
+              <dt>Plain SVG</dt>
+              <dd>No canvas, no GPU and no image files. The markup is complete when rendered on a server, and the cuts are transparent on any background.</dd>
             </div>
             <div>
               <dt>Yours to edit</dt>
@@ -298,7 +280,7 @@ function Landing() {
             link={{ label: "Installation guide", href: `${ROOT}docs/registry/` }}
           />
           <CodeBlock label="Install command">{`npx shadcn@latest add ${registryUrl}`}</CodeBlock>
-          <CodeBlock label="Rendered piece">{pieceCode(seed)}</CodeBlock>
+          <CodeBlock label="Use it">{useCode(seed)}</CodeBlock>
         </section>
       </main>
       <Footer />

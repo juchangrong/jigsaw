@@ -25,3 +25,7 @@ Default output changes, so `PRESET_VERSION` is `1.1.0` and `tests/golden/signatu
 Icons render without a shadow by default, in the playground and through the API. Descriptions now report `presetVersion` `1.1.0`, so images cached under `1.0.0` are not reused. `pnpm typecheck` and all 105 tests pass on the new baseline.
 
 Gap: the golden file was rewritten from the CPU renderer. That confirms the new output is stable, not that it looks right. The browser check covers how it looks.
+
+## Superseded
+
+The code this note describes was removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md). The note is kept as history.

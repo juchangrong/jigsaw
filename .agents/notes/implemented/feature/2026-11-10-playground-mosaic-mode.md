@@ -37,3 +37,7 @@ Opening the playground no longer starts a GPU device; that happens on the Piece 
 The app icon preview's heading class is `demo-head`, renamed from `assembly-head` when the assembly styles were removed.
 
 Checked in the browser on the dev server: Mosaic mode with each switch, a family pick, a set change, the dark backdrop, the R shortcut and a gallery pick; the Piece page on WebGPU without the assembly section; and switching between modes. The production build was checked on all three pages.
+
+## Later change
+
+The rendered piece and the pictogram were removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md); what this note says about the mosaic, the colour sets and the registry still holds.

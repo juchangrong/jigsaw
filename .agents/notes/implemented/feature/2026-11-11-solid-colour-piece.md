@@ -35,3 +35,7 @@ The light end of a vivid palette is pale, so some seeds now give a pale piece.
 The tests for spot placement and light flow are replaced by tests that a piece's colour belongs to its palette, that a custom colour is exact, and that the pieces of one icon differ.
 
 Checked in the playground: single and cluster pieces render in one colour each under WebGPU and WebGL2, and the CPU renderer is covered by the tests. The dev server had to be restarted after the shader files changed, because its hot reload handed the renderer the shader's asset path instead of its text.
+
+## Superseded
+
+The code this note describes was removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md). The note is kept as history.

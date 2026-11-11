@@ -16,7 +16,6 @@ Every page has a path, and one server serves all of them:
 /docs/registry/        Install PuzzleMosaic
 /docs/api/             API reference
 /playground/           Mosaic
-/playground/piece/     rendered piece
 /playground/cards/     card list
 /r/<name>.json         registry files
 ```
@@ -42,3 +41,7 @@ The playground can no longer be served or built alone; the repository has one ap
 The route list exists twice: the route table in `apps/site/dev.ts` and the entry list in the `build` script of `apps/site/package.json`. A new page is added to both.
 
 Checked on the dev server: every route answers 200, the no-slash forms redirect, an unknown path and an unknown registry file answer 404, the playground links move between the three pages and mark the current one, and `/playground/#/cards` lands on `/playground/cards/`. The production build was built and its seven HTML files listed, but not opened in a browser.
+
+## Later change
+
+The Piece page and `/playground/piece/` were removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md). The playground has two pages, Mosaic and Cards, and switching between them is still a page load.

@@ -1,17 +1,16 @@
 # AGENTS.md
 
-Procedural puzzle-piece icon generator: a seed becomes a top-down jigsaw piece in one colour with a soft-resin bevel, rendered with WebGPU and WebGL2/CPU fallbacks. The design spec is [docs/design.md](docs/design.md), the product context for UI work is [docs/PRODUCT.md](docs/PRODUCT.md), and usage is in [README.md](README.md).
+Seeded puzzle mosaic icons: a seed becomes a tile cut into four interlocking puzzle pieces in the shades of one colour, drawn as plain SVG. The design spec is [docs/design.md](docs/design.md), the product context for UI work is [docs/PRODUCT.md](docs/PRODUCT.md), and usage is in [README.md](README.md).
 
 ## Repository layout
 
 ```text
-packages/core/      options, seeded PRNG, geometry, SDF, palettes, stamp glyphs, reference shading, SVG pictograms (no GPU)
-packages/renderer/  WebGPU, WebGL2 and CPU backends, WGSL/GLSL shaders, PuzzleIconGenerator, PNG/WebP encoding
-packages/react/     <PuzzleIcon> and <PuzzlePictogram> components, shared generator
+packages/core/      seeded PRNG, OKLCH colour, colour sets, the mosaic design and its SVG (no DOM)
+packages/react/     <PuzzleMosaic> component
 apps/site/          the one app: landing page, docs pages and playground (src/playground/), dev server and build
 registry/           shadcn-format components, self-contained source (registry.json lists them)
 public/r/           built registry files that consumers install; generated, committed
-tests/              bun:test suites and golden image signatures
+tests/              bun:test suites
 docs/               project documentation
 .agents/            skills, decision records and convention gates
 .github/            CI workflow
@@ -25,7 +24,7 @@ bun run dev                 # landing page, docs and playground on http://localh
 bun run check               # everything CI runs except the build: format check, typecheck, test, verify-covenant
 bun fmt                     # format in place; bun fmt --check only reports
 bun run typecheck
-bun run test                # bun:test, CPU renderer
+bun run test                # bun:test
 bun run build               # production build of the site, playground included
 bun run registry:build      # rebuild public/r/ after editing registry/
 bun .agents/skills/covenant/scripts/verify-covenant.mjs
@@ -57,11 +56,9 @@ The main checkout holds `main`; pull there after merging so new worktrees start 
 - **Language:** write comments, instructions and documentation in English; put Chinese translations only in sibling `*.zh.md` files and update existing pairs together ([language requirement](.agents/skills/covenant/references/prose-standard.md#language)).
 - **Prose:** follow [the prose standard](.agents/skills/covenant/references/prose-standard.md) and [documentation rules](.agents/skills/covenant/references/docs-standard.md#writing-rules).
 - **Checks:** mechanically checkable requirements follow [the gate workflow](.agents/skills/covenant/references/gates.md#adding-a-gate); select evidence using [the change workflow](.agents/skills/covenant/references/change-workflow.md#choosing-evidence-before-pushing).
-- **Shader parity:** `packages/core/src/shading.ts` is the reference for `puzzle.wgsl` and `puzzle.frag.glsl`; change all three together and keep `packPieceUniforms` in step with both uniform layouts.
 - **Names:** `jigsaw` names the project, package scope and registry; exports and registry items that draw a piece or icon start with `Puzzle` ([decision](.agents/notes/implemented/architecture/2026-11-11-jigsaw-and-puzzle-names.md)).
-- **Determinism:** generation draws randomness only from `createRng` streams in `packages/core/src/prng.ts`, never `Math.random`; a change to generated output bumps `ALGORITHM_VERSION` or `PRESET_VERSION` in `options.ts`.
+- **Determinism:** generation draws randomness only from `createRng` streams in `packages/core/src/prng.ts`, never `Math.random`; the same seed must keep drawing the same mosaic, so a change to the design is a breaking change and its note says so.
 - **Registry copies:** `registry/jigsaw/*.tsx` are self-contained copies of library code that consumers install as source; change the library and the copy together and rebuild `public/r/` ([maintenance](docs/registry.md#maintain-the-registry)).
-- **Golden signatures:** an intended image change re-baselines `tests/golden/signatures.json` (delete it and re-run `bun run test`) in the same change, and the note says why.
 
 ## Editing this file
 

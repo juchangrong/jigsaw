@@ -3,8 +3,7 @@ import { clearStored } from "./storage";
 
 /**
  * Catches an error thrown while a page renders and shows a way out instead of
- * a blank screen. A failed icon render is not a render error; `<PuzzleIcon>`
- * reports those through `onError`.
+ * a blank screen.
  */
 export class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   override state: { error: Error | null } = { error: null };

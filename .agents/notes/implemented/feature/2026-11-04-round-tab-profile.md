@@ -44,3 +44,7 @@ Two tests change:
 All 107 tests pass.
 
 Gap: the design spec's depth range in `docs/design.md` is updated to 0.20–0.26, which departs from the original 0.12–0.22.
+
+## Superseded
+
+The code this note describes was removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md). The note is kept as history.

@@ -74,7 +74,7 @@ export function Header({ current }: { current?: "docs" }) {
           <a href={`${ROOT}docs/`} aria-current={current === "docs" ? "page" : undefined}>
             Docs
           </a>
-          <a href={`${ROOT}docs/api/#components`}>Components</a>
+          <a href={`${ROOT}docs/api/`}>API</a>
           <a href={`${ROOT}playground/`}>Playground</a>
         </nav>
         <ThemeToggle />

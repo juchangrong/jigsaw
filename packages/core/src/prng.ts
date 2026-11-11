@@ -1,14 +1,13 @@
 /**
  * Deterministic pseudo-random numbers. `Math.random` is never used anywhere in
  * the generator; every random decision comes from a named stream derived from
- * the seed (e.g. `"<seed>:geometry"`).
+ * the seed (e.g. `"<seed>:mosaic"`).
  */
 
 export type Seed = string | number;
 
-/** Stream names. Each concern draws from its own stream so that changing, say,
- * the palette never perturbs the geometry. */
-export type RngStream = "geometry" | "palette" | "color" | "layout" | "texture";
+/** Stream names. Each concern draws from its own stream, so a new concern never perturbs an existing one. */
+export type RngStream = "mosaic";
 
 /** 32-bit string hash (cyrb53 folded to 32 bits). */
 export function hashString(str: string): number {

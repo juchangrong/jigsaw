@@ -8,5 +8,5 @@
     "AGENTS.md": 1500
   },
   "markdown": ["*.md", "docs/**/*.md", ".agents/**/*.md", "apps/**/*.md", "packages/**/*.md"],
-  "exclude": ["node_modules/**", "tests/__output__/**", ".agents/skills/*/templates/**", "**/dist/**"]
+  "exclude": ["node_modules/**", ".agents/skills/*/templates/**", "**/dist/**"]
 }

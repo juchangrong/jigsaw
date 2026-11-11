@@ -72,3 +72,7 @@ Gaps:
 - The cuts use an SVG mask, which a few SVG rasterizers outside browsers do not support; `gap: 0` avoids it.
 - At 40 px a cut is under one pixel wide, so it shows as a soft line; it is crisp from about 48 px.
 - `<PuzzleMosaic>` has no test of its own; the repository has no DOM test environment.
+
+## Later change
+
+The rendered piece and the pictogram were removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md); what this note says about the mosaic, the colour sets and the registry still holds.

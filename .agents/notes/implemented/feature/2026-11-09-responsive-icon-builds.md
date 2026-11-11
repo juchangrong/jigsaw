@@ -52,3 +52,7 @@ Gaps:
 - Cluster and grid changes still block for up to about 80 ms, because one icon's generation and all of its fields are a single slice.
 - The CPU backend renders synchronously inside its slice, so large CPU renders still block.
 - Timings were taken with the browser pane in the background, using message-based polling and the long-task observer; timer-based polling was throttled there and is not reported.
+
+## Superseded
+
+The code this note describes was removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md). The note is kept as history.

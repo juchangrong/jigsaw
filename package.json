@@ -2,7 +2,7 @@
   "name": "jigsaw",
   "private": true,
   "type": "module",
-  "description": "Procedural puzzle-piece icon generator (TypeScript + React + WebGPU)",
+  "description": "Seeded puzzle-piece mosaic icons (TypeScript + React + SVG)",
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -20,7 +20,6 @@
     "@types/bun": "^1.4.4",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "@webgpu/types": "^0.1.51",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "typescript": "~5.7.2"

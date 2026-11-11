@@ -12,4 +12,4 @@ root = "./tests"
 [fmt]
 printWidth = 160
 # generated or vendored files, and Markdown, which the covenant prose rules own
-ignorePatterns = ["public/r/", "tests/golden/", ".agents/", ".claude/", "*.md"]
+ignorePatterns = ["public/r/", ".agents/", ".claude/", "*.md"]

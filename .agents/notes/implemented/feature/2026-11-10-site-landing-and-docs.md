@@ -45,3 +45,7 @@ The token colouring is a single regular expression over comments, strings, compo
 A new Markdown file in `docs/` appears on the site only after it is added to the `DOCS` table in `apps/site/src/docs.tsx` and given an HTML entry.
 
 Checked in a browser against the dev server and against the production build served under a sub-path: the landing page's seed field and sample names, the rendered sizes on WebGPU, both themes, the Preview and Code tabs, links between the three documentation pages and their anchors, the playground page, a 375 px viewport with no horizontal scroll, and `/r/puzzle-mosaic.json`. The copy buttons were not clicked. No automated test covers the site; `bun run build` fails CI if it stops bundling.
+
+## Later change
+
+The rendered piece and the pictogram were removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md); what this note says about the mosaic, the colour sets and the registry still holds.

@@ -54,3 +54,7 @@ Gaps:
 - Only the mosaic is installable. The pictogram would copy as easily; the rendered piece would not.
 - Tint, the Ink palettes and the playground's drop shadow are not part of the component.
 - The scratch project checked types, not pixels; the markup is covered by the tests here.
+
+## Later change
+
+The rendered piece and the pictogram were removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md); what this note says about the mosaic, the colour sets and the registry still holds.

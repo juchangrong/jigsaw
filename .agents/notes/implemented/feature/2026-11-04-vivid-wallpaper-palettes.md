@@ -29,3 +29,7 @@ Default icons are vivid and lit from the top-left. Images and descriptions cache
 `tests/palette.test.ts` checks four things: seeds pick only vivid palettes, pastel palettes resolve by name, each vivid palette is ordered deep to light, and spot lightness falls toward the bottom-right across 200 seeds. The flat-top albedo test now compares against the gradient's own color at the sampled pixel, because the new pairing changed which per-spot jitter lands there. All 109 tests pass, and the new palettes were reviewed in the playground on WebGPU.
 
 The palette names and values are original and do not use any platform's wallpaper names.
+
+## Superseded
+
+The code this note describes was removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md). The note is kept as history.

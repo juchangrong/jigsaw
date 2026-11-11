@@ -15,11 +15,10 @@
     "isolatedModules": true,
     "allowImportingTsExtensions": false,
     "resolveJsonModule": true,
-    "types": ["@webgpu/types", "bun"],
+    "types": ["bun"],
     "baseUrl": ".",
     "paths": {
       "@jigsaw/core": ["packages/core/src/index.ts"],
-      "@jigsaw/renderer": ["packages/renderer/src/index.ts"],
       "@jigsaw/react": ["packages/react/src/index.tsx"]
     }
   },

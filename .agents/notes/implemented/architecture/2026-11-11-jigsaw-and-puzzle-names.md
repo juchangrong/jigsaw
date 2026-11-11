@@ -4,7 +4,7 @@ Status: implemented
 
 ## Problem
 
-Two names are in use and nothing says why. The repository, the package scope (`@jigsaw/core`, `@jigsaw/react`, `@jigsaw/renderer`), the registry and the site are `jigsaw`. The components and the API are `Puzzle`: `PuzzleIcon`, `PuzzleMosaic`, `PuzzlePictogram`, `PuzzleIconGenerator`, `PuzzleIconOptions`, `generatePuzzleIcon`, and the registry item `puzzle-mosaic`.
+Two names are in use and nothing says why. The repository, the package scope (`@jigsaw/core`, `@jigsaw/react`), the registry and the site are `jigsaw`. The component is `Puzzle`: `PuzzleMosaic`, and the registry item `puzzle-mosaic`. When this was decided the API also had `PuzzleIcon`, `PuzzlePictogram`, `PuzzleIconGenerator`, `PuzzleIconOptions` and `generatePuzzleIcon`, since removed.
 
 The split was not designed. The generator was named after its subject, a puzzle icon, and the repository was named separately. Without a rule, a new export could take either name.
 
@@ -22,7 +22,7 @@ In prose, "jigsaw" is the project and "puzzle piece", "puzzle icon" or "mosaic" 
 
 ## Alternatives considered
 
-Renaming the exports to `Jigsaw*` would make one name everywhere. It breaks every caller, and for registry consumers it changes the installed file name and the item URL (`/r/puzzle-mosaic.json`). It also repeats the scope in every import (`JigsawMosaic` from `@jigsaw/react`) and says less about what is drawn: the pictogram and the piece are a puzzle piece, not a jigsaw.
+Renaming the exports to `Jigsaw*` would make one name everywhere. It breaks every caller, and for registry consumers it changes the installed file name and the item URL (`/r/puzzle-mosaic.json`). It also repeats the scope in every import (`JigsawMosaic` from `@jigsaw/react`) and says less about what is drawn: what is drawn is puzzle pieces, not a jigsaw.
 
 Renaming the project to `puzzle` would change the repository URL, the three package names and the registry name for a word that is too common to find or to claim as a scope.
 
