@@ -23,7 +23,7 @@ Every page has a path, and one server serves all of them:
 
 `apps/site` owns the HTML entry for every route, the dev server and the build. `bun run dev` starts it on port 5173; `dev:site` and port 5174 are gone. Port 5173 is kept because the playground stores its settings in `localStorage`, which belongs to the origin.
 
-`apps/playground` is now only the source of the three playground pages. Each HTML entry names its page in `data-page`, and `main.tsx` renders that page. The three headers share one `PlaygroundNav`: a home link, links to Mosaic, Piece and Cards, and a link to the docs. An old `#/piece` or `#/cards` link is replaced by the page's path on load.
+The playground is no longer an app of its own: its source lives in `apps/site/src/playground/`, and `apps/playground` is removed. Each HTML entry names its page in `data-page`, and `main.tsx` renders that page. The three headers share one `PlaygroundNav`: a home link, links to Mosaic, Piece and Cards, and a link to the docs. An old `#/piece` or `#/cards` link is replaced by the page's path on load.
 
 ## Alternatives considered
 
@@ -37,7 +37,7 @@ Moving the card list out of the playground to a top-level path was not done: it 
 
 Switching between Mosaic and Piece is now a page load instead of a hash change; both pages restore their stored settings, and the rendered piece starts its renderer again.
 
-The playground can no longer be served alone. Its stand-alone `index.html` and scripts are removed.
+The playground can no longer be served or built alone; the repository has one app.
 
 The route list exists twice: the route table in `apps/site/dev.ts` and the entry list in the `build` script of `apps/site/package.json`. A new page is added to both.
 

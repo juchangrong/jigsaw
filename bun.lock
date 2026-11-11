@@ -14,17 +14,6 @@
         "typescript": "~5.7.2",
       },
     },
-    "apps/playground": {
-      "name": "@jigsaw/playground",
-      "version": "1.0.0",
-      "dependencies": {
-        "@jigsaw/core": "workspace:*",
-        "@jigsaw/react": "workspace:*",
-        "@jigsaw/renderer": "workspace:*",
-        "react": "^18.3.1",
-        "react-dom": "^18.3.1",
-      },
-    },
     "apps/site": {
       "name": "@jigsaw/site",
       "version": "1.0.0",
@@ -61,8 +50,6 @@
   },
   "packages": {
     "@jigsaw/core": ["@jigsaw/core@workspace:packages/core"],
-
-    "@jigsaw/playground": ["@jigsaw/playground@workspace:apps/playground"],
 
     "@jigsaw/react": ["@jigsaw/react@workspace:packages/react"],
 

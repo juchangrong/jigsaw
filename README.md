@@ -24,8 +24,7 @@ bun run build      # production build of the site, playground included
 | `@jigsaw/core` | Seeded PRNG (Mulberry32, separate `geometry` / `palette` / `gradient` / `layout` / `texture` streams), cubic-Bézier edge profiles, shared-edge layouts (`single`, `cluster`, `grid`), mask rasterization + exact EDT signed distance field, OKLCH palettes, Gaussian-spot gradients, material presets, render plan + reference shading. No GPU needed. |
 | `@jigsaw/renderer` | WebGPU backend (`shaders/puzzle.wgsl`), WebGL2 fallback (`shaders/puzzle.frag.glsl`), CPU fallback, and the `PuzzleIconGenerator` API. One shared device, cached SDF textures. Also the pure-TS PNG encoder (with sRGB chunk, straight alpha) and WebP via the browser canvas. |
 | `@jigsaw/react` | `<PuzzleIcon />` (rendered, on a canvas), `<PuzzlePictogram />` and `<PuzzleMosaic />` (inline SVG) and `useRendererBackend()`. |
-| `apps/site` | The one site: landing page at `/`, documentation at `/docs/`, `/docs/registry/` and `/docs/api/`, the playground, and the registry files at `/r/`. It owns the dev server and the build. |
-| `apps/playground` | Source of the playground pages, which the site serves: Mosaic at `/playground/`, the rendered Piece at `/playground/piece/` and a card list at `/playground/cards/`. |
+| `apps/site` | The one app, bundled and served by Bun: landing page at `/`, documentation at `/docs/`, `/docs/registry/` and `/docs/api/`, the playground (Mosaic at `/playground/`, the rendered Piece at `/playground/piece/`, a card list at `/playground/cards/`) and the registry files at `/r/`. |
 
 ## Usage
 
