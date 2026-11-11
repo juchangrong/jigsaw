@@ -1,5 +1,5 @@
 import { COLOR_SETS, deriveSeed, hashString, tintColor, type ColorFamily, type MosaicVariant } from "@jigsaw/core";
-import { PuzzleMosaic } from "@jigsaw/react";
+import { PuzzleMosaic, PuzzleHills } from "@jigsaw/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MOSAIC_INSET } from "./CardsPage";
 import { Choice, PlaygroundNav, Section, Segmented, nameOf } from "./controls";
@@ -9,7 +9,10 @@ type Backdrop = "checker" | "white" | "dark";
 const SIZES = [24, 32, 40, 64, 128] as const;
 const PREVIEW_PX = 256;
 
+type IconStyle = "mosaic" | "hills";
+
 interface Look {
+  style: IconStyle;
   variant: MosaicVariant;
   gaps: boolean;
   /** set the mosaic inside a tile with a margin around it */
@@ -19,19 +22,17 @@ interface Look {
 }
 
 function Mosaic({ seed, size, family, look, title }: { seed: string; size: number; family: ColorFamily; look: Look; title?: string }) {
-  const icon = (
-    <PuzzleMosaic
-      seed={seed}
-      size={look.padding ? Math.round(size * MOSAIC_INSET) : size}
-      colors={family.colors}
-      variant={look.variant}
-      // inside a tile the tile is the frame, so the mosaic drops its own edge line
-      edge={!look.padding}
-      gap={look.gaps ? undefined : 0}
-      className="mosaic-icon"
-      title={title}
-    />
-  );
+  // inside a tile the tile is the frame, so the icon drops its own edge line
+  const common = {
+    seed,
+    size: look.padding ? Math.round(size * MOSAIC_INSET) : size,
+    colors: family.colors,
+    variant: look.variant,
+    edge: !look.padding,
+    className: "mosaic-icon",
+    title,
+  };
+  const icon = look.style === "hills" ? <PuzzleHills {...common} /> : <PuzzleMosaic {...common} gap={look.gaps ? undefined : 0} />;
   if (!look.padding) return icon;
   return (
     <span className="mosaic-tile" style={{ width: size, height: size, background: look.tint ? tintColor(family) : "#ffffff" }}>
@@ -40,14 +41,14 @@ function Mosaic({ seed, size, family, look, title }: { seed: string; size: numbe
   );
 }
 
-/** The playground's default mode: a seed becomes a four-piece mosaic, drawn as inline SVG. */
+/** The playground's first page: a seed becomes a mosaic or hills icon, drawn as inline SVG. */
 export function MosaicPage() {
   const [seed, setSeed] = useState("aurora-01");
   const [backdrop, setBackdrop] = useState<Backdrop>("checker");
   const [setId, setSetId] = useState("bright");
   // "" = the family the seed picks
   const [familyId, setFamilyId] = useState("");
-  const [look, setLook] = useState<Look>({ variant: "accent", gaps: true, padding: false, tint: false });
+  const [look, setLook] = useState<Look>({ style: "mosaic", variant: "accent", gaps: true, padding: false, tint: false });
   const counter = useRef(0);
 
   const randomize = useCallback(() => {
@@ -95,7 +96,7 @@ export function MosaicPage() {
           </div>
 
           <div className={`preview ${backdrop}`}>
-            <Mosaic seed={seed} size={PREVIEW_PX} family={family} look={look} title={`Mosaic icon for seed ${seed}`} />
+            <Mosaic seed={seed} size={PREVIEW_PX} family={family} look={look} title={`${nameOf(look.style)} icon for seed ${seed}`} />
           </div>
 
           <div className={`sizes ${backdrop}`}>
@@ -143,9 +144,16 @@ export function MosaicPage() {
           </Section>
 
           <Section title="Style">
+            <Choice label="Icon" value={look.style} options={["mosaic", "hills"] as const} onChange={(style) => setLook((p) => ({ ...p, style }))} />
             <Choice label="Shading" value={look.variant} options={["accent", "tonal"] as const} onChange={(variant) => setLook((p) => ({ ...p, variant }))} />
-            <label className="row check" title="Thin cuts between the four pieces">
-              <input type="checkbox" role="switch" checked={look.gaps} onChange={(e) => setLook((p) => ({ ...p, gaps: e.target.checked }))} />
+            <label className="row check" title="Mosaic only: thin cuts between the four pieces">
+              <input
+                type="checkbox"
+                role="switch"
+                checked={look.gaps}
+                disabled={look.style !== "mosaic"}
+                onChange={(e) => setLook((p) => ({ ...p, gaps: e.target.checked }))}
+              />
               <span>Gaps</span>
             </label>
             <label className="row check" title="Sets the icon inside a tile with a margin around it">
