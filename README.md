@@ -44,7 +44,7 @@ The packages are not published to npm: use them inside this workspace, or copy `
 | [PuzzleMosaic registry](docs/registry.md) | Installing `PuzzleMosaic` as source, its props and palettes, and maintaining the registry. |
 | [Design spec](docs/design.md) | How a mosaic is cut, coloured and drawn. |
 
-The same documents are served by the site in `apps/site`, next to a landing page and the playground: `bun run dev`, then http://localhost:5173.
+The same documents are on the site at https://juchangrong.github.io/jigsaw/, next to a landing page and the playground. To run it locally: `bun run dev`, then http://localhost:5173.
 
 ## Tests
 
