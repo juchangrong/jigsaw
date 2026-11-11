@@ -62,6 +62,8 @@ const NAMES: Record<string, string> = {
   checker: "Checker",
   white: "White",
   dark: "Dark",
+  mosaic: "Mosaic",
+  petals: "Petals",
   accent: "Accent",
   tonal: "Tonal",
 };
