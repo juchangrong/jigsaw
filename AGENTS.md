@@ -41,10 +41,10 @@ git switch dev && git pull --ff-only origin dev
 git push origin dev
 gh pr create --base main --head dev --title "<type(scope): description>" --body-file <file>
 gh pr merge <number> --merge
-git -C /Users/bytedance/Workspace/jigsaw pull --ff-only origin main
+git -C <main checkout> pull --ff-only origin main
 ```
 
-The main checkout holds `main`; pull there after merging so new worktrees start from the merged state. CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `bun run check` and `bun run build` on every push to `dev` and `main`; run `bun run check` before pushing. See [the change workflow](.agents/skills/covenant/references/change-workflow.md#pushing-and-prs) and [the dev-branch note](.agents/notes/implemented/process/2026-11-04-dev-branch-workflow.md).
+The main checkout holds `main`; pull there after merging so new worktrees start from the merged state. CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `bun run check` and `bun run build` on every push to `dev` and `main`, and [`pages.yml`](.github/workflows/pages.yml) deploys the built site to GitHub Pages on every push to `main`; run `bun run check` before pushing. See [the change workflow](.agents/skills/covenant/references/change-workflow.md#pushing-and-prs) and [the dev-branch note](.agents/notes/implemented/process/2026-11-04-dev-branch-workflow.md).
 
 ## Conventions
 

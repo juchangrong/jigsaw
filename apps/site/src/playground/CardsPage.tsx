@@ -6,7 +6,7 @@ import { useStoredState } from "./storage";
 
 /** Mock items, in the copy style of the product list this page imitates. */
 const ITEMS = [
-  { name: "Opero", tag: "Built by me", desc: "" },
+  { name: "Pilot", tag: "Built by me", desc: "" },
   { name: "Atlas Dashboard", tag: "Built by me", desc: "Key business metrics, refreshed daily" },
   { name: "Nimbus", tag: "Contributing", desc: "" },
   { name: "Quill Docs", tag: "Shared with team", desc: "Turns meeting notes into structured docs" },

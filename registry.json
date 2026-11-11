@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry.json",
   "name": "jigsaw",
-  "homepage": "https://github.com/juchangrong/jigsaw",
+  "homepage": "https://juchangrong.github.io/jigsaw/",
   "items": [
     {
       "name": "puzzle-mosaic",

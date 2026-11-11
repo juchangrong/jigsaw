@@ -10,14 +10,14 @@ This page has three parts: [install the component](#install), [its props and pal
 
 Your project needs a `components.json`, which `npx shadcn@latest init` creates. The CLI writes the file to the `components` alias set there, for example `src/components/puzzle-mosaic.tsx`.
 
-The repository is private, so its raw GitHub URLs need a token. Until the built files are served somewhere your project can reach, install from a checkout of this repository.
+The built registry files are served by the project's site at `https://juchangrong.github.io/jigsaw/r/`.
 
-### Install from a checkout
+### Install from the site
 
-Run this in your project, pointing at the built file in a checkout of this repository:
+Run this in your project:
 
 ```sh
-npx shadcn@latest add /path/to/jigsaw/public/r/puzzle-mosaic.json
+npx shadcn@latest add https://juchangrong.github.io/jigsaw/r/puzzle-mosaic.json
 ```
 
 The CLI reports the file it created:
@@ -27,20 +27,12 @@ The CLI reports the file it created:
   - src/components/puzzle-mosaic.tsx
 ```
 
-### Install from a URL
-
-Once `public/r/` is served over HTTP, pass the file's URL instead:
-
-```sh
-npx shadcn@latest add https://<host>/r/puzzle-mosaic.json
-```
-
 To install by name, add the registry to your `components.json`:
 
 ```json
 {
   "registries": {
-    "@jigsaw": "https://<host>/r/{name}.json"
+    "@jigsaw": "https://juchangrong.github.io/jigsaw/r/{name}.json"
   }
 }
 ```
@@ -148,4 +140,4 @@ Keep the file's only import `react`. A file comment above the imports is dropped
 
 ### Publish
 
-Serve `public/r/` over HTTP; any static host works, and no npm release is involved. `bun run build` copies it to `apps/site/dist/r/`, so hosting the built site also publishes the registry at `<site>/r/`. Consumers then install by URL or by registry name, as described in [Install from a URL](#install-from-a-url).
+The site publishes `public/r/`: `bun run build` copies it to `apps/site/dist/r/`, and the [Pages workflow](../.github/workflows/pages.yml) deploys the built site from `main`, so the registry is at `https://juchangrong.github.io/jigsaw/r/` after a merge to `main`. No npm release is involved. Consumers install by URL or by registry name, as described in [Install from the site](#install-from-the-site).

@@ -49,3 +49,7 @@ Checked in a browser against the dev server and against the production build ser
 ## Later change
 
 The rendered piece and the pictogram were removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md); what this note says about the mosaic, the colour sets and the registry still holds.
+
+## Deployment
+
+The site is deployed to GitHub Pages at `https://juchangrong.github.io/jigsaw/` by `.github/workflows/pages.yml`, which builds on every push to `main` and publishes `apps/site/dist`. Pages is not available for a private repository on the account's plan, so the maintainer chose to make the repository public; before that, a local checkout path was removed from `AGENTS.md` and a mock card name was replaced, though both remain in earlier commits. The relative paths the site was built with are what let it work under `/jigsaw/` without a base-path setting.
