@@ -1,5 +1,5 @@
-import { COLOR_SETS, deriveSeed, tintColor } from "@jigsaw/core";
-import { PuzzleMosaic } from "@jigsaw/react";
+import { deriveSeed, tintColor } from "@jigsaw/core";
+import { PuzzleMosaic, PuzzleHills } from "@jigsaw/react";
 import { StrictMode, useRef, useState, type ReactNode } from "react";
 import { BRIGHT, CodeBlock, Footer, Header, ROOT, familyFor, mount } from "./chrome";
 import "./site.css";
@@ -29,8 +29,8 @@ const useCode = (seed: string) => `import { PuzzleMosaic } from "@/components/pu
 
 <PuzzleMosaic seed=${JSON.stringify(seed)} size={40} />`;
 
-type TileKind = "accent" | "tonal" | "padded";
-const KINDS: TileKind[] = ["accent", "tonal", "padded", "accent", "accent", "tonal"];
+type TileKind = "accent" | "tonal" | "padded" | "hills";
+const KINDS: TileKind[] = ["accent", "hills", "padded", "accent", "tonal", "hills"];
 /** three columns of icons from derived seeds; each column starts at a different kind so rows do not line up */
 const WALL = [0, 1, 2].map((col) => KINDS.map((_, i) => ({ seed: deriveSeed("wall", col * 10 + i), kind: KINDS[(i + col * 2) % KINDS.length]! })));
 
@@ -42,6 +42,8 @@ function Tile({ seed, kind }: { seed: string; kind: TileKind }) {
         <span className="padded" style={{ background: tintColor(family) }}>
           <PuzzleMosaic seed={seed} size={62} colors={family.colors} variant="accent" edge={false} />
         </span>
+      ) : kind === "hills" ? (
+        <PuzzleHills seed={seed} size={84} colors={family.colors} />
       ) : (
         <PuzzleMosaic seed={seed} size={84} colors={family.colors} variant={kind} />
       )}
@@ -129,12 +131,12 @@ function Landing() {
             </a>
             <h1>Puzzle-piece icons, generated from a seed.</h1>
             <p className="lede">
-              jigsaw turns any id or name into an icon: a tile cut into four interlocking puzzle pieces, in the shades of one colour. The same seed always draws
-              the same icon, so there is nothing to design and nothing to store.
+              jigsaw turns any id or name into an icon: a tile of four interlocking puzzle pieces, or a small landscape of hills, in the shades of one colour.
+              The same seed always draws the same icon, so there is nothing to design and nothing to store.
             </p>
             <div className="actions">
-              <a className="button primary" href={`${ROOT}docs/api/#puzzlemosaic`}>
-                See the component
+              <a className="button primary" href={`${ROOT}docs/api/`}>
+                See the components
               </a>
               <a className="button" href={`${ROOT}docs/`}>
                 Read the docs
@@ -153,7 +155,7 @@ function Landing() {
           <Heading
             id="try"
             eyebrow="Try it"
-            title="One seed, one icon"
+            title="One seed, two styles"
             text="Type a name or an id. Every icon below is drawn from it on this page, with the same code the component ships."
             link={{ label: "Open the playground", href: `${ROOT}playground/` }}
           />
@@ -189,8 +191,8 @@ function Landing() {
               <Form name="Tonal" note="One shade per piece">
                 <PuzzleMosaic seed={seed} size={64} colors={family.colors} />
               </Form>
-              <Form name="Joined" note="No cuts between the pieces">
-                <PuzzleMosaic seed={seed} size={64} colors={family.colors} variant="accent" gap={0} />
+              <Form name="Hills" note="Three hills under a sun">
+                <PuzzleHills seed={seed} size={64} colors={family.colors} />
               </Form>
               <li className="size-row" aria-label={`The seed ${seed} at five sizes`}>
                 {SIZES.map((px) => (
@@ -207,25 +209,25 @@ function Landing() {
         <section aria-labelledby="components">
           <Heading
             id="components"
-            eyebrow="Component"
-            title="One component, a few looks"
-            text="PuzzleMosaic takes a seed and four shades of one colour. Its props choose the look."
-            link={{ label: "Browse the reference", href: `${ROOT}docs/api/#puzzlemosaic` }}
+            eyebrow="Components"
+            title="Two components, one seed"
+            text="PuzzleMosaic and PuzzleHills take a seed and four shades of one colour. Their props choose the look."
+            link={{ label: "Browse the reference", href: `${ROOT}docs/api/` }}
           />
           <ul className="cards">
-            <Card name="Accent" text="One deep piece stands out on three light ones. The default look in lists." href={`${ROOT}docs/api/#puzzlemosaic`}>
+            <Card name="Mosaic, accent" text="Four interlocking pieces; one deep piece stands out on three light ones." href={`${ROOT}docs/api/#puzzlemosaic`}>
               {BRIGHT.slice(0, 4).map((f, i) => (
                 <PuzzleMosaic key={f.id} seed={`a${i}`} size={56} colors={f.colors} variant="accent" />
               ))}
             </Card>
-            <Card name="Tonal" text="Each piece takes its own shade, deep to light, for a fuller tile." href={`${ROOT}docs/api/#puzzlemosaic`}>
+            <Card name="Mosaic, tonal" text="Each piece takes its own shade, deep to light, for a fuller tile." href={`${ROOT}docs/api/#puzzlemosaic`}>
               {BRIGHT.slice(0, 4).map((f, i) => (
                 <PuzzleMosaic key={f.id} seed={`t${i}`} size={56} colors={f.colors} />
               ))}
             </Card>
-            <Card name="Colour sets" text="Nine sets of colour families, from restrained metals to bright hues." href={`${ROOT}docs/api/#colour-sets`}>
-              {["studio", "aluminum", "candy", "ink"].map((id, i) => (
-                <PuzzleMosaic key={id} seed={`c${i}`} size={56} colors={COLOR_SETS.find((c) => c.id === id)!.families[i]!.colors} variant="accent" />
+            <Card name="Hills" text="Three hills that deepen toward the front, under a sun." href={`${ROOT}docs/api/#puzzlehills`}>
+              {BRIGHT.slice(0, 4).map((f, i) => (
+                <PuzzleHills key={f.id} seed={`h${i}`} size={56} colors={f.colors} />
               ))}
             </Card>
           </ul>
