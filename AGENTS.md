@@ -1,12 +1,12 @@
 # AGENTS.md
 
-Seeded icons: a seed becomes a tile in the shades of one colour, drawn as plain SVG, either a mosaic of four interlocking puzzle pieces or four petals. The design spec is [docs/design.md](docs/design.md), the product context for UI work is [docs/PRODUCT.md](docs/PRODUCT.md), and usage is in [README.md](README.md).
+Seeded puzzle mosaic icons: a seed becomes a tile cut into four interlocking puzzle pieces in the shades of one colour, drawn as plain SVG. The design spec is [docs/design.md](docs/design.md), the product context for UI work is [docs/PRODUCT.md](docs/PRODUCT.md), and usage is in [README.md](README.md).
 
 ## Repository layout
 
 ```text
-packages/core/      seeded PRNG, OKLCH colour, colour sets, the mosaic and petals designs and their SVG (no DOM)
-packages/react/     <PuzzleMosaic> and <PuzzlePetals> components
+packages/core/      seeded PRNG, OKLCH colour, colour sets, the mosaic design and its SVG (no DOM)
+packages/react/     <PuzzleMosaic> component
 apps/site/          the one app: landing page, docs pages and playground (src/playground/), dev server and build
 registry/           shadcn-format components, self-contained source (registry.json lists them)
 public/r/           built registry files that consumers install; generated, committed
@@ -57,7 +57,7 @@ The main checkout holds `main`; pull there after merging so new worktrees start 
 - **Prose:** follow [the prose standard](.agents/skills/covenant/references/prose-standard.md) and [documentation rules](.agents/skills/covenant/references/docs-standard.md#writing-rules).
 - **Checks:** mechanically checkable requirements follow [the gate workflow](.agents/skills/covenant/references/gates.md#adding-a-gate); select evidence using [the change workflow](.agents/skills/covenant/references/change-workflow.md#choosing-evidence-before-pushing).
 - **Names:** `jigsaw` names the project, package scope and registry; exports and registry items that draw a piece or icon start with `Puzzle` ([decision](.agents/notes/implemented/architecture/2026-11-11-jigsaw-and-puzzle-names.md)).
-- **Determinism:** generation draws randomness only from `createRng` streams in `packages/core/src/prng.ts`, never `Math.random`; the same seed must keep drawing the same icon, so a change to the design is a breaking change and its note says so.
+- **Determinism:** generation draws randomness only from `createRng` streams in `packages/core/src/prng.ts`, never `Math.random`; the same seed must keep drawing the same mosaic, so a change to the design is a breaking change and its note says so.
 - **Registry copies:** `registry/jigsaw/*.tsx` are self-contained copies of library code that consumers install as source; change the library and the copy together and rebuild `public/r/` ([maintenance](docs/registry.md#maintain-the-registry)).
 
 ## Editing this file

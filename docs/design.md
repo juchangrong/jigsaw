@@ -1,6 +1,6 @@
-# Icon design spec
+# Mosaic design spec
 
-> Seed → a tile in the shades of one colour, as plain SVG: a mosaic of four interlocking puzzle pieces, or four petals.
+> Seed → a tile cut into four interlocking puzzle pieces, in the shades of one colour, as plain SVG.
 
 ## 1. Goals
 
@@ -11,7 +11,7 @@
 
 **Non-goals:** animation, 3D or rendered materials, raster export, single-piece icons. (Earlier versions rendered a bevelled piece and drew a one-piece pictogram; both were removed.)
 
-## 2. The mosaic
+## 2. The design
 
 - The tile is a unit square cut by two seams through its centre into four cells: top-left, top-right, bottom-left, bottom-right.
 - Each of the four half-seams carries one knob at its midpoint. A knob is a circle of radius 0.09 centred 0.03 beyond the seam, and an arc of radius 0.045 eases it into the seam on each side, so the cut has no cusp. Everything is a straight line or a circular arc.
@@ -33,26 +33,17 @@
 - Paint order inside the clip: a ground in the mix of the four fills, so antialiasing between two fills never shows the page; the four cells; the four knobs; then a hairline along the outline, so light pieces hold on a light page.
 - `mosaicDrawing` returns these parts for any renderer; `mosaicSvg` writes a standalone SVG; `<PuzzleMosaic>` draws the same thing inline.
 
-## 5. Petals
-
-- The same unit tile and the same four cells as the mosaic, with one leaf in each cell. A leaf is the lens between two quarter circles of radius one cell (0.5), centred on two opposite corners of the cell, so it runs between the other two corners.
-- A leaf leans one of two ways: rising from the cell's bottom-left to its top-right, or falling from its top-left to its bottom-right. Leaves meet at their tips, at the tile's centre, its edge midpoints and its corners.
-- Nothing separates the cells: no cuts and no divider. The ground is one fill, so four leaves read as one figure, such as a flower, a pinwheel or a wave.
-- A seed picks one of 12 tone layouts and one of 16 lean layouts from the `petals` random stream: 192 designs.
-- The ground takes the lightest shade. One leaf is deep, one is the middle shade and two are the light shade, in any order. `accent` keeps the deep leaf and gives the other three the light shade.
-- Paint order inside the clip: the ground, the four leaves, then the hairline along the outline. The outline is the mosaic's.
-
-## 6. Determinism
+## 5. Determinism
 
 - Randomness comes only from `createRng(seed, stream)` in `packages/core/src/prng.ts` (Mulberry32 seeded by a string hash). `Math.random` is never used.
-- A design depends only on the seed and the style's own stream, so a seed's mosaic and its petals are chosen independently. Colours and options are the caller's.
+- The design depends only on the seed. Colours and style are the caller's.
 
-## 7. Repository layout
+## 6. Repository layout
 
 ```
-packages/core        PRNG, OKLCH colour, colour sets, the mosaic and petals designs and their SVG
-packages/react       <PuzzleMosaic/>, <PuzzlePetals/>
+packages/core        PRNG, OKLCH colour, colour sets, the mosaic design and its SVG
+packages/react       <PuzzleMosaic/>
 registry/            the installable, self-contained copy of PuzzleMosaic
 apps/site            landing page, docs pages and playground (src/playground), dev server and build
-tests/               mosaic, petals, PRNG and registry tests
+tests/               mosaic, PRNG and registry tests
 ```

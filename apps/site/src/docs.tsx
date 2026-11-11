@@ -24,7 +24,6 @@ const NAV: { group: string; items: { label: string; href: string; doc?: DocId }[
     items: [
       { label: DOCS.api.title, href: DOCS.api.path, doc: "api" },
       { label: "PuzzleMosaic", href: "docs/api/#puzzlemosaic" },
-      { label: "PuzzlePetals", href: "docs/api/#puzzlepetals" },
       { label: "SVG functions", href: "docs/api/#svg-functions" },
       { label: "Colour sets", href: "docs/api/#colour-sets" },
     ],

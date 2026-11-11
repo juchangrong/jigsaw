@@ -7,7 +7,7 @@
 export type Seed = string | number;
 
 /** Stream names. Each concern draws from its own stream, so a new concern never perturbs an existing one. */
-export type RngStream = "mosaic" | "petals";
+export type RngStream = "mosaic";
 
 /** 32-bit string hash (cyrb53 folded to 32 bits). */
 export function hashString(str: string): number {

@@ -1,6 +1,6 @@
 # API reference
 
-The exports of `@jigsaw/react` and `@jigsaw/core` that draw icons. `PuzzlePetals` is not in the registry yet. The installable `PuzzleMosaic` has its own props, listed in [the registry reference](registry.md#reference).
+The exports of `@jigsaw/react` and `@jigsaw/core` that draw icons. The installable `PuzzleMosaic` has its own props, listed in [the registry reference](registry.md#reference).
 
 ## PuzzleMosaic
 
@@ -28,31 +28,6 @@ From `@jigsaw/react`. Renders a tile cut into four pieces as one inline `<svg>`.
 | `title` | `string` | none | Accessible name. Without one the icon is `aria-hidden`. |
 | `className`, `style` | | | Passed to the `<svg>`. |
 
-## PuzzlePetals
-
-From `@jigsaw/react`. Renders a tile of four leaves as one inline `<svg>`. The leaves meet at their tips and nothing separates the cells.
-
-<!-- preview: puzzle-petals -->
-
-```tsx
-<PuzzlePetals seed="alpha" size={64} colors={family.colors} />
-<PuzzlePetals seed="alpha" size={64} colors={family.colors} variant="accent" />
-<PuzzlePetals seed="beta" size={64} colors={family.colors} />
-<PuzzlePetals seed="alpha" size={64} colors={family.colors} shape="round" />
-```
-
-| Prop | Type | Default | Effect |
-|---|---|---|---|
-| `seed` | `string \| number` | required | Selects one of 12 tone layouts and 16 lean layouts. |
-| `colors` | `readonly string[]` | required | Four shades of one colour, deep to light. The lightest is the ground. |
-| `size` | `number` | `24` | Width and height in CSS px. |
-| `variant` | `"tonal" \| "accent"` | `"tonal"` | `tonal`: one deep leaf, one middle and two light. `accent`: one deep leaf among light ones. |
-| `shape` | `"squircle" \| "round"` | `"squircle"` | The tile's outline. |
-| `radius` | `number` | `0.25` | Corner radius of a `round` tile, as a fraction of its side. |
-| `edge` | `boolean` | `true` | A hairline around the tile, so a light ground holds on a light page. |
-| `title` | `string` | none | Accessible name. Without one the icon is `aria-hidden`. |
-| `className`, `style` | | | Passed to the `<svg>`. |
-
 ## SVG functions
 
 From `@jigsaw/core`. None of them needs a DOM.
@@ -64,12 +39,7 @@ From `@jigsaw/core`. None of them needs a DOM.
 | `mosaicSvg(mosaic, colors, { size?, variant?, shape?, radius?, gap?, edge?, title? })` | A standalone SVG string. |
 | `mosaicDrawing(mosaic, colors, style?)` | The outline, fills, seams and cut widths, for drawing a mosaic yourself. |
 | `mosaicFills(mosaic, colors, variant?)` | The fill of each of the four cells. |
-| `mosaicOutline(shape?, radius?)` | The tile's outline as path data; petals use the same outline. |
-| `generatePetals(seed)` | The petals design for a seed: its leaf tones, leans, leaf paths and a `key` that identifies the design. |
-| `petalsOf(tones, leans)` | The design with the given leaf tones and leans. |
-| `petalsSvg(petals, colors, { size?, variant?, shape?, radius?, edge?, title? })` | A standalone SVG string. |
-| `petalsDrawing(petals, colors, style?)` | The outline, ground and leaf fills, for drawing petals yourself. |
-| `petalsFills(petals, colors, variant?)` | The fill of the ground and of each of the four leaves. |
+| `mosaicOutline(shape?, radius?)` | The tile's outline as path data. |
 
 ## Colour sets
 

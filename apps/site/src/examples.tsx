@@ -1,4 +1,4 @@
-import { PuzzleMosaic, PuzzlePetals } from "@jigsaw/react";
+import { PuzzleMosaic } from "@jigsaw/react";
 import type { ReactNode } from "react";
 import { BRIGHT, familyFor } from "./chrome";
 
@@ -11,8 +11,6 @@ export const EXAMPLES: Record<string, ReactNode> = {
     <>
       <PuzzleMosaic seed="alpha" size={40} colors={family.colors} variant="accent" />
       <PuzzleMosaic seed="alpha" size={40} colors={family.colors} />
-      <PuzzlePetals seed="alpha" size={40} colors={family.colors} />
-      <PuzzlePetals seed="alpha" size={40} colors={family.colors} variant="accent" />
     </>
   ),
   list: (
@@ -35,14 +33,6 @@ export const EXAMPLES: Record<string, ReactNode> = {
       <PuzzleMosaic seed="alpha" size={64} colors={family.colors} />
       <PuzzleMosaic seed="alpha" size={64} colors={family.colors} variant="accent" gap={0} />
       <PuzzleMosaic seed="alpha" size={64} colors={family.colors} shape="round" />
-    </>
-  ),
-  "puzzle-petals": (
-    <>
-      <PuzzlePetals seed="alpha" size={64} colors={family.colors} />
-      <PuzzlePetals seed="alpha" size={64} colors={family.colors} variant="accent" />
-      <PuzzlePetals seed="beta" size={64} colors={family.colors} />
-      <PuzzlePetals seed="alpha" size={64} colors={family.colors} shape="round" />
     </>
   ),
 };
