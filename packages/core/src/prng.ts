@@ -8,7 +8,7 @@ export type Seed = string | number;
 
 /** Stream names. Each concern draws from its own stream so that changing, say,
  * the palette never perturbs the geometry. */
-export type RngStream = "geometry" | "palette" | "gradient" | "layout";
+export type RngStream = "geometry" | "palette" | "gradient" | "layout" | "texture";
 
 /** 32-bit string hash (cyrb53 folded to 32 bits). */
 export function hashString(str: string): number {
@@ -77,7 +77,7 @@ export class Rng {
   }
 }
 
-export function createRng(seed: Seed, stream: RngStream | string): Rng {
+export function createRng(seed: Seed, stream: RngStream | (string & {})): Rng {
   return new Rng(hashString(`${String(seed)}:${stream}`));
 }
 

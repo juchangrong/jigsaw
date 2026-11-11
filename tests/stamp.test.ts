@@ -3,7 +3,7 @@
  * draws a vertical bar (an "I") and check the option handling, the glyph SDF
  * and how the relief is lit by the CPU reference renderer.
  */
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
   buildRenderPlan,
   buildStampSdf,
@@ -22,8 +22,7 @@ import { renderPlanCpu } from "../packages/renderer/src/cpu";
 const bar: GlyphRasterizer = ({ size: n }) => {
   const alpha = new Float32Array(n * n);
   const cov = (v: number, lo: number, hi: number) => Math.min(1, Math.max(0, Math.min(v - lo, hi - v) + 0.5));
-  for (let j = 0; j < n; j++)
-    for (let i = 0; i < n; i++) alpha[j * n + i] = cov(i + 0.5, 0.4 * n, 0.6 * n) * cov(j + 0.5, 0.19 * n, 0.81 * n);
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) alpha[j * n + i] = cov(i + 0.5, 0.4 * n, 0.6 * n) * cov(j + 0.5, 0.19 * n, 0.81 * n);
   return { alpha, size: n };
 };
 
@@ -35,7 +34,9 @@ afterAll(() => {
   setGlyphRasterizer(previous);
 });
 
-const BASE: PuzzleIconOptions = { seed: "stamp-test", size: 256, shadow: { enabled: false } };
+/** large enough that a stamp wall spans a few pixels, so sub-pixel placement does not decide the result */
+const W = 512;
+const BASE: PuzzleIconOptions = { seed: "stamp-test", size: W, shadow: { enabled: false } };
 /** side of the stamp square (piece units) at the default glyph size */
 const SIDE = resolveOptions({ seed: 0 }).stamp.size / 0.62;
 
@@ -98,7 +99,7 @@ describe("stamp rendering", () => {
   const across = (px: Uint8ClampedArray, p: PiecePlan, edge: number, dir: 1 | -1) => {
     const out: number[] = [];
     for (let t = 0; t <= 1; t += 0.125) {
-      const i = pixelAt(p, 0.5, edge + dir * t * p.stampBevel, 256);
+      const i = pixelAt(p, 0.5, edge + dir * t * p.stampBevel, W);
       out.push(luma(px, i) - luma(plain.px, i));
     }
     return out;
@@ -132,7 +133,7 @@ describe("stamp rendering", () => {
     expect(Math.max(...bw)).toBeGreaterThan(4);
     expect(Math.min(...bw)).toBeGreaterThan(-1.5);
     // the floor of the letter is flat: same light as the surface
-    const c = pixelAt(p, 0.5, 0.5, 256);
+    const c = pixelAt(p, 0.5, 0.5, W);
     expect(Math.abs(luma(s.px, c) - luma(plain.px, c))).toBeLessThan(1.5);
   });
 
@@ -160,7 +161,7 @@ describe("stamp rendering", () => {
         [left - 1.5 * px, 0.5],
         [1 - left + 1.5 * px, 0.5],
       ] as const) {
-        const i = pixelAt(p, x, y, 256);
+        const i = pixelAt(p, x, y, W);
         expect(Math.abs(luma(s.px, i) - luma(plain.px, i)), `${style} at ${x.toFixed(3)},${y.toFixed(3)}`).toBeLessThan(1);
       }
     }
@@ -169,8 +170,8 @@ describe("stamp rendering", () => {
   it("ink darkens the inside of the letter only", () => {
     const s = render({ ...BASE, stamp: { text: "I", ink: 1 } });
     const p = s.plan.pieces[0]!;
-    const c = pixelAt(p, 0.5, 0.5, 256);
-    const out = pixelAt(p, 0.3, 0.5, 256);
+    const c = pixelAt(p, 0.5, 0.5, W);
+    const out = pixelAt(p, 0.3, 0.5, W);
     // ink 1 scales linear color by 0.55 ≈ 0.76 in sRGB
     expect(luma(s.px, c)).toBeLessThan(luma(plain.px, c) * 0.82);
     expect(Math.abs(luma(s.px, out) - luma(plain.px, out))).toBeLessThan(1);

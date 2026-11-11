@@ -3,27 +3,27 @@
   "private": true,
   "type": "module",
   "description": "Procedural puzzle-piece icon generator (TypeScript + React + WebGPU)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "pnpm --filter @jigsaw/playground dev",
-    "build": "pnpm --filter @jigsaw/playground build",
-    "preview": "pnpm --filter @jigsaw/playground preview",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "dev": "bun run --cwd apps/playground dev",
+    "build": "bun run --cwd apps/playground build",
+    "test": "bun test --timeout 60000",
+    "test:watch": "bun test --timeout 60000 --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check": "bun fmt --check && bun run typecheck && bun run test && bun .agents/skills/covenant/scripts/verify-covenant.mjs",
+    "registry:build": "bun x shadcn@4.23.0 build"
   },
   "devDependencies": {
-    "@types/node": "^22.10.0",
+    "@types/bun": "^1.4.4",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@webgpu/types": "^0.1.51",
-    "typescript": "~5.7.2",
-    "vite": "^6.0.0",
-    "vitest": "^3.0.0"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "~5.7.2"
   },
-  "packageManager": "pnpm@10.28.1",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ]
-  }
+  "packageManager": "bun@1.4.4"
 }

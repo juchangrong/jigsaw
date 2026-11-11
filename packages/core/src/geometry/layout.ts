@@ -1,20 +1,19 @@
 import { createRng, hashString, type Rng } from "../prng";
-import type {
-  BezierSegment,
-  Bounds,
-  EdgeKind,
-  LayoutKind,
-  PieceSide,
-  PieceTransform,
-  PuzzleEdge,
-  ResolvedOptions,
-  SharedEdge,
-  Side,
-  Vec2,
-} from "../types";
+import type { BezierSegment, Bounds, EdgeKind, LayoutKind, PieceSide, PieceTransform, PuzzleEdge, ResolvedOptions, SharedEdge, Side, Vec2 } from "../types";
 import { SIDES } from "../types";
-import { flattenPath, mapSegment, pathBounds, pointInPolygon, polygonBounds, reversePath } from "./bezier";
-import { cornerArc, placeEdge, randomEdge, sanitizeEdge, SOFT_CORNER, TIGHT_CORNER, trimEdgeEnds, type CornerShape, type EdgeBias } from "./edge";
+import { flattenPath, mapSegment, pathBounds, pointInPolygon, polygonBounds, polygonCentroid, reversePath } from "./bezier";
+import {
+  cornerArc,
+  placeEdge,
+  randomEdge,
+  sanitizeEdge,
+  SOFT_CORNER,
+  SQUARE_CORNER,
+  standardEdge,
+  trimEdgeEnds,
+  type CornerShape,
+  type EdgeBias,
+} from "./edge";
 
 /** Minimum neck width in output pixels. */
 export const MIN_NECK_PX = 3;
@@ -85,9 +84,7 @@ function chooseCells(layout: LayoutKind, count: number, rng: Rng): [number, numb
   const cells = [...chosen.values()];
   const minI = Math.min(...cells.map((c) => c[0]));
   const minJ = Math.min(...cells.map((c) => c[1]));
-  return cells
-    .map((c) => [c[0] - minI, c[1] - minJ] as [number, number])
-    .sort((p, q) => p[1] - q[1] || p[0] - q[0]);
+  return cells.map((c) => [c[0] - minI, c[1] - minJ] as [number, number]).sort((p, q) => p[1] - q[1] || p[0] - q[0]);
 }
 
 /** Per-piece validity rules for the edge kinds (top, right, bottom, left). */
@@ -106,6 +103,45 @@ function aspectFor(kinds: Record<Side, EdgeKind>, depth: Record<Side, number>): 
   return Math.max(w / h, h / w);
 }
 
+/**
+ * Kinds for a piece's sides: the fixed ones as given, the rest drawn at random
+ * until the set is valid. `single` is the connector bias of a single piece,
+ * which must also stay close to square.
+ */
+function chooseKinds(geomRng: Rng, fixed: Partial<Record<Side, EdgeKind>>, single: EdgeBias | null): Record<Side, EdgeKind> {
+  for (let attempt = 0; attempt < 96; attempt++) {
+    const kinds = {} as Record<Side, EdgeKind>;
+    for (const s of SIDES) {
+      const f = fixed[s];
+      if (f) kinds[s] = f;
+      else {
+        const r = geomRng.next();
+        kinds[s] = r < 0.2 ? "flat" : r < 0.6 ? "tab" : "socket";
+      }
+    }
+    if (!validKinds(SIDES.map((s) => kinds[s]))) continue;
+    if (single) {
+      const depth = {} as Record<Side, number>;
+      for (const s of SIDES) depth[s] = standardEdge(s, kinds[s], single).depth;
+      if (aspectFor(kinds, depth) > 1.3) continue;
+    }
+    return kinds;
+  }
+  const kinds = {} as Record<Side, EdgeKind>;
+  const fallback: EdgeKind[] = ["tab", "socket", "socket", "tab"];
+  SIDES.forEach((s, i) => (kinds[s] = fixed[s] ?? fallback[i]!));
+  return kinds;
+}
+
+/**
+ * Side kinds of the single piece these options produce, without building its
+ * geometry. They depend only on the seed and the geometry options.
+ */
+export function singlePieceKinds(opts: Pick<ResolvedOptions, "seed" | "geometry">): Record<Side, EdgeKind> {
+  const { tabSize, curvature, asymmetry } = opts.geometry;
+  return chooseKinds(createRng(opts.seed, "geometry"), {}, { tabSize, curvature, asymmetry });
+}
+
 interface EdgeSlot {
   edge: PuzzleEdge;
   shared: boolean;
@@ -113,6 +149,8 @@ interface EdgeSlot {
   geometry: BezierSegment[];
   ownerA: string;
   ownerB?: string;
+  /** which side of owner A this is (boundary edges only) */
+  side?: Side;
   /** world-space side for owner A */
   a: Vec2;
   b: Vec2;
@@ -170,66 +208,51 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
     const sides = pieceSides.get(pid)!;
     const free = SIDES.filter((s) => !sides[s]);
     const fixedKind = (s: Side): EdgeKind => {
-      const ref = sides[s]!;
+      const ref = sides[s];
       const k = slots.get(ref.slot)!.edge.kind;
       return ref.reversed ? flip(k) : k;
     };
-    const edgeFor = (s: Side, kind: EdgeKind) => randomEdge(geomRng.fork(`${pid}:${s}`), `${pid}:${s}`, kind, bias);
-    let chosen: Record<Side, EdgeKind> | null = null;
+    // single pieces share one connector so they fit each other
+    const edgeFor = (s: Side, kind: EdgeKind) =>
+      opts.layout === "single" ? standardEdge(`${pid}:${s}`, kind, bias) : randomEdge(geomRng.fork(`${pid}:${s}`), `${pid}:${s}`, kind, bias);
+    let chosen: Record<Side, EdgeKind>;
     if (opts.layout === "grid") {
       chosen = {} as Record<Side, EdgeKind>;
       for (const s of SIDES) chosen[s] = sides[s] ? fixedKind(s) : "flat";
     } else {
-      for (let attempt = 0; attempt < 96 && !chosen; attempt++) {
-        const kinds = {} as Record<Side, EdgeKind>;
-        for (const s of SIDES) {
-          if (sides[s]) kinds[s] = fixedKind(s);
-          else {
-            const r = geomRng.next();
-            kinds[s] = r < 0.2 ? "flat" : r < 0.6 ? "tab" : "socket";
-          }
-        }
-        if (!validKinds(SIDES.map((s) => kinds[s]))) continue;
-        if (opts.layout === "single") {
-          const depth = {} as Record<Side, number>;
-          for (const s of SIDES) depth[s] = edgeFor(s, kinds[s]).depth;
-          if (aspectFor(kinds, depth) > 1.3) continue;
-        }
-        chosen = kinds;
-      }
-      if (!chosen) {
-        chosen = {} as Record<Side, EdgeKind>;
-        const fallback: EdgeKind[] = ["tab", "socket", "socket", "tab"];
-        SIDES.forEach((s, i) => (chosen![s] = sides[s] ? fixedKind(s) : fallback[i]!));
-      }
+      const fixed: Partial<Record<Side, EdgeKind>> = {};
+      for (const s of SIDES) if (sides[s]) fixed[s] = fixedKind(s);
+      chosen = chooseKinds(geomRng, fixed, opts.layout === "single" ? bias : null);
     }
     for (const s of free) {
       const id = `${pid}:${s}`;
-      slots.set(id, { edge: edgeFor(s, chosen[s]), shared: false, geometry: [], ownerA: pid, ...worldFrame(c, s) });
+      slots.set(id, { edge: edgeFor(s, chosen[s]), shared: false, geometry: [], ownerA: pid, side: s, ...worldFrame(c, s) });
       sides[s] = { slot: id, reversed: false };
     }
   }
 
-  // Corner shape per grid vertex. Interlocked grid pieces keep tight corners
-  // where they meet, or rounding would open holes between them; every other
-  // corner (single, cluster, the grid's outer corners) is soft.
-  const cornerAt = (v: Vec2): CornerShape => {
-    if (opts.layout !== "grid") return SOFT_CORNER;
-    const [x, y] = [Math.round(v[0]), Math.round(v[1])];
-    const touching = [
-      [x - 1, y - 1],
-      [x, y - 1],
-      [x - 1, y],
-      [x, y],
-    ].filter((c) => present.has(cellKey(c as [number, number]))).length;
-    return touching === 1 ? SOFT_CORNER : TIGHT_CORNER;
-  };
+  // Corner shape, as on a real puzzle: a corner is rounded only where both of
+  // its sides are flat, i.e. a corner of the finished puzzle's frame. Every
+  // other corner is square, so pieces that meet there (in a grid, or single
+  // pieces fitted together) close to a point with no hole or notch.
+  const next = (s: Side) => SIDES[(SIDES.indexOf(s) + 1) % 4]!;
+  const prev = (s: Side) => SIDES[(SIDES.indexOf(s) + 3) % 4]!;
+  const isFlat = (pid: string, s: Side) => slots.get(pieceSides.get(pid)![s].slot)!.edge.kind === "flat";
+  /** shape of the corner between side `s` and the side after it */
+  const cornerAfter = (pid: string, s: Side): CornerShape => (isFlat(pid, s) && isFlat(pid, next(s)) ? SOFT_CORNER : SQUARE_CORNER);
 
   // 2. geometry, built twice: the second pass widens necks for small sizes
+  // depth of the shared single-piece connector at the current neck minimum
+  let connectorDepth = standardEdge("connector", "tab", bias).depth;
   const build = (minNeck?: number) => {
+    if (minNeck !== undefined) connectorDepth = sanitizeEdge(standardEdge("connector", "tab", bias), minNeck).depth;
     for (const slot of slots.values()) {
       if (minNeck !== undefined) slot.edge = sanitizeEdge(slot.edge, minNeck);
-      slot.geometry = trimEdgeEnds(placeEdge(slot.edge, slot.a, slot.b, slot.n), cornerAt(slot.a).trim, cornerAt(slot.b).trim);
+      // a shared edge is never flat, so both of its corners are square
+      const side = slot.shared ? undefined : slot.side;
+      const r0 = side ? cornerAfter(slot.ownerA, prev(side)).trim : 0;
+      const r1 = side ? cornerAfter(slot.ownerA, side).trim : 0;
+      slot.geometry = trimEdgeEnds(placeEdge(slot.edge, slot.a, slot.b, slot.n), r0, r1);
     }
     return cells.map((c) => {
       const pid = pieceId(c);
@@ -245,9 +268,12 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
         const next = sides[SIDES[(si + 1) % 4]!];
         const nslot = slots.get(next.slot)!;
         const nsegs = next.reversed ? reversePath(nslot.geometry) : nslot.geometry;
-        const corner = SIDE_FRAME[s].b;
-        const v: Vec2 = [c[0] + corner[0], c[1] + corner[1]];
-        world.push(cornerArc(segs[segs.length - 1]!.p3, v, nsegs[0]!.p0, cornerAt(v).handle));
+        const shape = cornerAfter(pid, s);
+        if (shape.trim > 0) {
+          const corner = SIDE_FRAME[s].b;
+          const v: Vec2 = [c[0] + corner[0], c[1] + corner[1]];
+          world.push(cornerArc(segs[segs.length - 1]!.p3, v, nsegs[0]!.p0, shape.handle));
+        }
         outSides[s] = {
           kind: ref.reversed ? flip(slot.edge.kind) : slot.edge.kind,
           edgeId: ref.slot,
@@ -271,10 +297,7 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
   const sep = opts.layout === "single" ? 0 : opts.geometry.separation;
   const inset = opts.layout === "grid" ? sep / 2 : isCluster ? Math.min(0.012, sep / 2) : 0;
   const maxRot = isCluster ? (opts.geometry.rotation * Math.PI) / 180 : 0;
-  const centroid: Vec2 = [
-    cells.reduce((a, c) => a + c[0] + 0.5, 0) / cells.length,
-    cells.reduce((a, c) => a + c[1] + 0.5, 0) / cells.length,
-  ];
+  const centroid: Vec2 = [cells.reduce((a, c) => a + c[0] + 0.5, 0) / cells.length, cells.reduce((a, c) => a + c[1] + 0.5, 0) / cells.length];
   const jitter = cells.map(() => ({
     jx: isCluster ? layoutRng.signed(0.25) : 0,
     jy: isCluster ? layoutRng.signed(0.25) : 0,
@@ -284,10 +307,7 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
     cells.map((c, i) => {
       const j = jitter[i]!;
       return {
-        center: [
-          c[0] + 0.5 + (c[0] + 0.5 - centroid[0]) * spread + j.jx * sep,
-          c[1] + 0.5 + (c[1] + 0.5 - centroid[1]) * spread + j.jy * sep,
-        ] as Vec2,
+        center: [c[0] + 0.5 + (c[0] + 0.5 - centroid[0]) * spread + j.jx * sep, c[1] + 0.5 + (c[1] + 0.5 - centroid[1]) * spread + j.jy * sep] as Vec2,
         rot: j.rot * maxRot * rotScale,
       };
     });
@@ -307,11 +327,23 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
 
   const fit = (pieces: ReturnType<typeof build>, placement: Placement) => {
     const b = polygonBounds(worldPolys(pieces, placement).flat());
-    const margin = opts.layout === "single" ? 0.1 : 0.08;
-    const k = (1 - 2 * margin) / Math.max(b.maxX - b.minX, b.maxY - b.minY);
+    // small margin: the deep knobs already leave air around the body
+    const margin = 0.06;
+    // Single pieces share one scale: the widest a piece can be is the cell
+    // plus a tab on each side, so every single icon draws its cell at the same
+    // size and two icons line up when placed side by side.
+    const k = (1 - 2 * margin) / (opts.layout === "single" ? 1 + 2 * connectorDepth : Math.max(b.maxX - b.minX, b.maxY - b.minY));
     const shadowLift = opts.shadow.enabled ? opts.shadow.offset[1] * 0.5 : 0;
-    const ox = 0.5 - ((b.minX + b.maxX) / 2) * k;
-    const oy = 0.5 - shadowLift - ((b.minY + b.maxY) / 2) * k;
+    // A single piece is centred on its area centroid, not its bounding box: a
+    // knob on one side would otherwise pull the body off-centre (it sits low
+    // under a top knob), and the eye reads an icon by its mass. The bounds
+    // stay inside the canvas.
+    let c: Vec2 = [(b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2];
+    if (opts.layout === "single") c = polygonCentroid(worldPolys(pieces, placement)[0]!);
+    const edge = 0.02;
+    const clampTo = (o: number, lo: number, hi: number) => Math.min(Math.max(o, edge - lo * k), 1 - edge - hi * k);
+    const ox = clampTo(0.5 - c[0] * k, b.minX, b.maxX);
+    const oy = clampTo(0.5 - shadowLift - c[1] * k, b.minY, b.maxY);
     return { k, ox, oy };
   };
 
@@ -366,13 +398,18 @@ export function buildLayout(opts: ResolvedOptions): LayoutResult {
 
 /** True if any vertex of one polygon lies inside another. */
 export function polygonsOverlap(polys: Vec2[][]): boolean {
+  const bounds = polys.map(polygonBounds);
   for (let i = 0; i < polys.length; i++) {
-    const bi = polygonBounds(polys[i]!);
+    const bi = bounds[i]!;
     for (let j = 0; j < polys.length; j++) {
       if (i === j) continue;
-      const bj = polygonBounds(polys[j]!);
+      const bj = bounds[j]!;
       if (bi.maxX < bj.minX || bj.maxX < bi.minX || bi.maxY < bj.minY || bj.maxY < bi.minY) continue;
-      for (const q of polys[i]!) if (pointInPolygon(q, polys[j]!)) return true;
+      // only vertices inside the other polygon's bounds can be inside it
+      for (const q of polys[i]!) {
+        if (q[0] < bj.minX || q[0] > bj.maxX || q[1] < bj.minY || q[1] > bj.maxY) continue;
+        if (pointInPolygon(q, polys[j]!)) return true;
+      }
     }
   }
   return false;

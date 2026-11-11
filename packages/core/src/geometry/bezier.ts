@@ -19,10 +19,7 @@ export function evalCubic(s: BezierSegment, t: number): Vec2 {
   const b = 3 * mt * mt * t;
   const c = 3 * mt * t * t;
   const d = t * t * t;
-  return [
-    a * s.p0[0] + b * s.p1[0] + c * s.p2[0] + d * s.p3[0],
-    a * s.p0[1] + b * s.p1[1] + c * s.p2[1] + d * s.p3[1],
-  ];
+  return [a * s.p0[0] + b * s.p1[0] + c * s.p2[0] + d * s.p3[0], a * s.p0[1] + b * s.p1[1] + c * s.p2[1] + d * s.p3[1]];
 }
 
 export function reverseSegment(s: BezierSegment): BezierSegment {
@@ -74,6 +71,26 @@ export function polygonArea(poly: Vec2[]): number {
     a += poly[j]![0] * poly[i]![1] - poly[i]![0] * poly[j]![1];
   }
   return a / 2;
+}
+
+/** Area centroid of a simple polygon (falls back to the vertex mean if degenerate). */
+export function polygonCentroid(poly: Vec2[]): Vec2 {
+  let a = 0;
+  let cx = 0;
+  let cy = 0;
+  for (let i = 0, k = poly.length - 1; i < poly.length; k = i++) {
+    const p = poly[k]!;
+    const q = poly[i]!;
+    const cross = p[0] * q[1] - q[0] * p[1];
+    a += cross;
+    cx += (p[0] + q[0]) * cross;
+    cy += (p[1] + q[1]) * cross;
+  }
+  if (Math.abs(a) < 1e-12) {
+    const n = poly.length || 1;
+    return [poly.reduce((s, p) => s + p[0], 0) / n, poly.reduce((s, p) => s + p[1], 0) / n];
+  }
+  return [cx / (3 * a), cy / (3 * a)];
 }
 
 export function polygonBounds(poly: Vec2[]): Bounds {

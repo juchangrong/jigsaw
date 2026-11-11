@@ -1,0 +1,15 @@
+[install]
+# a lockfile written against a private mirror records its URLs, which CI cannot reach
+registry = "https://registry.npmjs.org"
+
+[run]
+# run tsc and the shadcn CLI on Bun, so nothing here needs Node
+bun = true
+
+[test]
+root = "./tests"
+
+[fmt]
+printWidth = 160
+# generated or vendored files, and Markdown, which the covenant prose rules own
+ignorePatterns = ["public/r/", "tests/golden/", ".agents/", ".claude/", "*.md"]

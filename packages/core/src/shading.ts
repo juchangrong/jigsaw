@@ -9,13 +9,14 @@
  */
 import { hexToSrgb, linearToSrgbChannel, type RGB } from "./color/oklch";
 import { gradientToLinear } from "./color/gradient";
-import { sampleSdf, sharedSdfCache, type SdfCache, type SdfField } from "./sdf/sdf";
-import { EMPTY_STAMP, stampCache, stampResolution } from "./stamp/glyph";
+import { recommendedSdfResolution, sampleSdf, sharedSdfCache, type SdfCache, type SdfField } from "./sdf";
+import { envLight, texHeight, TEXTURE_KIND, TEXTURE_LOOKS } from "./material/texture";
+import { EMPTY_STAMP, stampCache, stampResolution } from "./stamp";
 import type { PuzzleIconDescription } from "./types";
 
 export const MAX_SPOTS = 5;
 /** vec4 count of the packed per-piece uniform block */
-export const UNIFORM_VEC4S = 24;
+export const UNIFORM_VEC4S = 27;
 /** relief height (piece units) of a stamp at depth 1 */
 export const STAMP_MAX_HEIGHT = 0.02;
 
@@ -51,6 +52,23 @@ export interface PiecePlan {
   stampBevel: number;
   /** 0–1 darkening inside the letter */
   stampInk: number;
+  /** TEXTURE_KIND id (0 = untextured; every term below is then inert) */
+  texKind: number;
+  texSeed: number;
+  /** grain direction in piece-local space */
+  texCos: number;
+  texSin: number;
+  texScale: number;
+  /** height-gradient gain of the texture bump */
+  bumpAmp: number;
+  /** albedo variation, multiplied by the texture height */
+  albedoAmp: number;
+  /** 0 = dielectric, 1 = metal */
+  metal: number;
+  /** weight of the environment reflection */
+  envAmount: number;
+  /** screen direction towards the light, used to orient the environment */
+  envDir: [number, number];
 }
 
 export interface RenderPlan {
@@ -86,9 +104,7 @@ export interface PlanOptions {
 }
 
 export function sdfResolutionFor(desc: PuzzleIconDescription, size: number): number {
-  const s = desc.pieces[0]?.transform.scale ?? 0.5;
-  const want = size * s * 1.7 * 1.5;
-  return want <= 256 ? 256 : want <= 512 ? 512 : 1024;
+  return recommendedSdfResolution(size, desc.pieces[0]?.transform.scale ?? 0.5);
 }
 
 export function buildRenderPlan(desc: PuzzleIconDescription, o: PlanOptions = {}): RenderPlan {
@@ -98,6 +114,8 @@ export function buildRenderPlan(desc: PuzzleIconDescription, o: PlanOptions = {}
   const light = norm3(desc.lighting.direction);
   const half = norm3([light[0], light[1], light[2] + 1]);
   const transparent = o.transparent || desc.background === "transparent";
+  const ll = Math.hypot(light[0], light[1]);
+  const envDir: [number, number] = ll > 1e-3 ? [light[0] / ll, light[1] / ll] : [0, -1];
 
   const pieces: PiecePlan[] = desc.pieces.map((p) => {
     const t = p.transform;
@@ -121,6 +139,8 @@ export function buildRenderPlan(desc: PuzzleIconDescription, o: PlanOptions = {}
       ? stampCache.get(p.stamp, { font: st.font, weight: st.weight, size: st.size, resolution: stampResolution(res, st.size) })
       : EMPTY_STAMP;
     const hasStamp = stamp !== EMPTY_STAMP;
+    const look = TEXTURE_LOOKS[m.texture];
+    const textured = m.texture !== "none";
     return {
       id: p.id,
       sdf: cache.get(p.geometryKey, p.path, res),
@@ -132,8 +152,8 @@ export function buildRenderPlan(desc: PuzzleIconDescription, o: PlanOptions = {}
       // small-size tuning: keep the bevel at least ~1.25 px wide
       bevel: Math.max(m.bevelWidth, 1.25 * pxLocal),
       heightScale: m.thickness * m.bevelStrength,
-      shininess: 6 + 42 * (1 - rough) * (1 - rough),
-      specScale: m.specularIntensity / 0.3,
+      shininess: (6 + 42 * (1 - rough) * (1 - rough)) * look.shininess,
+      specScale: (m.specularIntensity / 0.3) * look.specular,
       ao: m.ambientOcclusion,
       base: g.base,
       baseWeight: g.baseWeight,
@@ -153,6 +173,16 @@ export function buildRenderPlan(desc: PuzzleIconDescription, o: PlanOptions = {}
       // walls scale with the letter; never narrower than ~1 px
       stampBevel: Math.max(0.035 * st.size, 0.9 * pxLocal),
       stampInk: hasStamp ? st.ink : 0,
+      texKind: TEXTURE_KIND[m.texture],
+      texSeed: m.textureSeed,
+      texCos: Math.cos(m.textureAngle),
+      texSin: Math.sin(m.textureAngle),
+      texScale: m.textureScale,
+      bumpAmp: textured ? m.textureStrength * look.bump * m.textureScale : 0,
+      albedoAmp: textured ? m.textureStrength * look.albedo : 0,
+      metal: look.metal,
+      envAmount: look.env,
+      envDir,
     };
   });
 
@@ -200,6 +230,9 @@ export function packPieceUniforms(plan: RenderPlan, p: PiecePlan, out = new Floa
   v(21, plan.half[0], plan.half[1], plan.half[2], flatSpec);
   v(22, p.stamp.originX, p.stamp.originY, p.stamp.texel, p.stampInk);
   v(23, p.stamp.width, p.stamp.height, p.stampHeight, p.stampBevel);
+  v(24, p.texKind, p.texSeed, p.texCos, p.texSin);
+  v(25, p.bumpAmp, p.albedoAmp, p.texScale, p.envAmount);
+  v(26, p.metal, p.envDir[0], p.envDir[1], 0);
   return out;
 }
 
@@ -265,8 +298,23 @@ export function shadeSurface(plan: RenderPlan, p: PiecePlan, px: number, py: num
   const dhs = (inner * p.stampHeight * 6 * ts * (1 - ts)) / p.stampBevel;
   const letter = inner * ts * ts * (3 - 2 * ts);
 
-  let nx = -dh * gx - dhs * sgx;
-  let ny = -dh * gy - dhs * sgy;
+  // surface texture: bump from a height field in grain-aligned coordinates
+  let tgx = 0;
+  let tgy = 0;
+  let alb = 1;
+  if (p.texKind !== 0) {
+    const ax = p.texCos * lx + p.texSin * ly;
+    const ay = -p.texSin * lx + p.texCos * ly;
+    const [hv, hax, hay] = texHeight(p.texKind, ax, ay, p.texScale, p.texSeed, p.pxLocal);
+    const glx = p.texCos * hax - p.texSin * hay;
+    const gly = p.texSin * hax + p.texCos * hay;
+    tgx = p.bumpAmp * (p.cos * glx - p.sin * gly);
+    tgy = p.bumpAmp * (p.sin * glx + p.cos * gly);
+    alb = Math.max(1 + p.albedoAmp * hv, 0);
+  }
+
+  let nx = -dh * gx - dhs * sgx - tgx;
+  let ny = -dh * gy - dhs * sgy - tgy;
   let nz = 1;
   const nl = Math.hypot(nx, ny, nz);
   nx /= nl;
@@ -296,15 +344,26 @@ export function shadeSurface(plan: RenderPlan, p: PiecePlan, px: number, py: num
     b += s.color[2] * w;
     ws += w;
   }
-  const inkK = 1 - 0.45 * p.stampInk * letter;
+  const inkK = (1 - 0.45 * p.stampInk * letter) * alb;
   r = (r / ws) * inkK;
   g = (g / ws) * inkK;
   b = (b / ws) * inkK;
 
   const shade = diffuse * ao;
-  const tint = (c: number) => spec * (0.8 + 0.2 * c);
   const n = ditherNoise(px, py) / 255;
-  const out = (c: number) => clamp01(linearToSrgbChannel(c * shade + tint(c)) + n) * coverage;
+  let lit = (c: number) => c * shade + spec * (0.8 + 0.2 * c);
+  if (p.texKind !== 0) {
+    // metals: little diffuse, highlight tinted by the base color, plus a
+    // reflected studio environment that also drifts across the flat face
+    const qx = lx - 0.5;
+    const qy = ly - 0.5;
+    const ex = 0.8 * 2 * nz * nx + 0.6 * (p.cos * qx - p.sin * qy);
+    const ey = 0.8 * 2 * nz * ny + 0.6 * (p.sin * qx + p.cos * qy);
+    const env = p.envAmount * envLight(ex * p.envDir[0] + ey * p.envDir[1]) * ao;
+    const dk = shade * (1 - 0.85 * p.metal);
+    const m = p.metal;
+    lit = (c: number) => c * (dk + env) + spec * ((0.8 + 0.2 * c) * (1 - m) + m * (0.3 + 0.9 * c));
+  }
+  const out = (c: number) => clamp01(linearToSrgbChannel(lit(c)) + n) * coverage;
   return [out(r), out(g), out(b), coverage];
 }
-

@@ -1,5 +1,5 @@
 import { packPieceUniforms, UNIFORM_VEC4S, type RenderPlan, type SdfField } from "@jigsaw/core";
-import shaderSource from "../shaders/puzzle.wgsl?raw";
+import shaderSource from "../shaders/puzzle.wgsl" with { type: "text" };
 import { LruMap, SerialQueue, type RenderBackend } from "./backend";
 
 const UNIFORM_STRIDE = 512; // ≥ UNIFORM_VEC4S·16 and a multiple of 256
@@ -22,6 +22,7 @@ export class WebGpuBackend implements RenderBackend {
   private readback: GPUBuffer | null = null;
   private live = 0;
   private disposed = false;
+  readonly lost: Promise<string>;
 
   private constructor(
     private device: GPUDevice,
@@ -32,6 +33,12 @@ export class WebGpuBackend implements RenderBackend {
     this.textures = new LruMap<GPUTexture>(96, (t) => {
       t.destroy();
       this.live--;
+    });
+    this.lost = new Promise((resolve) => {
+      // dispose destroys the device, which also settles device.lost
+      void device.lost.then((info) => {
+        if (!this.disposed) resolve(info.message || `WebGPU device lost (${info.reason ?? "unknown"})`);
+      });
     });
   }
 
@@ -88,12 +95,7 @@ export class WebGpuBackend implements RenderBackend {
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
     });
     this.live++;
-    this.device.queue.writeTexture(
-      { texture: tex },
-      sdf.data as Float32Array<ArrayBuffer>,
-      { bytesPerRow: sdf.width * 4 },
-      [sdf.width, sdf.height],
-    );
+    this.device.queue.writeTexture({ texture: tex }, sdf.data, { bytesPerRow: sdf.width * 4 }, [sdf.width, sdf.height]);
     this.textures.set(id, tex);
     return tex;
   }

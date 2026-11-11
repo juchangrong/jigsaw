@@ -12,9 +12,22 @@
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { inflateSync } from "node:zlib";
-import { beforeAll, describe, expect, it } from "vitest";
-import { buildRenderPlan, generatePuzzleIcon, sampleSdf, toLocal, type PuzzleIconOptions } from "@jigsaw/core";
-import { encodePNG, unpremultiply } from "@jigsaw/export";
+import { beforeAll, describe, expect, it } from "bun:test";
+import {
+  buildRenderPlan,
+  evalGradientLinear,
+  generatePuzzleIcon,
+  gradientToLinear,
+  linearToSrgbChannel,
+  recommendedSdfResolution,
+  sampleSdf,
+  SDF_RESOLUTIONS,
+  SdfCache,
+  sdfResolutionFor,
+  toLocal,
+  type PuzzleIconOptions,
+} from "@jigsaw/core";
+import { encodePNG, unpremultiply } from "@jigsaw/renderer";
 import { renderPlanCpu } from "../packages/renderer/src/cpu";
 
 const OUT = "tests/__output__";
@@ -49,7 +62,7 @@ const lum = (px: Uint8ClampedArray, i: number) => 0.2126 * px[i]! + 0.7152 * px[
 beforeAll(() => mkdirSync(OUT, { recursive: true }));
 
 describe("visual matrix (32–512 px × white / dark / transparent)", () => {
-  const golden: Record<string, number[]> = existsSync(GOLDEN) ? JSON.parse(readFileSync(GOLDEN, "utf8")) : {};
+  const golden: Record<string, number[]> = existsSync(GOLDEN) ? (JSON.parse(readFileSync(GOLDEN, "utf8")) as Record<string, number[]>) : {};
   const fresh: Record<string, number[]> = {};
 
   for (const layout of ["single", "cluster", "grid"] as const) {
@@ -105,7 +118,7 @@ describe("material properties", () => {
     const { plan, px } = render(flat);
     const p = plan.pieces[0]!;
     const b = p.bevel;
-    const sums = { lit: [0, 0], dim: [0, 0], flat: [0, 0] };
+    const sums: Record<"lit" | "dim" | "flat", [number, number]> = { lit: [0, 0], dim: [0, 0], flat: [0, 0] };
     for (let y = 0; y < plan.height; y++)
       for (let x = 0; x < plan.width; x++) {
         const [lx, ly] = toLocal(p, x, y);
@@ -133,13 +146,14 @@ describe("material properties", () => {
   });
 
   it("keeps the flat top close to the albedo (no global over-exposure)", () => {
-    const { plan, px } = render(flat);
+    const { d, plan, px } = render(flat);
     const c = Math.floor(plan.width / 2);
     const i = (c * plan.width + c) * 4;
-    // #A49CF0 → (164, 156, 240)
-    expect(Math.abs(px[i]! - 164)).toBeLessThanOrEqual(6);
-    expect(Math.abs(px[i + 1]! - 156)).toBeLessThanOrEqual(6);
-    expect(Math.abs(px[i + 2]! - 240)).toBeLessThanOrEqual(6);
+    // albedo = the gradient's own color at this pixel, including per-spot jitter
+    const albedo = evalGradientLinear(gradientToLinear(d.pieces[0]!.gradient), toLocal(plan.pieces[0]!, c, c));
+    for (let k = 0; k < 3; k++) {
+      expect(Math.abs(px[i + k]! - Math.round(linearToSrgbChannel(albedo[k]!) * 255))).toBeLessThanOrEqual(6);
+    }
   });
 
   it("has no banding in the diffuse gradient", () => {
@@ -226,5 +240,40 @@ describe("PNG export", () => {
       expect(raw[y * 257]).toBe(0);
       expect(Buffer.from(raw.subarray(y * 257 + 1, (y + 1) * 257)).equals(Buffer.from(data.subarray(y * 256, (y + 1) * 256)))).toBe(true);
     }
+  });
+});
+
+describe("SDF resolution and cache", () => {
+  it("gives about one texel per pixel, from the fixed steps", () => {
+    expect(recommendedSdfResolution(32, 0.55)).toBe(128);
+    expect(recommendedSdfResolution(128, 0.55)).toBe(128);
+    expect(recommendedSdfResolution(256, 0.55)).toBe(256);
+    expect(recommendedSdfResolution(512, 0.55)).toBe(512);
+    expect(recommendedSdfResolution(4096, 0.55)).toBe(1024);
+    for (const size of [48, 96, 200, 300, 700]) {
+      const r = recommendedSdfResolution(size, 0.55);
+      expect<readonly number[]>(SDF_RESOLUTIONS).toContain(r);
+      expect(r).toBeGreaterThanOrEqual(size * 0.55 * 1.7);
+    }
+    const d = generatePuzzleIcon({ seed: "res", size: 256 });
+    expect(d.sdfResolution).toBe(sdfResolutionFor(d, 256));
+  });
+
+  it("evicts by total texels and keeps the field just built", () => {
+    const path = generatePuzzleIcon({ seed: "cache" }).pieces[0]!.path;
+    const cache = new SdfCache(3 * 128 * 128);
+    const a = cache.get("a", path, 128);
+    cache.get("b", path, 128);
+    expect(cache.get("a", path, 128)).toBe(a);
+    cache.get("c", path, 128);
+    expect(cache.size).toBeLessThanOrEqual(3);
+    cache.get("d", path, 128);
+    // "b" was the least recently used
+    expect(cache.get("a", path, 128)).toBe(a);
+    const big = cache.get("big", path, 512);
+    expect(cache.size).toBe(1);
+    expect(cache.get("big", path, 512)).toBe(big);
+    cache.clear();
+    expect(cache.size).toBe(0);
   });
 });

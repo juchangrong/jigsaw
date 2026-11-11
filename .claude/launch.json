@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "playground",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@jigsaw/playground", "dev", "--port", "5173", "--strictPort"],
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "--cwd", "apps/playground", "dev"],
       "port": 5173
     }
   ]

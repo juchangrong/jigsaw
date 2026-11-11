@@ -2,16 +2,12 @@ import { generateGradient } from "./color/gradient";
 import { resolvePalette } from "./color/palettes";
 import { buildLayout } from "./geometry/layout";
 import { ALGORITHM_VERSION, PRESET_VERSION, resolveOptions } from "./options";
-import { createRng } from "./prng";
+import { createRng, type Rng } from "./prng";
+import { recommendedSdfResolution } from "./sdf";
 import type { PuzzleIconDescription, PuzzleIconOptions } from "./types";
 
-/** SDF resolution (longest side, texels) appropriate for an output size. */
-export function recommendedSdfResolution(size: number, pieceScale: number): number {
-  // ≈1.5 texels per output pixel across the piece domain (~1.7 piece units)
-  const want = size * pieceScale * 1.7 * 1.5;
-  if (want <= 256) return 256;
-  if (want <= 512) return 512;
-  return 1024;
+function pieceTexture(rng: Rng) {
+  return { textureSeed: rng.int(0, 65535), textureAngle: rng.signed(0.3) };
 }
 
 /**
@@ -24,6 +20,7 @@ export function generatePuzzleIcon(options: PuzzleIconOptions): PuzzleIconDescri
   const layout = buildLayout(opts);
   const palette = resolvePalette(opts.gradient.palette, createRng(opts.seed, "palette"));
   const gradientRng = createRng(opts.seed, "gradient");
+  const textureRng = createRng(opts.seed, "texture");
   const { preset: _preset, ...material } = opts.material;
   const letters = Array.from(opts.stamp.text);
 
@@ -40,7 +37,7 @@ export function generatePuzzleIcon(options: PuzzleIconOptions): PuzzleIconDescri
         spots: opts.gradient.spots,
         softness: opts.gradient.softness,
       }),
-      material: { ...material },
+      material: { ...material, ...pieceTexture(textureRng.fork(p.id)) },
       stamp: letters[i] ?? "",
     })),
     sharedEdges: layout.sharedEdges,

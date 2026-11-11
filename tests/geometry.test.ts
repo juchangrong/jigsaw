@@ -1,7 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import {
   applyTransform,
+  polygonCentroid,
   EDGE_LIMITS,
+  edgeProfile,
   flattenPath,
   generatePuzzleIcon,
   MIN_NECK_PX,
@@ -20,8 +22,7 @@ import {
 
 const seeds = (n: number, prefix = "s") => Array.from({ length: n }, (_, i) => `${prefix}${i}`);
 const close = (a: Vec2, b: Vec2, eps = 1e-9) => Math.abs(a[0] - b[0]) < eps && Math.abs(a[1] - b[1]) < eps;
-const segClose = (a: BezierSegment, b: BezierSegment) =>
-  close(a.p0, b.p0) && close(a.p1, b.p1) && close(a.p2, b.p2) && close(a.p3, b.p3);
+const segClose = (a: BezierSegment, b: BezierSegment) => close(a.p0, b.p0) && close(a.p1, b.p1) && close(a.p2, b.p2) && close(a.p3, b.p3);
 const toWorld = (p: PieceDescription) =>
   p.path.map((s) => {
     const f = (q: Vec2): Vec2 => [q[0] + p.cell[0], q[1] + p.cell[1]];
@@ -31,9 +32,22 @@ const toWorld = (p: PieceDescription) =>
 describe("single piece", () => {
   const icons = seeds(100).map((seed) => generatePuzzleIcon({ seed, size: 128 }));
 
-  it("produces 100 valid, distinct outlines", () => {
-    const keys = new Set(icons.map((d) => d.pieces[0]!.geometryKey));
-    expect(keys.size).toBe(100);
+  // Single pieces share one connector so any two fit together (see
+  // tests/interlock.test.ts); an outline is therefore set by its side kinds.
+  it("varies the outline through its side kinds", () => {
+    const kindsOf = (d: (typeof icons)[number]) => SIDES.map((s) => d.pieces[0]!.sides[s].kind).join(",");
+    const byKinds = new Map<string, Set<string>>();
+    for (const d of icons) {
+      const k = kindsOf(d);
+      if (!byKinds.has(k)) byKinds.set(k, new Set());
+      byKinds.get(k)!.add(d.pieces[0]!.geometryKey);
+    }
+    // the same kinds always give the same outline, different kinds a different one
+    for (const keys of byKinds.values()) expect(keys.size).toBe(1);
+    const outlines = new Set([...byKinds.values()].map((k) => [...k][0]));
+    expect(outlines.size).toBe(byKinds.size);
+    // 100 seeds reach a wide spread of the valid kind combinations
+    expect(byKinds.size).toBeGreaterThanOrEqual(30);
   });
 
   it("paths are closed and continuous", () => {
@@ -83,7 +97,12 @@ describe("single piece", () => {
       for (const s of SIDES) {
         const side = p.sides[s];
         if (side.kind === "tab") expect(reach[s]).toBeGreaterThan(EDGE_LIMITS.depth[0] - 1e-6);
-        else expect(reach[s]).toBeLessThan(1e-6);
+        // a socket bulges out by no more than its tab's deepest inward dip (the S
+        // before the neck, point-reflected); flat sides stay straight
+        else if (side.kind === "socket") {
+          const tab = flattenPath(edgeProfile({ ...side.edge, kind: "tab" }), 0.002);
+          expect(reach[s]).toBeLessThan(-Math.min(...tab.map((q) => q[1])) + 1e-3);
+        } else expect(reach[s]).toBeLessThan(1e-6);
         if (side.kind === "socket") {
           // the point a little inside the side's centre must be outside the piece
           const c = side.edge.center;
@@ -217,26 +236,59 @@ describe("corner rounding", () => {
   };
   const nearest = (poly: [number, number][], cx: number, cy: number) => Math.min(...poly.map((q) => Math.hypot(q[0] - cx, q[1] - cy)));
 
-  it("rounds every corner of a single piece softly", () => {
-    for (let i = 0; i < 20; i++) {
-      const [{ flat }] = sampled({ seed: `corner-${i}` });
-      for (const [cx, cy] of [
-        [0, 0],
-        [1, 0],
-        [1, 1],
-        [0, 1],
-      ] as const) {
+  it("rounds a single piece's corner only where both sides are flat", () => {
+    // corner (cx, cy) sits between these two sides
+    const corners = [
+      { at: [0, 0], sides: ["left", "top"] },
+      { at: [1, 0], sides: ["top", "right"] },
+      { at: [1, 1], sides: ["right", "bottom"] },
+      { at: [0, 1], sides: ["bottom", "left"] },
+    ] as const;
+    let soft = 0;
+    let square = 0;
+    for (let i = 0; i < 60; i++) {
+      const { p, flat } = sampled({ seed: `corner-${i}` })[0]!;
+      for (const c of corners) {
+        const frame = c.sides.every((s) => p.sides[s].kind === "flat");
+        const d = nearest(flat, c.at[0], c.at[1]);
         // a circular corner of radius r sits r(√2 − 1) from the sharp corner
-        expect(nearest(flat!, cx, cy)).toBeGreaterThan(0.045);
+        if (frame) {
+          expect(d).toBeGreaterThan(0.045);
+          soft++;
+        } else {
+          expect(d).toBeLessThan(1e-9);
+          square++;
+        }
       }
     }
+    expect(soft).toBeGreaterThan(5);
+    expect(square).toBeGreaterThan(50);
   });
 
-  it("keeps tight corners where grid pieces meet and soft ones on the outside", () => {
+  it("keeps square corners where grid pieces meet and soft ones on the outside", () => {
     const pieces = sampled({ seed: "corner-grid", layout: "grid", pieceCount: 4 });
     const topLeft = pieces.find(({ p }) => p.cell[0] === 0 && p.cell[1] === 0)!;
     // outer corner of the 2×2 grid vs the shared centre vertex, in piece-local units
     expect(nearest(topLeft.flat, 0, 0)).toBeGreaterThan(0.045);
-    expect(nearest(topLeft.flat, 1, 1)).toBeLessThan(0.025);
+    expect(nearest(topLeft.flat, 1, 1)).toBeLessThan(1e-9);
+  });
+});
+
+describe("single piece centring", () => {
+  it("puts the piece's area centroid at the centre of the icon", () => {
+    for (let i = 0; i < 40; i++) {
+      const p = generatePuzzleIcon({ seed: `centre-${i}`, size: 256 }).pieces[0]!;
+      const icon = flattenPath(p.path, 0.004).map((q) => applyTransform(p.transform, q));
+      const c = polygonCentroid(icon);
+      expect(c[0]).toBeCloseTo(0.5, 3);
+      expect(c[1]).toBeCloseTo(0.5, 3);
+      // and the whole piece stays inside the canvas
+      for (const q of icon) {
+        expect(q[0]).toBeGreaterThan(0);
+        expect(q[0]).toBeLessThan(1);
+        expect(q[1]).toBeGreaterThan(0);
+        expect(q[1]).toBeLessThan(1);
+      }
+    }
   });
 });

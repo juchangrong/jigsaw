@@ -5,7 +5,11 @@ export type OKLCH = [number, number, number]; // L 0..1, C, h degrees
 
 export function hexToSrgb(hex: string): RGB {
   let h = hex.trim().replace(/^#/, "");
-  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  if (h.length === 3)
+    h = h
+      .split("")
+      .map((c) => c + c)
+      .join("");
   if (!/^[0-9a-fA-F]{6}$/.test(h)) throw new Error(`Invalid hex color: ${hex}`);
   const n = parseInt(h, 16);
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
@@ -20,8 +24,7 @@ export function srgbToHex(c: RGB): string {
 }
 
 export const srgbToLinearChannel = (c: number) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
-export const linearToSrgbChannel = (c: number) =>
-  c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(Math.max(c, 0), 1 / 2.4) - 0.055;
+export const linearToSrgbChannel = (c: number) => (c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(Math.max(c, 0), 1 / 2.4) - 0.055);
 
 export const srgbToLinear = (c: RGB): RGB => [srgbToLinearChannel(c[0]), srgbToLinearChannel(c[1]), srgbToLinearChannel(c[2])];
 export const linearToSrgb = (c: RGB): RGB => [linearToSrgbChannel(c[0]), linearToSrgbChannel(c[1]), linearToSrgbChannel(c[2])];
@@ -68,7 +71,8 @@ const inGamut = (c: RGB) => c.every((v) => v >= -1e-4 && v <= 1 + 1e-4);
 
 /** OKLCH → sRGB hex, reducing chroma until the color fits the sRGB gamut. */
 export function oklchToHex(lch: OKLCH): string {
-  let [L, C, h] = lch;
+  let [L, C] = lch;
+  const h = lch[2];
   L = Math.min(1, Math.max(0, L));
   let lin = oklabToLinear(oklchToOklab([L, C, h]));
   for (let i = 0; i < 24 && !inGamut(lin); i++) {

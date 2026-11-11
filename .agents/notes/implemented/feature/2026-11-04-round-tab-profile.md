@@ -2,6 +2,8 @@
 
 Status: implemented
 
+[Formula-defined connector profile](2026-11-04-formula-connector-profile.md) later replaces this profile shape with three formula-defined cubics.
+
 ## Problem
 
 After [Soft piece corners](2026-11-04-soft-piece-corners.md), the user marked three places that still looked sharp: a flat, mushroom-shaped tab head on a thin neck, and the lips of two sockets, which curled into pointed hooks. The cause was the tab profile in `edgeProfile`:

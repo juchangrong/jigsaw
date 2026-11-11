@@ -21,16 +21,18 @@ export interface PuzzleEdge {
   kind: EdgeKind;
   /** 0.42 – 0.58 */
   center: number;
-  /** 0.22 – 0.35, head width */
+  /** 0.22 – 0.35: head size (sets the head handle length λ) */
   width: number;
-  /** 0.20 – 0.26 */
+  /** 0.24 – 0.30: how far a tab reaches past the side (head top) */
   depth: number;
-  /** 0.12 – 0.20 */
+  /** 0.18 – 0.26: neck-point spacing; the narrowest neck is ≈ 0.78 × this */
   neckWidth: number;
   /** ±0.08 */
   asymmetry: number;
   /** 0.5 – 0.9 */
   curvature: number;
+  /** 0.025 – 0.045: how far each side run bows (peak offset) in a gentle S between corner and connector */
+  wave: number;
 }
 
 /** An edge shared by two neighbouring pieces. `geometry` is in layout (world)
@@ -104,6 +106,25 @@ export interface MaterialParams {
   thickness: number;
 }
 
+/** Procedural surface finish layered on the material. */
+export type SurfaceTexture = "none" | "paper" | "linen" | "frosted" | "wood" | "brushedMetal" | "polishedMetal";
+
+export interface TextureParams {
+  texture: SurfaceTexture;
+  /** 0–1, depth of the bump and albedo variation */
+  textureStrength: number;
+  /** grain size multiplier (1 = default, larger = coarser) */
+  textureScale: number;
+}
+
+/** Material of one generated piece: shared params plus its texture placement. */
+export interface PieceMaterial extends MaterialParams, TextureParams {
+  /** integer seed of the noise lattice, 0–65535 */
+  textureSeed: number;
+  /** direction of grain and streaks, radians in piece-local space */
+  textureAngle: number;
+}
+
 export interface LightingParams {
   /** direction towards the light, screen space (x right, y down, z to viewer) */
   direction: [number, number, number];
@@ -129,7 +150,7 @@ export interface StampOptions {
   text?: string;
   /** deboss = pressed into the surface, emboss = raised (default deboss) */
   style?: StampStyle;
-  /** glyph height in piece units, side = 1 (0.15–0.7, default 0.36) */
+  /** glyph height in piece units, side = 1 (0.15–0.7, default 0.3) */
   size?: number;
   /** 0–1, depth of the relief (default 0.5) */
   depth?: number;
@@ -162,7 +183,7 @@ export interface PieceDescription {
    * gap between neighbours; the path itself stays exact */
   inset: number;
   gradient: PieceGradient;
-  material: MaterialParams;
+  material: PieceMaterial;
   /** stable hash of the outline, used as the SDF cache key */
   geometryKey: string;
   /** letter stamped on this piece ("" = none) */
@@ -173,7 +194,7 @@ export interface PuzzleIconDescription {
   metadata: GeneratorMetadata;
   size: number;
   layout: LayoutKind;
-  background: string | "transparent";
+  background: "transparent" | (string & {});
   palette: { name: string; colors: string[] };
   pieces: PieceDescription[];
   sharedEdges: SharedEdge[];
@@ -213,11 +234,11 @@ export interface PuzzleIconOptions {
   pieceCount?: number;
   geometry?: GeometryOptions;
   gradient?: GradientOptions;
-  material?: Partial<MaterialParams> & { preset?: MaterialPreset };
+  material?: Partial<MaterialParams> & Partial<TextureParams> & { preset?: MaterialPreset };
   lighting?: Partial<LightingParams>;
   shadow?: Partial<ShadowParams>;
   stamp?: StampOptions;
-  background?: string | "transparent";
+  background?: "transparent" | (string & {});
 }
 
 export interface ResolvedOptions {
@@ -227,9 +248,9 @@ export interface ResolvedOptions {
   pieceCount: number;
   geometry: Required<GeometryOptions>;
   gradient: { palette: string | string[] | null; spots: number | null; softness: number };
-  material: MaterialParams & { preset: MaterialPreset };
+  material: MaterialParams & TextureParams & { preset: MaterialPreset };
   lighting: LightingParams;
   shadow: ShadowParams;
   stamp: ResolvedStamp;
-  background: string | "transparent";
+  background: "transparent" | (string & {});
 }
