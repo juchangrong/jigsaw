@@ -19,7 +19,7 @@ export interface PuzzleIconProps extends Omit<PuzzleIconOptions, "seed"> {
 }
 
 /**
- * `<PuzzleIcon seed="alpha" size={64} gradient={{ palette: "aurora" }} />`
+ * `<PuzzleIcon seed="alpha" size={64} palette="aurora" />`
  *
  * Icons asking for the same renderer share one generator (one GPU device);
  * rendered images are cached, so re-mounting or repeating an icon costs a

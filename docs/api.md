@@ -103,7 +103,7 @@ interface PuzzleIconOptions {
     separation?: number;               // gap between pieces (piece units)
     rotation?: number;                 // max degrees, cluster only
   };
-  gradient?: { palette?: PaletteName | string[]; spots?: 3 | 4 | 5; softness?: number };
+  palette?: PaletteName | string[];   // each piece takes one colour; a hex list is used exactly as given
   // vivid (picked by seeds): dusk, tide, ember, orchid, meadow, glacier, bloom
   // muted (by name only): slate, sage, clay, plum, fog, moss
   // pastel (by name only): aurora, sunset, mint, candy, lagoon, peach
@@ -138,7 +138,7 @@ const gen = new PuzzleIconGenerator({ renderer: "auto", imageCacheSize: 128, ima
 
 | Method | Returns | Notes |
 |---|---|---|
-| `generate(options)` | `PuzzleIconDescription` | The deterministic description: geometry, transforms, palette, spots and material. Uses no GPU. |
+| `generate(options)` | `PuzzleIconDescription` | The deterministic description: geometry, transforms, palette, piece colours and material. Uses no GPU. |
 | `render(options, { size?, transparent?, signal? })` | `Promise<RenderResult>` | Renders queue in call order. Aborting `signal` skips one that has not started and rejects with an `AbortError`. |
 | `toPNG(options, { size?, transparent? })` | `Promise<Blob>` | |
 | `toWebP(options, { size?, transparent?, quality? })` | `Promise<Blob>` | Needs a browser canvas. |
@@ -165,7 +165,7 @@ From `@jigsaw/core`. None of them needs a DOM.
 
 ## Colour sets
 
-`COLOR_SETS` from `@jigsaw/core` holds nine sets. Each set has an `id`, a `label` and up to five `families`; a family has an `id` and four hex `colors`, deep to light. A family's `colors` also work as a `gradient.palette` for `<PuzzleIcon>`.
+`COLOR_SETS` from `@jigsaw/core` holds nine sets. Each set has an `id`, a `label` and up to five `families`; a family has an `id` and four hex `colors`, deep to light. A family's `colors` also work as the `palette` of `<PuzzleIcon>`; pass one of them, such as `[family.colors[1]]`, to fix the piece's colour.
 
 | Set `id` | Families | Character |
 |---|---|---|

@@ -4,7 +4,7 @@ precision highp float;
 precision highp int;
 precision highp sampler2D;
 
-uniform vec4 u[27];
+uniform vec4 u[17];
 uniform sampler2D sdfTex;
 uniform sampler2D stampTex;
 uniform float uHeight;
@@ -21,14 +21,14 @@ out vec4 outColor;
 #define SHADOW u[6]
 #define BASE u[7]
 #define SHADOW_COLOR u[8]
-#define LIGHT u[19]
-#define LIGHT2 u[20]
-#define HALFV u[21]
-#define STAMP_INFO u[22]
-#define STAMP_SIZE u[23]
-#define TEX u[24]
-#define TEX2 u[25]
-#define TEX3 u[26]
+#define LIGHT u[9]
+#define LIGHT2 u[10]
+#define HALFV u[11]
+#define STAMP_INFO u[12]
+#define STAMP_SIZE u[13]
+#define TEX u[14]
+#define TEX2 u[15]
+#define TEX3 u[16]
 
 float sdfAt(vec2 p) {
   vec2 size = SDF_SIZE.xy;
@@ -219,17 +219,7 @@ void main() {
   float spec = LIGHT2.y * MAT.w * max(pow(ndh, MAT.z) - HALFV.w, 0.0);
   float ao = 1.0 - MAT2.x * 0.6 * (1.0 - smoothstep(0.0, bevel * 0.9, d));
 
-  vec3 col = BASE.rgb * SHADOW.w;
-  float ws = SHADOW.w;
-  int count = int(SHADOW.z);
-  for (int i = 0; i < 5; i++) {
-    vec4 s = u[9 + i];
-    vec2 dv = l - s.xy;
-    float w = i < count ? s.w * exp(-dot(dv, dv) / (2.0 * s.z * s.z)) : 0.0;
-    col += u[14 + i].rgb * w;
-    ws += w;
-  }
-  col = col / ws * ((1.0 - 0.45 * STAMP_INFO.w * letter) * alb);
+  vec3 col = BASE.rgb * ((1.0 - 0.45 * STAMP_INFO.w * letter) * alb);
 
   vec3 lit = col * (diffuse * ao) + spec * (0.8 + 0.2 * col);
   if (kind != 0) {

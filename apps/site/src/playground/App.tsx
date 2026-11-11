@@ -40,8 +40,6 @@ interface State {
   separation: number;
   rotation: number;
   palette: string; // "" = from seed
-  spots: number; // 0 = from seed
-  softness: number;
   preset: MaterialPreset;
   bevelWidth: number;
   bevelStrength: number;
@@ -75,8 +73,6 @@ const initial: State = {
   separation: 0.09,
   rotation: 6,
   palette: "",
-  spots: 0,
-  softness: 0.5,
   preset: "softResin",
   ...MATERIAL_PRESETS.softResin,
   texture: "none",
@@ -96,6 +92,10 @@ const initial: State = {
   stampWeight: 700,
 };
 
+/** A swatch of hard-edged stripes, one per colour: a piece takes one of them, it does not blend them. */
+const stripes = (colors: readonly string[]) =>
+  `linear-gradient(135deg, ${colors.map((c, i) => `${c} ${(i * 100) / colors.length}% ${((i + 1) * 100) / colors.length}%`).join(",")})`;
+
 function toOptions(s: State, size: number): PuzzleIconOptions {
   const az = (s.lightAngle * Math.PI) / 180;
   const el = (s.lightElevation * Math.PI) / 180;
@@ -112,7 +112,7 @@ function toOptions(s: State, size: number): PuzzleIconOptions {
       separation: s.layout === "single" ? undefined : s.separation,
       rotation: s.rotation,
     },
-    gradient: { palette: s.palette || undefined, spots: s.spots || undefined, softness: s.softness },
+    palette: s.palette || undefined,
     material: {
       preset: s.preset,
       bevelWidth: s.bevelWidth,
@@ -279,7 +279,7 @@ export function App() {
             )}
           </Section>
 
-          <Section title="Gradient">
+          <Section title="Colour">
             <div className="palettes" role="group" aria-label="Palette">
               <button type="button" className={s.palette === "" ? "on" : ""} aria-pressed={s.palette === ""} onClick={() => set("palette", "")}>
                 From seed
@@ -292,21 +292,11 @@ export function App() {
                   aria-pressed={s.palette === name}
                   onClick={() => set("palette", name)}
                 >
-                  <span className="swatch" style={{ background: `linear-gradient(135deg, ${PALETTES[name].join(",")})` }} />
+                  <span className="swatch" style={{ background: stripes(PALETTES[name]) }} />
                   {name}
                 </button>
               ))}
             </div>
-            <Slider
-              label="Spots"
-              value={s.spots}
-              min={0}
-              max={5}
-              step={1}
-              onChange={(v) => set("spots", v < 3 ? 0 : v)}
-              format={(v) => (v < 3 ? "seed" : String(v))}
-            />
-            <Slider label="Softness" value={s.softness} min={0} max={1} step={0.01} onChange={(v) => set("softness", v)} />
           </Section>
 
           <Section title="Material">

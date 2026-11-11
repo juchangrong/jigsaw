@@ -8,7 +8,6 @@ export * from "./geometry/layout";
 export * from "./sdf";
 export * from "./color/oklch";
 export * from "./color/palettes";
-export * from "./color/gradient";
 export * from "./material/presets";
 export * from "./material/texture";
 export * from "./shading";

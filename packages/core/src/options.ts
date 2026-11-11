@@ -3,7 +3,7 @@ import type { LayoutKind, PuzzleIconOptions, ResolvedOptions, SurfaceTexture } f
 
 export const SURFACE_TEXTURES: readonly SurfaceTexture[] = ["none", "paper", "linen", "frosted", "wood", "brushedMetal", "polishedMetal"];
 
-export const ALGORITHM_VERSION = "1.9.0";
+export const ALGORITHM_VERSION = "2.0.0";
 export const PRESET_VERSION = "1.2.0";
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -42,11 +42,7 @@ export function resolveOptions(o: PuzzleIconOptions): ResolvedOptions {
       separation: clamp(num(g.separation, layout === "cluster" ? 0.09 : 0.04), 0, 0.5),
       rotation: clamp(num(g.rotation, layout === "cluster" ? 6 : 0), 0, 30),
     },
-    gradient: {
-      palette: o.gradient?.palette ?? null,
-      spots: o.gradient?.spots !== undefined ? clamp(Math.round(o.gradient.spots), 3, 5) : null,
-      softness: clamp(num(o.gradient?.softness, 0.5), 0, 1),
-    },
+    palette: o.palette ?? null,
     material: {
       preset,
       bevelWidth: clamp(num(m.bevelWidth, base.bevelWidth), 0.005, 0.2),

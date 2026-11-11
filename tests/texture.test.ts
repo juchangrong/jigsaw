@@ -9,7 +9,7 @@ import { renderPlanCpu } from "../packages/renderer/src/cpu";
 const base: PuzzleIconOptions = {
   seed: "texture",
   size: 256,
-  gradient: { palette: ["#7FA6E8", "#7FA6E8", "#7FA6E8"] },
+  palette: ["#7FA6E8"],
   background: "transparent",
 };
 
@@ -58,10 +58,10 @@ describe("surface textures", () => {
     expect(seeds.size).toBe(4);
     const b = generatePuzzleIcon({ ...base, seed: "other", layout: "grid", material: { texture: "paper" } });
     expect(b.pieces[0]!.material.textureSeed).not.toBe(a.pieces[0]!.material.textureSeed);
-    // the texture stream never perturbs geometry or gradients
+    // the texture stream never perturbs geometry or colours
     const c = generatePuzzleIcon({ ...base, layout: "grid" });
     expect(c.pieces.map((p) => p.geometryKey)).toEqual(a.pieces.map((p) => p.geometryKey));
-    expect(JSON.stringify(c.pieces.map((p) => p.gradient))).toBe(JSON.stringify(a.pieces.map((p) => p.gradient)));
+    expect(c.pieces.map((p) => p.color)).toEqual(a.pieces.map((p) => p.color));
   });
 
   it("metal is visibly more specular and less diffuse than resin", () => {

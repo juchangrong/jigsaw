@@ -2,21 +2,19 @@
  * Render plan + reference shading.
  *
  * `buildRenderPlan` turns a description into the exact numbers every backend
- * consumes (per-piece SDF, inverse transform, material, gradient, shadow).
+ * consumes (per-piece SDF, inverse transform, material, colour, shadow).
  * `shadeSurface` / `shadeShadow` are the TypeScript reference of the WGSL /
  * GLSL fragment shaders and back the CPU fallback renderer, so all three
  * backends produce the same image (up to float precision).
  */
-import { hexToSrgb, linearToSrgbChannel, type RGB } from "./color/oklch";
-import { gradientToLinear } from "./color/gradient";
+import { hexToLinear, hexToSrgb, linearToSrgbChannel, type RGB } from "./color/oklch";
 import { recommendedSdfResolution, sampleSdf, sharedSdfCache, type SdfCache, type SdfField } from "./sdf";
 import { envLight, texHeight, TEXTURE_KIND, TEXTURE_LOOKS } from "./material/texture";
 import { EMPTY_STAMP, stampCache, stampResolution } from "./stamp";
 import type { PuzzleIconDescription } from "./types";
 
-export const MAX_SPOTS = 5;
 /** vec4 count of the packed per-piece uniform block */
-export const UNIFORM_VEC4S = 27;
+export const UNIFORM_VEC4S = 17;
 /** relief height (piece units) of a stamp at depth 1 */
 export const STAMP_MAX_HEIGHT = 0.02;
 
@@ -37,9 +35,8 @@ export interface PiecePlan {
   shininess: number;
   specScale: number;
   ao: number;
+  /** the piece's colour, linear RGB */
   base: RGB;
-  baseWeight: number;
-  spots: { x: number; y: number; r: number; i: number; color: RGB }[];
   shadowOffset: [number, number];
   shadowBlur: number;
   shadowOpacity: number;
@@ -132,7 +129,6 @@ export function buildRenderPlan(desc: PuzzleIconDescription, o: PlanOptions = {}
     const f = t.pivot[1] - (-sn * t.x + cs * t.y) / t.scale;
     const pxLocal = k;
     const so = desc.shadow.offset;
-    const g = gradientToLinear(p.gradient);
     const rough = m.roughness;
     const st = desc.stamp;
     const stamp = p.stamp
@@ -155,15 +151,7 @@ export function buildRenderPlan(desc: PuzzleIconDescription, o: PlanOptions = {}
       shininess: (6 + 42 * (1 - rough) * (1 - rough)) * look.shininess,
       specScale: (m.specularIntensity / 0.3) * look.specular,
       ao: m.ambientOcclusion,
-      base: g.base,
-      baseWeight: g.baseWeight,
-      spots: g.spots.slice(0, MAX_SPOTS).map((s) => ({
-        x: s.position[0],
-        y: s.position[1],
-        r: s.radius,
-        i: s.intensity,
-        color: s.color,
-      })),
+      base: hexToLinear(p.color),
       shadowOffset: [(cs * so[0] + sn * so[1]) / t.scale, (-sn * so[0] + cs * so[1]) / t.scale],
       shadowBlur: Math.max(desc.shadow.blur / t.scale, 1.5 * pxLocal),
       shadowOpacity: desc.shadow.opacity,
@@ -216,23 +204,18 @@ export function packPieceUniforms(plan: RenderPlan, p: PiecePlan, out = new Floa
   v(3, p.sdf.width, p.sdf.height, p.cos, p.sin);
   v(4, p.bevel, p.heightScale, p.shininess, p.specScale);
   v(5, p.ao, p.shadowOpacity, p.shadowBlur, p.inset);
-  v(6, p.shadowOffset[0], p.shadowOffset[1], p.spots.length, p.baseWeight);
+  v(6, p.shadowOffset[0], p.shadowOffset[1], 0, 0);
   v(7, p.base[0], p.base[1], p.base[2], 0);
   v(8, p.shadowColor[0], p.shadowColor[1], p.shadowColor[2], 0);
-  for (let i = 0; i < MAX_SPOTS; i++) {
-    const s = p.spots[i];
-    v(9 + i, s?.x ?? 0, s?.y ?? 0, s?.r ?? 1, s?.i ?? 0);
-    v(14 + i, s?.color[0] ?? 0, s?.color[1] ?? 0, s?.color[2] ?? 0, 0);
-  }
-  v(19, plan.light[0], plan.light[1], plan.light[2], plan.intensity);
-  v(20, plan.ambient, plan.specular, plan.flatDiffuse, 0);
+  v(9, plan.light[0], plan.light[1], plan.light[2], plan.intensity);
+  v(10, plan.ambient, plan.specular, plan.flatDiffuse, 0);
   const flatSpec = Math.pow(Math.max(plan.half[2], 0), p.shininess);
-  v(21, plan.half[0], plan.half[1], plan.half[2], flatSpec);
-  v(22, p.stamp.originX, p.stamp.originY, p.stamp.texel, p.stampInk);
-  v(23, p.stamp.width, p.stamp.height, p.stampHeight, p.stampBevel);
-  v(24, p.texKind, p.texSeed, p.texCos, p.texSin);
-  v(25, p.bumpAmp, p.albedoAmp, p.texScale, p.envAmount);
-  v(26, p.metal, p.envDir[0], p.envDir[1], 0);
+  v(11, plan.half[0], plan.half[1], plan.half[2], flatSpec);
+  v(12, p.stamp.originX, p.stamp.originY, p.stamp.texel, p.stampInk);
+  v(13, p.stamp.width, p.stamp.height, p.stampHeight, p.stampBevel);
+  v(14, p.texKind, p.texSeed, p.texCos, p.texSin);
+  v(15, p.bumpAmp, p.albedoAmp, p.texScale, p.envAmount);
+  v(16, p.metal, p.envDir[0], p.envDir[1], 0);
   return out;
 }
 
@@ -330,24 +313,11 @@ export function shadeSurface(plan: RenderPlan, p: PiecePlan, px: number, py: num
   const spec = plan.specular * p.specScale * Math.max(Math.pow(ndh, p.shininess) - flatSpec, 0);
   const ao = 1 - p.ao * 0.6 * (1 - smoothstep(0, p.bevel * 0.9, d));
 
-  // diffuse gradient (linear RGB)
-  let r = p.base[0] * p.baseWeight;
-  let g = p.base[1] * p.baseWeight;
-  let b = p.base[2] * p.baseWeight;
-  let ws = p.baseWeight;
-  for (const s of p.spots) {
-    const dx = lx - s.x;
-    const dy = ly - s.y;
-    const w = s.i * Math.exp(-(dx * dx + dy * dy) / (2 * s.r * s.r));
-    r += s.color[0] * w;
-    g += s.color[1] * w;
-    b += s.color[2] * w;
-    ws += w;
-  }
+  // the piece's colour (linear RGB), darkened under an inked letter and varied by the texture
   const inkK = (1 - 0.45 * p.stampInk * letter) * alb;
-  r = (r / ws) * inkK;
-  g = (g / ws) * inkK;
-  b = (b / ws) * inkK;
+  const r = p.base[0] * inkK;
+  const g = p.base[1] * inkK;
+  const b = p.base[2] * inkK;
 
   const shade = diffuse * ao;
   const n = ditherNoise(px, py) / 255;

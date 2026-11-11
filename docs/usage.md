@@ -30,7 +30,7 @@ The rest of this guide imports from the workspace packages.
 import { PuzzleIcon } from "@jigsaw/react";
 
 <PuzzleIcon seed="alpha" size={128} />
-<PuzzleIcon seed="team-42" size={64} layout="cluster" pieceCount={3} gradient={{ palette: "dusk" }} />
+<PuzzleIcon seed="team-42" size={64} layout="cluster" pieceCount={3} palette="dusk" />
 <PuzzleIcon seed="board" size={256} layout="grid" pieceCount={9} material={{ preset: "matteAcrylic" }} background="#FFFFFF" />
 ```
 
@@ -138,7 +138,7 @@ Single-piece icons from different seeds fit each other. `assembleSinglePieces` p
 ```ts
 import { assembleSinglePieces } from "@jigsaw/core";
 
-const set = assembleSinglePieces({ seed: "team", size: 128, cols: 3, rows: 3, gradient: { palette: "dusk" } });
+const set = assembleSinglePieces({ seed: "team", size: 128, cols: 3, rows: 3, palette: "dusk" });
 // for each piece: draw <PuzzleIcon seed={p.description.metadata.seed} size={128} />
 // with its icon's top-left at (cell − cellOrigin) × 128 px, cell = p.cell × p.cellSize × 128 px
 ```

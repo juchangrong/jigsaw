@@ -11,7 +11,7 @@ export const EXAMPLES: Record<string, ReactNode> = {
   piece: (
     <>
       <PuzzleIcon seed="alpha" size={128} />
-      <PuzzleIcon seed="team-42" size={64} layout="cluster" pieceCount={3} gradient={{ palette: "dusk" }} />
+      <PuzzleIcon seed="team-42" size={64} layout="cluster" pieceCount={3} palette="dusk" />
       <PuzzleIcon
         seed="board"
         size={256}

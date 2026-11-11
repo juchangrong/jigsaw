@@ -15,9 +15,8 @@ import { inflateSync } from "node:zlib";
 import { beforeAll, describe, expect, it } from "bun:test";
 import {
   buildRenderPlan,
-  evalGradientLinear,
   generatePuzzleIcon,
-  gradientToLinear,
+  hexToLinear,
   linearToSrgbChannel,
   recommendedSdfResolution,
   sampleSdf,
@@ -106,11 +105,10 @@ describe("visual matrix (32–512 px × white / dark / transparent)", () => {
 });
 
 describe("material properties", () => {
-  // a flat single color isolates the lighting from the gradient
   const flat: PuzzleIconOptions = {
     seed: "material",
     size: 256,
-    gradient: { palette: ["#A49CF0", "#A49CF0", "#A49CF0"] },
+    palette: ["#A49CF0"],
     background: "transparent",
   };
 
@@ -149,14 +147,13 @@ describe("material properties", () => {
     const { d, plan, px } = render(flat);
     const c = Math.floor(plan.width / 2);
     const i = (c * plan.width + c) * 4;
-    // albedo = the gradient's own color at this pixel, including per-spot jitter
-    const albedo = evalGradientLinear(gradientToLinear(d.pieces[0]!.gradient), toLocal(plan.pieces[0]!, c, c));
+    const albedo = hexToLinear(d.pieces[0]!.color);
     for (let k = 0; k < 3; k++) {
       expect(Math.abs(px[i + k]! - Math.round(linearToSrgbChannel(albedo[k]!) * 255))).toBeLessThanOrEqual(6);
     }
   });
 
-  it("has no banding in the diffuse gradient", () => {
+  it("keeps the flat face even, with no banding from the dither", () => {
     const { plan, px } = render({ seed: "banding", size: 512, background: "#FFFFFF" });
     const w = plan.width;
     const p = plan.pieces[0]!;

@@ -62,10 +62,9 @@ describe("determinism", () => {
   });
 
   it("palette choice does not perturb geometry (separate streams)", () => {
-    const a = generatePuzzleIcon({ seed: "iso", gradient: { palette: "aurora" } });
-    const b = generatePuzzleIcon({ seed: "iso", gradient: { palette: "candy" } });
+    const a = generatePuzzleIcon({ seed: "iso", palette: "aurora" });
+    const b = generatePuzzleIcon({ seed: "iso", palette: "candy" });
     expect(a.pieces[0]!.geometryKey).toBe(b.pieces[0]!.geometryKey);
-    expect(a.pieces[0]!.gradient.spots.map((s) => s.position)).toEqual(b.pieces[0]!.gradient.spots.map((s) => s.position));
     expect(a.palette.colors).not.toEqual(b.palette.colors);
   });
 
@@ -73,20 +72,16 @@ describe("determinism", () => {
     const icons = Array.from({ length: 60 }, (_, i) => generatePuzzleIcon({ seed: `v${i}` }));
     const kinds = new Set(icons.map((d) => SIDES.map((s) => d.pieces[0]!.sides[s].kind).join("")));
     const palettes = new Set(icons.map((d) => d.palette.name));
-    const firstSpot = new Set(icons.map((d) => d.pieces[0]!.gradient.spots[0]!.color));
+    const colors = new Set(icons.map((d) => d.pieces[0]!.color));
     expect(kinds.size).toBeGreaterThanOrEqual(15);
     expect(palettes.size).toBeGreaterThanOrEqual(4);
-    expect(firstSpot.size).toBeGreaterThanOrEqual(40);
+    expect(colors.size).toBeGreaterThanOrEqual(40);
   });
 
-  it("pieces in one icon share a palette but get their own spots", () => {
+  it("pieces in one icon take different colours of one palette", () => {
     const d = generatePuzzleIcon({ seed: "share", layout: "grid", pieceCount: 4 });
-    const spots = d.pieces.map((p) => JSON.stringify(p.gradient.spots));
-    expect(new Set(spots).size).toBe(4);
-    const spotsPerPiece = d.pieces.map((p) => p.gradient.spots.length);
-    for (const n of spotsPerPiece) {
-      expect(n).toBeGreaterThanOrEqual(3);
-      expect(n).toBeLessThanOrEqual(5);
-    }
+    const colors = d.pieces.map((p) => p.color);
+    for (const c of colors) expect(d.palette.colors).toContain(c);
+    expect(new Set(colors).size).toBe(Math.min(4, d.palette.colors.length));
   });
 });

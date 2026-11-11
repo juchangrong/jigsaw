@@ -9,11 +9,9 @@ struct Piece {
   sdfSize: vec4f,     // width, height, cos θ, sin θ
   mat: vec4f,         // bevel, heightScale, shininess, specScale
   mat2: vec4f,        // ao, shadowOpacity, shadowBlur, inset
-  shadow: vec4f,      // shadowOffset.xy, spotCount, baseWeight
-  base: vec4f,        // base color (linear)
+  shadow: vec4f,      // shadowOffset.xy, -, -
+  base: vec4f,        // piece colour (linear)
   shadowColor: vec4f, // shadow color (sRGB)
-  spotPos: array<vec4f, 5>,   // x, y, radius, intensity
-  spotColor: array<vec4f, 5>, // linear RGB
   light: vec4f,       // L.xyz, intensity
   light2: vec4f,      // ambient, specular, flatDiffuse, -
   halfV: vec4f,       // H.xyz, flatSpec
@@ -230,18 +228,7 @@ fn fsSurface(@builtin(position) pos: vec4f) -> @location(0) vec4f {
   let spec = P.light2.y * P.mat.w * max(pow(ndh, P.mat.z) - P.halfV.w, 0.0);
   let ao = 1.0 - P.mat2.x * 0.6 * (1.0 - smoothstep(0.0, bevel * 0.9, d));
 
-  // Diffuse gradient: normalized Gaussian spots + base color (linear RGB).
-  var col = P.base.rgb * P.shadow.w;
-  var ws = P.shadow.w;
-  let count = i32(P.shadow.z);
-  for (var i = 0; i < 5; i++) {
-    let s = P.spotPos[i];
-    let dv = l - s.xy;
-    let w = select(0.0, s.w * exp(-dot(dv, dv) / (2.0 * s.z * s.z)), i < count);
-    col += P.spotColor[i].rgb * w;
-    ws += w;
-  }
-  col = col / ws * ((1.0 - 0.45 * P.stampInfo.w * letter) * alb);
+  let col = P.base.rgb * ((1.0 - 0.45 * P.stampInfo.w * letter) * alb);
 
   var lit = col * (diffuse * ao) + spec * (0.8 + 0.2 * col);
   if (kind != 0) {

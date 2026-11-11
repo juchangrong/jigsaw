@@ -1,12 +1,12 @@
 # Procedural Puzzle Icon Generator — Technical Design (v1.0)
 
-> Seed → jigsaw-puzzle-piece icon. Strict top-down view, classic tab/socket outline, soft multi-color diffuse gradient, subtle 3D "soft resin / matte acrylic" look produced by an SDF bevel and lighting.
+> Seed → jigsaw-puzzle-piece icon. Strict top-down view, classic tab/socket outline, one colour per piece, subtle 3D "soft resin / matte acrylic" look produced by an SDF bevel and lighting.
 >
 > **Principle:** geometry defines the shape, the SDF defines the bevel, shaders define the material, the seed defines the identity.
 
 ## 1. Visual goals
 
-- Minimal, geometric, soft resin, diffuse gradient, subtle 3D.
+- Minimal, geometric, soft resin, one colour per piece, subtle 3D.
 - Orthographic top-down only. The surface is flat; depth comes from rounded bevel highlights, never from extruded sides.
 - No color banding, no drop shadow by default, legible from 32 px to 256 px.
 - Avoid: thick strokes, metal, strong specular, cartoon look.
@@ -25,7 +25,7 @@ Geometry ── topology, shared edges, cubic Bézier paths      (@jigsaw/core/g
 Mask rasterization → exact EDT → signed distance field      (@jigsaw/core/sdf)
    │
    ▼
-WebGPU renderer ── diffuse gradient, bevel normals,          (@jigsaw/renderer)
+WebGPU renderer ── piece colour, bevel normals,             (@jigsaw/renderer)
                    lighting, ambient shadow, AA
    │
    ▼
@@ -74,7 +74,7 @@ Neighbors traverse the same geometry in opposite directions, so pieces fit exact
 - Visually balanced; bounding-box aspect ratio stays reasonable (≈ 0.75–1.33).
 - Corners: rounded only where both sides are flat (the frame corners of an assembled puzzle); every other corner is square, so pieces close with no gaps.
 - Connector sides are hand-cut, not ruler-straight: the side runs bow in a gentle S and heads lean slightly; only the frame (flat sides) is straight. Sockets are the point reflection of tabs, so leaning, wavy connectors still fit exactly.
-- Single pieces interlock with each other. They share one connector derived from the geometry options (not the seed), and one scale per output size, so any single piece's tab fits any other single piece's socket. Outlines therefore vary only by which sides are tabs, sockets or flat; seeds also vary palette, gradient and stamp.
+- Single pieces interlock with each other. They share one connector derived from the geometry options (not the seed), and one scale per output size, so any single piece's tab fits any other single piece's socket. Outlines therefore vary only by which sides are tabs, sockets or flat; seeds also vary palette, colour and stamp.
 
 ### 3.4 Layouts
 
@@ -95,7 +95,7 @@ Neighbors traverse the same geometry in opposite directions, so pieces fit exact
 - Height: `h = H · smoothstep(0, b, d)` (H = thickness, b = bevel width).
 - Normal: `normalize(-∂h/∂x, -∂h/∂y, 1)` with derivatives computed by central differences of the SDF texture in piece-local units, so the scale is the same at every resolution and control flow stays uniform.
 - One directional light plus ambient: `direction [-0.5, -0.6, 1]`, `intensity 0.85`, `ambient 0.65`, `specular 0.28`.
-- Lambert + simplified Blinn–Phong. Lighting is normalized so the flat top keeps the true gradient color; top and left bevels get brighter, opposite bevels slightly darker. Never fake highlights with a fixed white stroke.
+- Lambert + simplified Blinn–Phong. Lighting is normalized so the flat top keeps the piece's true color; top and left bevels get brighter, opposite bevels slightly darker. Never fake highlights with a fixed white stroke.
 - `softResin` preset: `bevelWidth 0.055`, `bevelStrength 0.7`, `roughness 0.48`, `specularIntensity 0.3`, `ambientOcclusion 0.18`, `thickness 0.025`.
 
 ### 5.1 Surface textures
@@ -109,19 +109,15 @@ Neighbors traverse the same geometry in opposite directions, so pieces fit exact
 - Each texture also scales the Blinn-Phong exponent and specular (`TEXTURE_LOOKS` in `packages/core/src/material/texture.ts`). The two metals set `metal = 1`: diffuse drops to 15 %, the highlight is tinted by the base color, and a studio environment is reflected: a gradient towards the light with one bright and one dark band, indexed by the reflected view vector plus a position term so it also drifts across the flat face.
 - `none` skips all texture terms, so untextured output is byte-for-byte what it was before textures existed.
 
-## 6. Diffuse gradient
+## 6. Colour
 
-```ts
-interface GradientSpot { position: [number, number]; color: string; radius: number; intensity: number; }
-```
-
-- 3–5 Gaussian spots per piece; normalized weighted sum plus a base color and base weight (avoids division by zero).
-- Mixing happens in linear RGB; palettes are built/jittered in OKLCH.
+- Each piece has one colour, and the bevel and lighting give it all its light and dark. The colour is stored as sRGB hex and shaded in linear RGB.
+- The colour comes from the icon's palette. A `color` stream picks a start, and piece `i` takes colour `(start + i) mod n`, so the pieces of one icon differ while fewer pieces than colours never repeat.
+- A named preset is varied per seed in OKLCH (hue ±7°, chroma ±6 %, lightness ±0.015), so two seeds with one preset are related but not identical. A custom hex list is used exactly as given; a list of one colour fixes the piece's colour.
 - Vivid presets, picked by seeds: each is an analogous hue sweep from a saturated deep anchor to a luminous highlight, ordered deep to light (`dusk`, `tide`, `ember`, `orchid`, `meadow`, `glacier`, `bloom`; values in `packages/core/src/color/palettes.ts`).
 - Muted presets, by name only: low-chroma sweeps (OKLCH chroma 0.03–0.065, lightness 0.46 → 0.82) within one hue family: `slate`, `sage`, `clay`, `plum`, `fog`, `moss`.
 - Pastel presets, by name only: aurora `#B9A0FF #7DE5ED #6478F2`, sunset `#FFE18C #FF91B2 #CB91F5`, mint `#91EFC8 #71CBEF #9F9CFF`, candy `#FFA6CF #A6A3FF #82D9FF`, plus `lagoon` and `peach`.
-- Lighter colors sit toward the light (top-left) and the deep anchor opposite, along a seeded flow direction, so the gradient agrees with the bevel lighting.
-- Spot positions come from the seed. Pieces may share a palette but each gets its own spots.
+- A piece does not blend colours: an earlier version drew a diffuse gradient of 3–5 Gaussian spots, removed in algorithm version 2.0.0.
 
 ## 7. Shadow
 
@@ -130,12 +126,12 @@ Soft ambient shadow, off by default and enabled with `shadow.enabled`: `opacity 
 ## 8. Rendering pipeline
 
 - Premultiplied-alpha compositing, SDF-based anti-aliasing, lighting in linear space, sRGB output. Exports must match the preview.
-- Per piece: geometry, SDF, gradient, material, transform. Shared: lighting, camera, color management, renderer.
+- Per piece: geometry, SDF, colour, material, transform. Shared: lighting, camera, color management, renderer.
 
 ## 9. Determinism
 
 - Seeded PRNG only (Mulberry32), never `Math.random`.
-- Separate streams: `seed:geometry`, `seed:palette`, `seed:gradient`, `seed:layout`, `seed:texture`.
+- Separate streams: `seed:geometry`, `seed:palette`, `seed:color`, `seed:layout`, `seed:texture`.
 - `GeneratorMetadata { seed, algorithmVersion, presetVersion }`.
 - Per-pixel identity across GPUs is **not** promised.
 
@@ -148,7 +144,7 @@ interface PuzzleIconOptions {
   layout?: "single" | "cluster" | "grid";
   pieceCount?: number;
   geometry?: { tabSize?: number; curvature?: number; asymmetry?: number; separation?: number; rotation?: number };
-  gradient?: { palette?: PaletteName | string[]; spots?: number; softness?: number };
+  palette?: PaletteName | string[];
   material?: Partial<MaterialParams> & Partial<TextureParams> & { preset?: MaterialPreset };
   lighting?: Partial<LightingParams>;
   shadow?: { enabled?: boolean; opacity?: number; blur?: number };
@@ -157,7 +153,7 @@ interface PuzzleIconOptions {
 ```
 
 ```tsx
-<PuzzleIcon seed="alpha" size={128} layout="single" gradient={{ palette: "aurora" }} background="transparent" />
+<PuzzleIcon seed="alpha" size={128} layout="single" palette="aurora" background="transparent" />
 ```
 
 ```ts
@@ -180,7 +176,7 @@ await gen.export(opts, { format: "png" }); // also toPNG() / toWebP()
 ## 11. Playground
 
 - Left: preview (checkerboard / white / dark background, 32/64/128/256 sizes, Randomize, seed input).
-- Right: Geometry, Gradient, Material, Lighting, Export (PNG, WebP, resolution, transparent background, copy config).
+- Right: Geometry, Colour, Material, Lighting, Export (PNG, WebP, resolution, transparent background, copy config).
 - Randomize generates a new seed and re-renders immediately.
 
 ## 12. Repository layout
@@ -213,6 +209,6 @@ tests/               geometry, deterministic, rendering tests
 
 1. PRNG + single-piece Bézier + mask preview (valid outlines; single pieces vary by side kinds, since they share one connector).
 2. SDF + WebGPU material + shadow (a single-color piece already looks real).
-3. Diffuse gradient + presets.
+3. Palettes + presets.
 4. Shared-edge multi-piece layouts.
 5. React component, playground, export, fallbacks, caching.

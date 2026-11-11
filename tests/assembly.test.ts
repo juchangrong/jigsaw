@@ -130,7 +130,7 @@ describe("singlePieceKinds", () => {
     const looks: Omit<PuzzleIconOptions, "seed">[] = [
       {},
       { geometry: { tabSize: 0, curvature: 1, asymmetry: 1 } },
-      { geometry: { tabSize: 1 }, size: 24, gradient: { palette: "slate" }, stamp: { text: "A" } },
+      { geometry: { tabSize: 1 }, size: 24, palette: "slate", stamp: { text: "A" } },
     ];
     for (const look of looks)
       for (let i = 0; i < 200; i++) {
@@ -143,6 +143,6 @@ describe("singlePieceKinds", () => {
 
   it("keeps the assembly independent of everything but seed and geometry", () => {
     const seeds = (o: Partial<PuzzleIconOptions>) => assembleSinglePieces({ seed: "indep", cols: 3, rows: 3, ...o })!.map((p) => p.description.metadata.seed);
-    expect(seeds({ size: 32, gradient: { palette: "sage" }, material: { preset: "matteAcrylic" } })).toEqual(seeds({}));
+    expect(seeds({ size: 32, palette: "sage", material: { preset: "matteAcrylic" } })).toEqual(seeds({}));
   });
 });

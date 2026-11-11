@@ -220,7 +220,7 @@ function Landing() {
           <ul className="cards">
             <Card
               name="PuzzleIcon"
-              text="A piece with a soft bevel and a diffuse gradient, rendered on a canvas from 32 px to 1024 px."
+              text="A piece in one colour with a soft bevel, rendered on a canvas from 32 px to 1024 px."
               href={`${ROOT}docs/api/#puzzleicon`}
             >
               <PuzzleIcon seed="alpha" size={88} />

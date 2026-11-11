@@ -1,6 +1,6 @@
 /**
- * Colour families and sets for icons that use one flat colour or a calm
- * gradient, as in a product list. A family is four shades from deep to light;
+ * Colour families and sets for icons that use one flat colour or a few tones
+ * of one hue, as in a product list. A family is four shades from deep to light;
  * a set is at most five families that sit well together.
  */
 import { hexToOklch, mixOklab, oklchToHex } from "./oklch";
@@ -8,7 +8,7 @@ import { PALETTES, type PaletteName } from "./palettes";
 
 export interface ColorFamily {
   id: string;
-  /** four sRGB hex shades, deep to light; usable as a gradient palette */
+  /** four sRGB hex shades, deep to light; usable as a palette */
   colors: string[];
 }
 

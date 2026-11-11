@@ -77,21 +77,6 @@ export interface PieceTransform {
 
 export type LayoutKind = "single" | "cluster" | "grid";
 
-export interface GradientSpot {
-  /** piece-local coordinates (cell is [0,1]²) */
-  position: Vec2;
-  /** sRGB hex */
-  color: string;
-  radius: number;
-  intensity: number;
-}
-
-export interface PieceGradient {
-  base: string;
-  baseWeight: number;
-  spots: GradientSpot[];
-}
-
 export type MaterialPreset = "softResin" | "matteAcrylic" | "satinResin";
 
 export interface MaterialParams {
@@ -182,7 +167,8 @@ export interface PieceDescription {
   /** the rendered outline is eroded by this much (piece units) to form the
    * gap between neighbours; the path itself stays exact */
   inset: number;
-  gradient: PieceGradient;
+  /** the piece's one colour, sRGB hex */
+  color: string;
   material: PieceMaterial;
   /** stable hash of the outline, used as the SDF cache key */
   geometryKey: string;
@@ -219,21 +205,14 @@ export interface GeometryOptions {
   rotation?: number;
 }
 
-export interface GradientOptions {
-  palette?: string | string[];
-  /** spots per piece, 3–5 */
-  spots?: number;
-  /** 0–1, larger = softer, wider spots (default 0.5) */
-  softness?: number;
-}
-
 export interface PuzzleIconOptions {
   seed: Seed;
   size?: number;
   layout?: LayoutKind;
   pieceCount?: number;
   geometry?: GeometryOptions;
-  gradient?: GradientOptions;
+  /** a palette name or a list of sRGB hex colours; each piece takes one colour from it. Chosen by the seed when omitted. */
+  palette?: string | string[];
   material?: Partial<MaterialParams> & Partial<TextureParams> & { preset?: MaterialPreset };
   lighting?: Partial<LightingParams>;
   shadow?: Partial<ShadowParams>;
@@ -247,7 +226,7 @@ export interface ResolvedOptions {
   layout: LayoutKind;
   pieceCount: number;
   geometry: Required<GeometryOptions>;
-  gradient: { palette: string | string[] | null; spots: number | null; softness: number };
+  palette: string | string[] | null;
   material: MaterialParams & TextureParams & { preset: MaterialPreset };
   lighting: LightingParams;
   shadow: ShadowParams;

@@ -11,7 +11,7 @@ describe("palettes", () => {
 
   it("keeps the pastel palettes selectable by name", () => {
     for (const name of Object.keys(PASTEL_PALETTES)) {
-      expect(generatePuzzleIcon({ seed: 1, gradient: { palette: name } }).palette.name).toBe(name);
+      expect(generatePuzzleIcon({ seed: 1, palette: name }).palette.name).toBe(name);
     }
     expect(Object.keys(PALETTES)).toEqual([...Object.keys(VIVID_PALETTES), ...Object.keys(MUTED_PALETTES), ...Object.keys(PASTEL_PALETTES)]);
   });
@@ -30,26 +30,20 @@ describe("palettes", () => {
   });
 });
 
-describe("gradient flow", () => {
-  it("puts lighter colors toward the top-left light", () => {
-    // Over many seeds, spot lightness falls as spots move toward the bottom-right.
-    let n = 0;
-    let sxy = 0;
-    let sx = 0;
-    let sy = 0;
-    let sxx = 0;
+describe("piece colour", () => {
+  it("gives a single piece one colour of its palette", () => {
     for (const seed of SEEDS) {
-      for (const s of generatePuzzleIcon({ seed }).pieces[0]!.gradient.spots) {
-        const t = s.position[0] + s.position[1]; // grows toward the bottom-right
-        const L = hexToOklch(s.color)[0];
-        n++;
-        sx += t;
-        sy += L;
-        sxy += t * L;
-        sxx += t * t;
-      }
+      const d = generatePuzzleIcon({ seed });
+      expect(d.palette.colors).toContain(d.pieces[0]!.color);
     }
-    const slope = (n * sxy - sx * sy) / (n * sxx - sx * sx);
-    expect(slope).toBeLessThan(-0.1);
+  });
+
+  it("uses a custom colour exactly as given", () => {
+    for (const seed of SEEDS.slice(0, 20)) expect(generatePuzzleIcon({ seed, palette: ["#A49CF0"] }).pieces[0]!.color).toBe("#A49CF0");
+  });
+
+  it("reaches every colour of a palette across seeds", () => {
+    const picked = new Set(SEEDS.map((seed) => generatePuzzleIcon({ seed, palette: ["#111111", "#222222", "#333333"] }).pieces[0]!.color));
+    expect(picked.size).toBe(3);
   });
 });

@@ -50,8 +50,8 @@ const STYLE_NAMES: Record<IconStyle, string> = {
 const STYLES: readonly IconStyle[] = ["glass", "tile", "outline", "abstract", "solid", "mosaic", "bare"];
 const asBoolean = (v: unknown) => (typeof v === "boolean" ? v : undefined);
 /** which switches change anything in each style */
-// for a mosaic the switch chooses four tones (on) or one accent piece (off)
-const USES_GRADIENT: IconStyle[] = ["glass", "tile", "mosaic", "bare"];
+// the switch chooses four tones (on) or one accent piece (off) for a mosaic
+const USES_TONAL: IconStyle[] = ["mosaic"];
 // a mosaic has a tile to tint only when Padding puts it on one
 const USES_TINT: IconStyle[] = ["glass", "tile", "abstract"];
 /**
@@ -88,16 +88,8 @@ const MosaicIcon = ({ seed, size, family, solid, look }: { seed: string; size: n
 export const MOSAIC_INSET = 0.75;
 
 const ICON_PX = 40;
-/**
- * Gradient options for an icon. With the gradient off, the family collapses
- * to its main tone (its second, mid-deep shade), so the piece is one solid
- * color shaded only by the bevel and lighting.
- */
-function gradientFor(f: ColorFamily, solid: boolean) {
-  if (!solid) return { palette: f.colors };
-  const tone = f.colors[1]!;
-  return { palette: [tone, tone] };
-}
+/** A rendered piece takes the family's main tone: its second, mid-deep shade. */
+const pieceColor = (f: ColorFamily) => [f.colors[1]!];
 
 function CardIcon({
   seed,
@@ -114,7 +106,6 @@ function CardIcon({
   tint: boolean;
   mosaic: MosaicLook;
 }) {
-  const gradient = gradientFor(f, solid);
   if (style === "solid") {
     return (
       <span className="card-icon tile solid" style={{ backgroundColor: tileColor(f) }} aria-hidden="true">
@@ -155,7 +146,7 @@ function CardIcon({
   if (style === "bare") {
     return (
       <span className="card-icon bare" aria-hidden="true">
-        <PuzzleIcon seed={seed} layout="single" gradient={gradient} size={ICON_PX} />
+        <PuzzleIcon seed={seed} layout="single" palette={pieceColor(f)} size={ICON_PX} />
       </span>
     );
   }
@@ -165,7 +156,7 @@ function CardIcon({
       style={tint ? ({ "--glass-tint": tintColor(f), background: style === "glass" ? undefined : tintColor(f) } as CSSProperties) : undefined}
       aria-hidden="true"
     >
-      <PuzzleIcon seed={seed} layout="single" gradient={gradient} size={Math.round(ICON_PX * 0.95)} />
+      <PuzzleIcon seed={seed} layout="single" palette={pieceColor(f)} size={Math.round(ICON_PX * 0.95)} />
     </span>
   );
 }
@@ -194,7 +185,7 @@ const familyOf = (set: ColorFamily[], slot: number) => set[((slot % set.length) 
 const DEFAULT_LOOK = {
   style: "mosaic" as IconStyle,
   colorSet: "bright",
-  gradient: false,
+  tonal: false,
   tint: false,
   padding: false,
   gaps: true,
@@ -357,7 +348,7 @@ function CandidatePicker(props: {
                     <MosaicIcon seed={c.seed} size={46} family={familyOf(set, c.slot)} solid={solid} look={mosaic} />
                   </span>
                 ) : (
-                  <PuzzleIcon seed={c.seed} layout="single" gradient={gradientFor(familyOf(set, c.slot), solid)} size={46} />
+                  <PuzzleIcon seed={c.seed} layout="single" palette={pieceColor(familyOf(set, c.slot))} size={46} />
                 )}
                 {order !== undefined && (
                   <span className="picker-badge" aria-hidden="true">
@@ -403,7 +394,7 @@ export function CardsPage() {
   const usesTint = USES_TINT.includes(style) || (style === "mosaic" && paddingOn);
   const [salt, setSalt] = useState(0);
   const [picks, setPicks] = useState<Candidate[]>(loadPicks);
-  const [gradientOn, setGradientOn] = useStoredState("cardGradient", DEFAULT_LOOK.gradient, asBoolean);
+  const [tonalOn, setTonalOn] = useStoredState("cardGradient", DEFAULT_LOOK.tonal, asBoolean);
   const [tintOn, setTintOn] = useStoredState("cardTint", DEFAULT_LOOK.tint, asBoolean);
   const [setId, setSetId] = useStoredState("cardColorSet", DEFAULT_LOOK.colorSet, (v) => COLOR_SETS.find((c) => c.id === v)?.id);
   const colorSet = COLOR_SETS.find((c) => c.id === setId) ?? COLOR_SETS[0]!;
@@ -412,7 +403,7 @@ export function CardsPage() {
   const reset = () => {
     setStyle(DEFAULT_LOOK.style);
     setSetId(DEFAULT_LOOK.colorSet);
-    setGradientOn(DEFAULT_LOOK.gradient);
+    setTonalOn(DEFAULT_LOOK.tonal);
     setTintOn(DEFAULT_LOOK.tint);
     setPaddingOn(DEFAULT_LOOK.padding);
     setGapsOn(DEFAULT_LOOK.gaps);
@@ -444,14 +435,8 @@ export function CardsPage() {
             Shuffle icons
           </button>
           <label className="row check">
-            <input
-              type="checkbox"
-              role="switch"
-              checked={gradientOn}
-              disabled={!USES_GRADIENT.includes(style)}
-              onChange={(e) => setGradientOn(e.target.checked)}
-            />
-            <span>Gradient</span>
+            <input type="checkbox" role="switch" checked={tonalOn} disabled={!USES_TONAL.includes(style)} onChange={(e) => setTonalOn(e.target.checked)} />
+            <span>Tonal</span>
           </label>
           <label className="row check">
             <input type="checkbox" role="switch" checked={tintOn} disabled={!usesTint} onChange={(e) => setTintOn(e.target.checked)} />
@@ -489,7 +474,7 @@ export function CardsPage() {
         <CandidatePicker
           picks={picks}
           onChange={setPicks}
-          solid={!gradientOn}
+          solid={!tonalOn}
           tint={tintOn}
           set={colorSet.families}
           setId={colorSet.id}
@@ -507,7 +492,7 @@ export function CardsPage() {
             <ul className="cards" role="list">
               {INDEXED.filter((item) => item.tag === section).map((item) => (
                 <li key={item.name} className="card">
-                  <CardIcon {...iconFor(item.name, item.index)} style={style} solid={!gradientOn} tint={tintOn} mosaic={mosaic} />
+                  <CardIcon {...iconFor(item.name, item.index)} style={style} solid={!tonalOn} tint={tintOn} mosaic={mosaic} />
                   <div className="card-body">
                     <span className="card-name">{item.name}</span>
                     <p className="card-desc">{item.desc || "No description yet"}</p>

@@ -3,8 +3,7 @@ import { hexToOklch, oklchToHex } from "./oklch";
 
 /**
  * Vivid palettes, each an analogous hue sweep from a saturated deep anchor to a
- * luminous highlight, ordered deep → light. The gradient puts the light end
- * toward the light source, so pieces read as lit from above.
+ * luminous highlight, ordered deep → light. A piece takes one of the colours.
  */
 export const VIVID_PALETTES = {
   dusk: ["#3B3FD6", "#8A3FE0", "#E24FA8", "#FFB38A"],
@@ -50,32 +49,24 @@ export const SEED_PALETTE_NAMES = Object.keys(VIVID_PALETTES) as PaletteName[];
 
 export interface ResolvedPalette {
   name: string;
-  /** the colors after the seeded OKLCH variation, sRGB hex */
+  /** sRGB hex; a named preset's colors after the seeded OKLCH variation */
   colors: string[];
 }
 
 /**
- * Resolve a palette for an icon. Named presets (or a custom hex list) are
- * varied slightly in OKLCH from the `palette` stream so two seeds with the
- * same preset are related but not identical.
+ * Resolve a palette for an icon. A named preset is varied slightly in OKLCH
+ * from the `palette` stream, so two seeds with the same preset are related but
+ * not identical. A custom hex list is used exactly as given.
  */
 export function resolvePalette(spec: string | string[] | null, rng: Rng): ResolvedPalette {
-  let name: string;
-  let base: readonly string[];
   if (Array.isArray(spec)) {
-    if (spec.length < 2) throw new Error("A custom palette needs at least 2 colors");
-    name = "custom";
-    base = spec;
-  } else if (spec && spec in PALETTES) {
-    name = spec;
-    base = PALETTES[spec as PaletteName];
-  } else {
-    name = rng.pick(SEED_PALETTE_NAMES);
-    base = PALETTES[name as PaletteName];
+    if (spec.length < 1) throw new Error("A custom palette needs at least 1 color");
+    return { name: "custom", colors: [...spec] };
   }
+  const name = spec && spec in PALETTES ? spec : rng.pick(SEED_PALETTE_NAMES);
   const hueShift = rng.signed(7);
   const chromaScale = 1 + rng.signed(0.06);
-  const colors = base.map((hex) => {
+  const colors = PALETTES[name as PaletteName].map((hex) => {
     const [L, C, h] = hexToOklch(hex);
     return oklchToHex([L + rng.signed(0.015), C * chromaScale, h + hueShift]);
   });
