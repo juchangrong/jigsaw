@@ -146,4 +146,4 @@ Keep the file's only import `react`. A file comment above the imports is dropped
 
 ### Publish
 
-Serve `public/r/` over HTTP; any static host works, and no npm release is involved. Consumers then install by URL or by registry name, as described in [Install from a URL](#install-from-a-url).
+Serve `public/r/` over HTTP; any static host works, and no npm release is involved. `bun run build` copies it to `apps/site/dist/r/`, so hosting the built site also publishes the registry at `<site>/r/`. Consumers then install by URL or by registry name, as described in [Install from a URL](#install-from-a-url).

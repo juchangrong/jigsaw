@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "dev": "bun run --cwd apps/playground dev",
-    "build": "bun run --cwd apps/playground build",
+    "dev:site": "bun run --cwd apps/site dev",
+    "build": "bun run --cwd apps/site build",
     "test": "bun test --timeout 60000",
     "test:watch": "bun test --timeout 60000 --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",

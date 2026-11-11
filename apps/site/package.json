@@ -1,0 +1,17 @@
+{
+  "name": "@jigsaw/site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun ./dev.ts",
+    "build": "rm -rf dist && bun build ./index.html ./docs/index.html ./docs/api/index.html ./docs/registry/index.html ./playground/index.html --outdir dist --production --splitting && cp -R ../../public/r dist/r"
+  },
+  "dependencies": {
+    "@jigsaw/core": "workspace:*",
+    "@jigsaw/react": "workspace:*",
+    "@jigsaw/renderer": "workspace:*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

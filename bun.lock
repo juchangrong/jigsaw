@@ -25,6 +25,17 @@
         "react-dom": "^18.3.1",
       },
     },
+    "apps/site": {
+      "name": "@jigsaw/site",
+      "version": "1.0.0",
+      "dependencies": {
+        "@jigsaw/core": "workspace:*",
+        "@jigsaw/react": "workspace:*",
+        "@jigsaw/renderer": "workspace:*",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+      },
+    },
     "packages/core": {
       "name": "@jigsaw/core",
       "version": "1.0.0",
@@ -56,6 +67,8 @@
     "@jigsaw/react": ["@jigsaw/react@workspace:packages/react"],
 
     "@jigsaw/renderer": ["@jigsaw/renderer@workspace:packages/renderer"],
+
+    "@jigsaw/site": ["@jigsaw/site@workspace:apps/site"],
 
     "@types/bun": ["@types/bun@1.4.4", "", { "dependencies": { "bun-types": "1.4.4" } }, "sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ=="],
 

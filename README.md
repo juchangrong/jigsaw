@@ -4,8 +4,6 @@ Turns a **seed** into a jigsaw-puzzle-piece icon: strict top-down view, classic 
 
 > Geometry defines the shape, the SDF defines the bevel, shaders define the material, the seed defines the identity.
 
-Design spec: [docs/design.md](docs/design.md).
-
 ## Quick start
 
 The only tool to install is [Bun](https://bun.sh) 1.4 or later; Node is not needed.
@@ -13,10 +11,11 @@ The only tool to install is [Bun](https://bun.sh) 1.4 or later; Node is not need
 ```bash
 bun install
 bun run dev        # playground at http://localhost:5173
+bun run dev:site   # landing page, docs and playground at http://localhost:5174
 bun run test       # unit + determinism + rendering / visual regression tests
 bun run typecheck
 bun run check      # format check, typecheck, tests and convention gate, as CI runs them
-bun run build      # production build of the playground
+bun run build      # production build of the site, playground included
 ```
 
 ## Packages
@@ -27,150 +26,30 @@ bun run build      # production build of the playground
 | `@jigsaw/renderer` | WebGPU backend (`shaders/puzzle.wgsl`), WebGL2 fallback (`shaders/puzzle.frag.glsl`), CPU fallback, and the `PuzzleIconGenerator` API. One shared device, cached SDF textures. Also the pure-TS PNG encoder (with sRGB chunk, straight alpha) and WebP via the browser canvas. |
 | `@jigsaw/react` | `<PuzzleIcon />` (rendered, on a canvas), `<PuzzlePictogram />` and `<PuzzleMosaic />` (inline SVG) and `useRendererBackend()`. |
 | `apps/playground` | React playground, bundled and served by Bun: Mosaic mode (the default), the rendered Piece mode at `#/piece`, and a card list at `#/cards`. |
+| `apps/site` | Landing page and documentation pages, built into one static site together with the playground and the registry files. |
 
 ## Usage
 
-### React
-
 ```tsx
-import { PuzzleIcon } from "@jigsaw/react";
+import { COLOR_SETS } from "@jigsaw/core";
+import { PuzzleIcon, PuzzleMosaic } from "@jigsaw/react";
 
-<PuzzleIcon seed="alpha" size={128} />
-<PuzzleIcon seed="team-42" size={64} layout="cluster" pieceCount={3} gradient={{ palette: "dusk" }} />
-<PuzzleIcon seed="board" size={256} layout="grid" pieceCount={9} material={{ preset: "matteAcrylic" }} background="#FFFFFF" />
+const family = COLOR_SETS.find((s) => s.id === "bright")!.families[0]!;
+
+<PuzzleIcon seed="alpha" size={128} />                                              // rendered piece, on a canvas
+<PuzzleMosaic seed="alpha" size={40} colors={family.colors} variant="accent" />     // four-piece tile, inline SVG
 ```
 
-`<PuzzleIcon>`s that ask for the same `renderer` share one generator (one GPU device). Rendered images are cached within a count and a memory limit, and the canvas is rendered at `size × devicePixelRatio`, again when that ratio changes. Icons that mount together are built in short slices, so the page keeps painting and responding, and an icon that changes or unmounts while it is queued is skipped.
+The same seed always draws the same icon. The packages are not published to npm: use them inside this workspace, or copy `PuzzleMosaic` into another project with the shadcn CLI.
 
-Pass `title` to give an icon an accessible name; without one it is hidden from assistive technology, like the SVG components. On a server the canvas is emitted at a pixel ratio of 1 and corrected after hydration. If the GPU device or WebGL context is lost, the next render starts a new backend, so icons keep rendering without a reload.
+| Document | What it covers |
+| --- | --- |
+| [Use jigsaw icons](docs/usage.md) | Choosing a form, rendering pieces, SVG icons, exporting files, rendering without a browser. |
+| [API reference](docs/api.md) | Component props, `PuzzleIconOptions`, the generator, SVG functions and colour sets. |
+| [PuzzleMosaic registry](docs/registry.md) | Installing `PuzzleMosaic` as source, its props and palettes, and maintaining the registry. |
+| [Design spec](docs/design.md) | The geometry, distance field, shading and material model. |
 
-### Pictograms, mosaics and outlines (SVG)
-
-For lists, menus and other small or repeated uses, draw the piece as inline SVG instead: no canvas and no GPU.
-
-```tsx
-import { COLOR_SETS, pictogramColor, tileColor } from "@jigsaw/core";
-import { PuzzleMosaic, PuzzlePictogram } from "@jigsaw/react";
-
-const family = COLOR_SETS.find((s) => s.id === "studio")!.families[0]!;
-
-<PuzzlePictogram seed="alpha" size={24} color={pictogramColor(family)} />                        // flat pictogram
-<PuzzlePictogram seed="alpha" size={40} color="#fff" background={tileColor(family)} />           // white on a solid tile
-<PuzzlePictogram seed="alpha" size={24} variant="outline" color="#7A7A8C" title="Alpha" />       // the realistic piece as a line
-<PuzzleMosaic seed="alpha" size={40} colors={family.colors} />                                   // a tile cut into four pieces
-<PuzzleMosaic seed="alpha" size={40} colors={family.colors} variant="accent" />                  // one deep piece on light ones
-```
-
-The pictogram reduces the piece to a sign built on one grid: a unit square whose corners, knobs and notches are all arcs of one radius, with a smaller arc easing each knob and notch into its side, in one flat colour. Seeds draw from the 30 side arrangements that still read as a puzzle piece at about 24 px. `variant="outline"` strokes the realistic piece's own Bézier outline. Without React, `vectorSvg(generatePictogram(seed), { size, color, background })` and `vectorSvg(pieceOutline({ seed }), { outline: true })` return standalone SVG strings.
-
-A mosaic makes the tile itself the puzzle: four pieces, each a shade of one colour family, with the two deep shades on one diagonal so every seam has contrast. A seed picks one of 8 tone layouts and 16 knob layouts. The pieces are separated by thin transparent cuts with rounded corners, inside a squircle outline, so a mosaic sits on any background; `gap={0}`, `shape="round"` and `edge={false}` turn each of those off. `mosaicSvg(generateMosaic(seed), family.colors, { size, variant })` returns it as a standalone SVG string, and `mosaicDrawing` returns the parts for drawing it yourself.
-
-`COLOR_SETS` holds nine sets of at most five colour families: six restrained ones (Studio, Aluminum, Titanium, Desktop, Mono, System) and three bright ones made for mosaics (Bright, Candy, and Ink, where every family's deepest shade is one navy); a family's `colors` also work as a gradient palette for `<PuzzleIcon>`.
-
-### Install as source (shadcn registry)
-
-`PuzzleMosaic` can also be copied into a project as one self-contained source file with the shadcn CLI, with no dependency on these packages:
-
-```sh
-npx shadcn@latest add /path/to/jigsaw/public/r/puzzle-mosaic.json
-```
-
-```tsx
-import { PuzzleMosaic } from "@/components/puzzle-mosaic";
-
-<PuzzleMosaic seed={app.id} title={app.name} />
-```
-
-See [the PuzzleMosaic registry](docs/registry.md) for installing it and for its props and palettes.
-
-### Core API
-
-```ts
-import { PuzzleIconGenerator } from "@jigsaw/renderer";
-
-const gen = new PuzzleIconGenerator({ renderer: "webgpu" }); // or "webgl2" | "cpu" | "auto"
-// also: imageCacheSize (default 128 images) and imageCacheBytes (default 64 MB) bound the rendered-image cache
-
-// Deterministic description: geometry, transforms, palette, spots, material. No GPU.
-const description = gen.generate({ seed: "alpha", size: 128 });
-
-// Render (falls back WebGPU → WebGL2 → CPU if the adapter/device is unavailable)
-const { image, backend, ms } = await gen.render({ seed: "alpha", size: 128 });
-// image: { width, height, data: Uint8ClampedArray } (straight-alpha sRGB RGBA)
-// ms: time spent on this icon, not counting time queued behind others
-
-// Renders queue in call order. Abort one that is still queued and it is skipped (rejects with an AbortError).
-const abort = new AbortController();
-gen.render({ seed: "beta", size: 128 }, { signal: abort.signal }).catch(() => {});
-abort.abort();
-
-// Export — large sizes regenerate the SDF at higher resolution
-const png = await gen.toPNG({ seed: "alpha", size: 128 }, { size: 1024 });
-const webp = await gen.toWebP({ seed: "alpha", size: 128 }, { size: 512, transparent: true });
-const blob = await gen.export({ seed: "alpha" }, { format: "png", size: 256, transparent: false });
-```
-
-Without any renderer at all (e.g. on a server), `@jigsaw/core` gives you the description, and `renderPlanCpu(buildRenderPlan(description))` the pixels:
-
-```ts
-import { buildRenderPlan, generatePuzzleIcon } from "@jigsaw/core";
-import { encodePNG, renderPlanCpu, unpremultiply } from "@jigsaw/renderer";
-
-const plan = buildRenderPlan(generatePuzzleIcon({ seed: "alpha", size: 256 }));
-const png = await encodePNG({ width: plan.width, height: plan.height, data: unpremultiply(renderPlanCpu(plan)) });
-```
-
-Single-piece icons fit each other. `assembleSinglePieces` picks icons, from seeds derived from yours, that close into a framed `cols × rows` puzzle (flat outside, tab against socket inside) and tells you where each one goes:
-
-```ts
-import { assembleSinglePieces } from "@jigsaw/core";
-
-const set = assembleSinglePieces({ seed: "team", size: 128, cols: 3, rows: 3, gradient: { palette: "dusk" } });
-// for each piece: draw <PuzzleIcon seed={p.description.metadata.seed} size={128} />
-// with its icon's top-left at (cell − cellOrigin) × 128 px, cell = p.cell × p.cellSize × 128 px
-```
-
-The search reads only each seed's side kinds (`singlePieceKinds`) and generates just the chosen icons, so it takes a few milliseconds.
-
-### Options
-
-```ts
-interface PuzzleIconOptions {
-  seed: string | number;
-  size?: number;                       // px, default 128
-  layout?: "single" | "cluster" | "grid";
-  pieceCount?: number;                 // cluster 2–5, grid 4 (2×2) or 9 (3×3)
-  geometry?: {
-    tabSize?: number;                  // 0–1, bias within width/depth ranges
-    curvature?: number;                // 0–1 → 0.5–0.9
-    asymmetry?: number;                // 0–1 → up to ±0.08 (single pieces share one lean: 0.6 × that)
-    separation?: number;               // gap between pieces (piece units)
-    rotation?: number;                 // max degrees, cluster only
-  };
-  gradient?: { palette?: PaletteName | string[]; spots?: 3 | 4 | 5; softness?: number };
-  // vivid (picked by seeds): dusk, tide, ember, orchid, meadow, glacier, bloom
-  // muted (by name only): slate, sage, clay, plum, fog, moss
-  // pastel (by name only): aurora, sunset, mint, candy, lagoon, peach
-  material?: {
-    preset?: "softResin" | "matteAcrylic" | "satinResin";
-    bevelWidth?; bevelStrength?; roughness?; specularIntensity?; ambientOcclusion?; thickness?;
-    texture?: "none" | "paper" | "linen" | "frosted" | "wood" | "brushedMetal" | "polishedMetal"; // default none
-    textureStrength?: number;          // 0–1 bump and albedo variation (default 0.6)
-    textureScale?: number;             // grain size, 0.25–4 (default 1, larger = coarser)
-  };
-  lighting?: { direction?: [x, y, z]; intensity?; ambient?; specular? }; // default [-0.5,-0.6,1], 0.85, 0.65, 0.28
-  shadow?: { enabled?; opacity?; blur?; offset?: [x, y]; color? };      // off by default; when enabled 0.12, 0.04, [0.01, 0.025]
-  stamp?: {                            // letter stamp, off by default
-    text?: string;                     // character i goes on piece i, e.g. "R" or "ABC"
-    style?: "deboss" | "emboss";       // pressed in (default) or raised
-    size?: number;                     // glyph height, piece units (0.15–0.7, default 0.3)
-    depth?: number;                    // 0–1 relief (default 0.5)
-    ink?: number;                      // 0–1 darkening inside the letter (default 0.25)
-    font?: string; weight?: number;    // CSS font family, 100–900 (default system sans, 700)
-  };
-  background?: string | "transparent";
-}
-```
+The same documents are served by the site in `apps/site`, next to a landing page and the playground: `bun run dev:site`, then http://localhost:5174.
 
 ## How it works
 

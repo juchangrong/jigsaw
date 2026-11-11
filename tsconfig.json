@@ -23,5 +23,5 @@
       "@jigsaw/react": ["packages/react/src/index.tsx"]
     }
   },
-  "include": ["packages/*/src", "apps/playground/src", "registry", "tests"]
+  "include": ["packages/*/src", "apps/playground/src", "apps/site/src", "apps/site/dev.ts", "registry", "tests"]
 }
