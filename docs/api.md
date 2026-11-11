@@ -1,6 +1,6 @@
 # API reference
 
-The exports of `@jigsaw/react` and `@jigsaw/core` that draw icons. The installable `PuzzleMosaic` has its own props, listed in [the registry reference](registry.md#reference).
+The exports of `@jigsaw/react` and `@jigsaw/core` that draw icons. `PuzzleHills` is not in the registry yet. The installable `PuzzleMosaic` has its own props, listed in [the registry reference](registry.md#reference).
 
 ## PuzzleMosaic
 
@@ -28,6 +28,31 @@ From `@jigsaw/react`. Renders a tile cut into four pieces as one inline `<svg>`.
 | `title` | `string` | none | Accessible name. Without one the icon is `aria-hidden`. |
 | `className`, `style` | | | Passed to the `<svg>`. |
 
+## PuzzleHills
+
+From `@jigsaw/react`. Renders three hills under a sun as one inline `<svg>`.
+
+<!-- preview: puzzle-hills -->
+
+```tsx
+<PuzzleHills seed="alpha" size={64} colors={family.colors} />
+<PuzzleHills seed="alpha" size={64} colors={family.colors} variant="accent" />
+<PuzzleHills seed="beta" size={64} colors={family.colors} />
+<PuzzleHills seed="alpha" size={64} colors={family.colors} shape="round" />
+```
+
+| Prop | Type | Default | Effect |
+|---|---|---|---|
+| `seed` | `string \| number` | required | Selects the positions and sizes of the hills and the sun. Every seed has its own scene. |
+| `colors` | `readonly string[]` | required | Four shades of one colour, deep to light. The lightest is the sky. |
+| `size` | `number` | `24` | Width and height in CSS px. |
+| `variant` | `"tonal" \| "accent"` | `"tonal"` | `tonal`: the hills deepen toward the front. `accent`: one deep hill in front of light ones. |
+| `shape` | `"squircle" \| "round"` | `"squircle"` | The tile's outline. |
+| `radius` | `number` | `0.25` | Corner radius of a `round` tile, as a fraction of its side. |
+| `edge` | `boolean` | `true` | A hairline around the tile, so a light sky holds on a light page. |
+| `title` | `string` | none | Accessible name. Without one the icon is `aria-hidden`. |
+| `className`, `style` | | | Passed to the `<svg>`. |
+
 ## SVG functions
 
 From `@jigsaw/core`. None of them needs a DOM.
@@ -39,7 +64,11 @@ From `@jigsaw/core`. None of them needs a DOM.
 | `mosaicSvg(mosaic, colors, { size?, variant?, shape?, radius?, gap?, edge?, title? })` | A standalone SVG string. |
 | `mosaicDrawing(mosaic, colors, style?)` | The outline, fills, seams and cut widths, for drawing a mosaic yourself. |
 | `mosaicFills(mosaic, colors, variant?)` | The fill of each of the four cells. |
-| `mosaicOutline(shape?, radius?)` | The tile's outline as path data. |
+| `mosaicOutline(shape?, radius?)` | The tile's outline as path data; hills use the same outline. |
+| `generateHills(seed)` | The hills scene for a seed: the sun and three hills as circles, and a `key` that identifies the scene. |
+| `hillsSvg(hills, colors, { size?, variant?, shape?, radius?, edge?, title? })` | A standalone SVG string. |
+| `hillsDrawing(colors, style?)` | The outline and the fills of the sky, the sun and each hill, for drawing hills yourself. |
+| `hillsFills(colors, variant?)` | The fills of the sky, the sun and the three hills. |
 
 ## Colour sets
 

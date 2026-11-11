@@ -16,7 +16,7 @@ The sky is the lightest shade and the sun the light shade. `tonal` steps the hil
 
 Hills take the mosaic's props except `gap`, and reuse its outline and variant type. The playground's first page has an Icon choice between the two styles.
 
-Because petals was reverted after being wired into the landing page and every document, this change stops at the library, its tests and the playground. The landing page, the usage guide, the API reference, the design spec and the README still describe only the mosaic until the maintainer has looked at hills in the playground.
+Because petals was reverted after being wired into the landing page and every document, hills went in two steps: first the library, its tests and the playground; then, once the maintainer had looked at it in the playground and approved it, the landing page, the usage guide, the API reference, the design spec and the README.
 
 ## Alternatives considered
 
@@ -28,10 +28,10 @@ A `style` prop on `PuzzleMosaic` would hide two unrelated designs behind one com
 
 ## Consequences
 
-`PuzzleHills` is exported but undocumented outside this note and its source comments, and it is not in the registry.
+`PuzzleHills` is not in the registry; the documents say so. The card list still draws mosaics only.
 
 The style reads as a landscape, which is further from the project's puzzle theme than the mosaic.
 
 A seed's mosaic and its hills come from separate streams and are unrelated.
 
-Tests cover determinism and variety, the ordering and placement of the hills, the sun's position, fills, the drawing plan, the standalone SVG and the React markup. Checked on the dev server: the playground's Icon choice draws hills at every size and in the gallery.
+Tests cover determinism and variety, the ordering and placement of the hills, the sun's position, fills, the drawing plan, the standalone SVG and the React markup. Checked on the dev server: the playground's Icon choice draws hills at every size and in the gallery, and the landing page and the API page's live example draw hills.
