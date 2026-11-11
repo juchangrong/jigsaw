@@ -8,7 +8,18 @@ All three are exported from `@jigsaw/react`.
 
 ### PuzzleIcon
 
-Renders a piece on a `<canvas>` at `size × devicePixelRatio`. It accepts every field of [`PuzzleIconOptions`](#puzzleiconoptions) as a prop, and these:
+Renders a piece on a `<canvas>` at `size × devicePixelRatio`.
+
+<!-- preview: puzzle-icon -->
+
+```tsx
+<PuzzleIcon seed="alpha" size={96} />
+<PuzzleIcon seed="alpha" size={96} material={{ preset: "matteAcrylic", texture: "paper" }} />
+<PuzzleIcon seed="alpha" size={96} layout="cluster" pieceCount={3} />
+<PuzzleIcon seed="alpha" size={96} layout="grid" pieceCount={4} />
+```
+
+It accepts every field of [`PuzzleIconOptions`](#puzzleiconoptions) as a prop, and these:
 
 | Prop | Type | Default | Effect |
 |---|---|---|---|
@@ -28,6 +39,15 @@ On a server the canvas is emitted at a pixel ratio of 1 and corrected after hydr
 
 Renders a tile cut into four pieces as one inline `<svg>`.
 
+<!-- preview: puzzle-mosaic -->
+
+```tsx
+<PuzzleMosaic seed="alpha" size={64} colors={family.colors} variant="accent" />
+<PuzzleMosaic seed="alpha" size={64} colors={family.colors} />
+<PuzzleMosaic seed="alpha" size={64} colors={family.colors} variant="accent" gap={0} />
+<PuzzleMosaic seed="alpha" size={64} colors={family.colors} shape="round" />
+```
+
 | Prop | Type | Default | Effect |
 |---|---|---|---|
 | `seed` | `string \| number` | required | Selects one of 8 tone layouts and 16 knob layouts. |
@@ -44,6 +64,14 @@ Renders a tile cut into four pieces as one inline `<svg>`.
 ### PuzzlePictogram
 
 Renders one piece as one inline `<svg>`.
+
+<!-- preview: puzzle-pictogram -->
+
+```tsx
+<PuzzlePictogram seed="alpha" size={64} color={pictogramColor(family)} />
+<PuzzlePictogram seed="alpha" size={64} color="#fff" background={tileColor(family)} />
+<PuzzlePictogram seed="alpha" size={64} variant="outline" color="#7A7A8C" strokeWidth={1.6} />
+```
 
 | Prop | Type | Default | Effect |
 |---|---|---|---|

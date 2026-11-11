@@ -14,11 +14,19 @@ The landing page shows real output, as [the product context](../../../../docs/PR
 
 The usage text has one home in `docs/`: `usage.md` is the how-to, `api.md` is the reference, and `registry.md` is unchanged. The README keeps one example and links to them. The site's documentation pages are those same files, converted to HTML at bundle time by a Bun macro (`apps/site/src/markdown.ts`, using `Bun.markdown`), so there is no second copy to keep in step. Links between the three files are pointed at their pages; a link to any other repository file is shown as plain text.
 
+The layout follows the structure of the Aceternity UI site, which the maintainer named as the reference, without its branding or assets. The landing page has a sticky header with a theme switch, copy on the left of the hero and a wall of icons drifting in three columns on the right, then sections that each open with a label, a heading and a link, and a grid of component cards with a live preview on a dotted ground. A documentation page has three columns: grouped navigation, the text, and the headings of the page. Its header puts the title beside the opening paragraph, code blocks are dark with a copy button and light token colouring, and tables sit in a bordered frame.
+
+A code block that the Markdown marks with `<!-- preview: id -->` gets Preview and Code tabs, and the preview is the element registered under that id in `apps/site/src/examples.tsx`. The comment is invisible where the Markdown is read as Markdown.
+
+The site has a light and a dark theme. It starts from the system setting, and the switch stores the choice under `jigsaw-site-theme` in `localStorage`. The playground page keeps its own light styles.
+
 Every page reaches the others through relative paths taken from a `data-root` attribute on its `<html>`, and the bundler writes relative asset paths, so the site works at a domain root or under a project path. `apps/site/dev.ts` serves the pages with trailing slashes, as a static host serves the build, because `bun ./docs/index.html` serves `/docs` and the relative paths would then resolve one level too high.
 
 ## Alternatives considered
 
 Putting the landing page in the playground app as another hash route would make the playground's bundle and stylesheet carry the site, and would take the `#/` route that was just given to Mosaic mode.
+
+Copying the reference more closely, with its animated backgrounds, glows and 3D effects, would go against the product context, which keeps the chrome quiet so the icons carry the colour. The wall of icons is the one moving element, and it stops under `prefers-reduced-motion`.
 
 Writing the documentation pages as React components would give them live examples, but the text would then exist twice, in `docs/` and in the site, and the docs standard keeps documentation under `docs/`.
 
@@ -32,8 +40,8 @@ Deploying the site, for example to GitHub Pages, is left out. The repository is 
 
 The site is not deployed, so the install command on the landing page points at wherever the page is opened from; on `localhost` that is the dev server, which serves `public/r/` at `/r/`.
 
-Code blocks in the documentation pages have no syntax colouring. The pages are rendered in the browser from inlined HTML, so they need JavaScript.
+The token colouring is a single regular expression over comments, strings, component tags and a few keywords, not a parser. A live preview and the code under it are two copies: the element in `examples.tsx` and the block in the Markdown file must be changed together. The pages are rendered in the browser from inlined HTML, so they need JavaScript.
 
 A new Markdown file in `docs/` appears on the site only after it is added to the `DOCS` table in `apps/site/src/docs.tsx` and given an HTML entry.
 
-Checked in a browser against the dev server and against the production build served under a sub-path: the landing page's seed field and sample names, the five rendered sizes on WebGPU, links between the three documentation pages and their anchors, the playground page, a 375 px viewport with no horizontal scroll, and `/r/puzzle-mosaic.json`. The copy buttons were not clicked. No automated test covers the site; `bun run build` fails CI if it stops bundling.
+Checked in a browser against the dev server and against the production build served under a sub-path: the landing page's seed field and sample names, the rendered sizes on WebGPU, both themes, the Preview and Code tabs, links between the three documentation pages and their anchors, the playground page, a 375 px viewport with no horizontal scroll, and `/r/puzzle-mosaic.json`. The copy buttons were not clicked. No automated test covers the site; `bun run build` fails CI if it stops bundling.

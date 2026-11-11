@@ -24,6 +24,8 @@ The rest of this guide imports from the workspace packages.
 
 ## Render a piece
 
+<!-- preview: piece -->
+
 ```tsx
 import { PuzzleIcon } from "@jigsaw/react";
 
@@ -39,6 +41,8 @@ Icons that ask for the same `renderer` share one generator and one GPU device. R
 ## Draw SVG icons
 
 The SVG components need no canvas and no GPU, and their markup is complete when rendered on a server.
+
+<!-- preview: svg -->
 
 ```tsx
 import { COLOR_SETS, pictogramColor, tileColor } from "@jigsaw/core";
@@ -58,6 +62,8 @@ A mosaic takes four shades of one colour, deep to light. A [colour family](api.m
 ## Give each item in a list its own colour
 
 Pick the family from the seed, so an item keeps its colour wherever it appears:
+
+<!-- preview: list -->
 
 ```tsx
 import { COLOR_SETS, hashString } from "@jigsaw/core";

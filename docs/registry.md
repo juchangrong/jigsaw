@@ -51,6 +51,8 @@ npx shadcn@latest add @jigsaw/puzzle-mosaic
 
 ### Use it
 
+<!-- preview: registry -->
+
 ```tsx
 import { PuzzleMosaic } from "@/components/puzzle-mosaic";
 
