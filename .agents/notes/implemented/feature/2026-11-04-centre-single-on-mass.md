@@ -32,3 +32,7 @@ In the playground, every App icon tile is now centred on the piece's visual mass
 The stamp lighting tests now render at 512 px. At 256 px a default stamp wall is only about 1.6 px wide, and the centring shift moved sub-pixel sampling enough to flip the emboss result.
 
 All 131 tests pass.
+
+## Superseded
+
+The code this note describes was removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md). The note is kept as history.

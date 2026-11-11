@@ -25,3 +25,7 @@ This partly supersedes [Soft piece corners](2026-11-04-soft-piece-corners.md): t
 `tests/assembly.test.ts` assembles a framed 3×3 from nine different single seeds, with flat outer sides and tab-against-socket interior seams. It checks zero overlap, and that the only uncovered texels inside the outline are at the four rounded frame corners. It writes `tests/__output__/assembly-3x3.png`, which matches the reference: one closed rectangle with rounded frame corners and seamless interior seams. The corner tests in `tests/geometry.test.ts` now check the rule directly: frame corners are soft, and every other corner of 60 single seeds is exactly square. All 116 tests pass.
 
 Cost: standalone single icons mostly have square corners again, softened only by the bevel. A single icon has rounded corners only where two flat sides meet.
+
+## Superseded
+
+The code this note describes was removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md). The note is kept as history.

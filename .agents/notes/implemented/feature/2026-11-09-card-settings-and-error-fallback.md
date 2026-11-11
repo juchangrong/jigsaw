@@ -40,3 +40,7 @@ Gaps:
 - No automated test covers either part; the repository has no DOM test environment.
 - The boundary catches render errors only. A failed icon render is asynchronous and still reaches `<PuzzleIcon>`'s `onError`.
 - The playground page's own controls are not saved.
+
+## Later change
+
+The rendered piece and the pictogram were removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md); what this note says about the mosaic, the colour sets and the registry still holds.

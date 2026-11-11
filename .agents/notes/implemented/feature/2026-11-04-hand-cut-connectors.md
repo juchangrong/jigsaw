@@ -29,3 +29,7 @@ This partly supersedes [Single pieces interlock](2026-11-04-single-pieces-interl
 ## Consequences
 
 `tests/interlock.test.ts` still finds that a tab from one seed and a socket from another trace the same outline within 0.002 piece units on all four sides, and now requires the shared connector to lean and wave. `tests/assembly.test.ts` still assembles a framed 3×3 from nine seeds with zero overlap and no gaps except the four rounded frame corners. The tab-direction test allows a socket side to bow outward by at most the largest wave; flat sides must still be exactly straight. All 116 tests pass, and the single, grid and assembly renders and the playground on WebGPU look like the reference.
+
+## Superseded
+
+The code this note describes was removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md). The note is kept as history.

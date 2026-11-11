@@ -76,3 +76,7 @@ Checked in the browser on WebGPU:
 - the console has no errors.
 
 This is playground-only; the library is unchanged.
+
+## Later change
+
+The rendered piece and the pictogram were removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md); what this note says about the mosaic, the colour sets and the registry still holds.

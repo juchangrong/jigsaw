@@ -42,3 +42,7 @@ The playground changes:
 Verified in the playground: no text element is below 4.5:1, each of the 7 radio groups has one tab stop and a label, arrow keys move the selection and the focus, the toast is announced, and no choice row wraps. At 375 px wide there is no horizontal scroll and every button is at least 44 px tall. The console has no errors. `pnpm typecheck` passes.
 
 Gaps: the playground has no automated UI tests, so these checks were done by hand in the browser. The badge and backdrop colors remain fixed values because they match export backgrounds and backend identities rather than theme roles.
+
+## Superseded
+
+The code this note describes was removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md). The note is kept as history.

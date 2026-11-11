@@ -33,3 +33,7 @@ Textured icons render the same on all three backends. In the playground at 256 p
 At 128 px and below, the finest grain (paper fibers, linen, frosted, brushed streaks) fades out by design; wood rings and the metal reflections still show. Use `textureScale` above 1 for visible grain at small sizes.
 
 Gap: the look of each texture was judged by eye at 128 and 512 px on one seed and palette. Very dark or very light palettes may need different strengths.
+
+## Superseded
+
+The code this note describes was removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md). The note is kept as history.

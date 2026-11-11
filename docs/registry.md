@@ -51,6 +51,8 @@ npx shadcn@latest add @jigsaw/puzzle-mosaic
 
 ### Use it
 
+<!-- preview: registry -->
+
 ```tsx
 import { PuzzleMosaic } from "@/components/puzzle-mosaic";
 
@@ -116,7 +118,7 @@ The registry is named `jigsaw` and follows the shadcn format: `registry.json` li
 
 ### Change PuzzleMosaic
 
-`registry/jigsaw/puzzle-mosaic.tsx` is a self-contained copy of the mosaic in `packages/core/src/pictogram.ts`, and `tests/registry.test.ts` holds the two to the same output. When the design changes, change both.
+`registry/jigsaw/puzzle-mosaic.tsx` is a self-contained copy of the mosaic in `packages/core/src/mosaic.ts`, and `tests/registry.test.ts` holds the two to the same output. When the design changes, change both.
 
 1. Edit the library and the registry file together.
 2. Rebuild the installable file:
@@ -146,4 +148,4 @@ Keep the file's only import `react`. A file comment above the imports is dropped
 
 ### Publish
 
-Serve `public/r/` over HTTP; any static host works, and no npm release is involved. Consumers then install by URL or by registry name, as described in [Install from a URL](#install-from-a-url).
+Serve `public/r/` over HTTP; any static host works, and no npm release is involved. `bun run build` copies it to `apps/site/dist/r/`, so hosting the built site also publishes the registry at `<site>/r/`. Consumers then install by URL or by registry name, as described in [Install from a URL](#install-from-a-url).

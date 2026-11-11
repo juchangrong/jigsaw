@@ -30,3 +30,7 @@ This supersedes the profile shape in [Round tab heads and soft socket lips](2026
 ## Consequences
 
 Edges are continuous like the reference, knobs are near-round on narrow necks, and the interlock and gapless 3×3 assembly tests still pass on the new geometry. The tab-direction test now bounds a socket's outward bulge by its tab's deepest inward dip, computed from the profile, since that dip reflects into the socket's lips. All 116 tests pass.
+
+## Superseded
+
+The code this note describes was removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md). The note is kept as history.

@@ -21,3 +21,7 @@ The tile background is Tint or Deep, derived from the icon's own palette (its OK
 ## Consequences
 
 Users can judge an icon as an app icon at real launcher sizes and on light or dark tiles. Checked in the playground on WebGPU: all eight tiles render with the piece fully inside both masks, the backgrounds switch, and the console has no errors. This is playground-only; the library API is unchanged.
+
+## Superseded
+
+The code this note describes was removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md). The note is kept as history.

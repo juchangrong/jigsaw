@@ -9,8 +9,7 @@
     ".": "./src/index.tsx"
   },
   "dependencies": {
-    "@jigsaw/core": "workspace:*",
-    "@jigsaw/renderer": "workspace:*"
+    "@jigsaw/core": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=18"

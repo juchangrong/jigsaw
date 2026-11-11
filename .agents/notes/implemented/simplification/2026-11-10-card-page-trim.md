@@ -33,3 +33,7 @@ The readers for old saved formats are removed: the `mosaicTile` and `mosaicJoine
 Reset has no undo: it replaces the saved style, colours, switches and picks at once.
 
 Checked in the browser: the page opens with the saved look, switching to Glass and to Bare piece works, Reset returns to Mosaic in the Bright set with Padding off and Gaps on, and the playground page's controls still show their labels.
+
+## Later change
+
+The rendered piece and the pictogram were removed when [the project became mosaic-only](2026-11-11-mosaic-only.md); what this note says about the mosaic, the colour sets and the registry still holds.

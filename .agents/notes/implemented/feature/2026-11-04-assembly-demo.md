@@ -21,3 +21,7 @@ The playground demo was removed later, when the playground was trimmed ([Mosaic 
 ## Consequences
 
 The search takes about 85–145 ms per change in the playground, on the main thread, which is acceptable for a demo. `tests/assembly.test.ts` now builds its 3×3 with `assembleSinglePieces` and checks the frame and seam rule for 2×2, 3×3 and 4×3, determinism, `cellOrigin`, and that a 1×1 has no answer. Checked in the playground on WebGPU: 3×3 and 4×3 close with no gaps, scatter and reassembly animate, and the console has no errors. All 119 tests pass.
+
+## Superseded
+
+The code this note describes was removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md). The note is kept as history.

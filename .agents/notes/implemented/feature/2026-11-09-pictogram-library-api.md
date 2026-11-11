@@ -41,3 +41,7 @@ Products can draw the same pictograms, outlines and colours as the card list, as
 All 144 tests pass. The card list was checked in the browser after the switch.
 
 Gap: `vectorSvg` uses a non-scaling stroke for outlines, so the line width is in rendered pixels and does not scale if the SVG is resized later.
+
+## Later change
+
+The rendered piece and the pictogram were removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md); what this note says about the mosaic, the colour sets and the registry still holds.

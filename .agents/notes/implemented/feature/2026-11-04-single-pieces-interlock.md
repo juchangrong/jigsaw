@@ -37,3 +37,7 @@ Cost: single outlines now vary only by their side kinds, about 44 valid combinat
 The neck widening for very small sizes depends on the output size, so at 32 px and below the connector is identical only between icons generated at the same size. From 48 px up the minimum is not reached, and connectors match across sizes too (neck 0.16, depth 0.259, scale 0.580 at default options).
 
 All 110 tests pass, and the playground was checked on WebGPU.
+
+## Superseded
+
+The code this note describes was removed when [the project became mosaic-only](../simplification/2026-11-11-mosaic-only.md). The note is kept as history.
